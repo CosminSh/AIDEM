@@ -1,0 +1,108 @@
+{
+    "nodes": {
+        "start": {
+            "id": "start",
+            "question": "Are you or anyone else injured?",
+            "source": "Red Cross Wilderness First Aid",
+            "gps_context": false,
+            "branches": [
+                {"label": "Yes", "target": "injury_assessment"},
+                {"label": "No, just lost or need rescue", "target": "lost_protocol"}
+            ]
+        },
+        "injury_assessment": {
+            "id": "injury_assessment",
+            "question": "Is there severe, life-threatening bleeding?",
+            "source": "TCCC / Red Cross",
+            "gps_context": false,
+            "branches": [
+                {"label": "Yes", "target": "bleeding_protocol"},
+                {"label": "No", "target": "wound_assessment"}
+            ]
+        },
+        "bleeding_protocol": {
+            "id": "bleeding_protocol",
+            "question": "Apply firm, direct pressure to the wound immediately. Do you have a tourniquet?",
+            "source": "TCCC",
+            "gps_context": false,
+            "branches": [
+                {"label": "Yes", "target": "apply_tourniquet"},
+                {"label": "No", "target": "pressure_dressing"}
+            ]
+        },
+        "apply_tourniquet": {
+            "id": "apply_tourniquet",
+            "question": "Place the tourniquet 2-3 inches above the wound. Tighten until bleeding stops. Done?",
+            "source": "TCCC",
+            "gps_context": false,
+            "branches": [
+                {"label": "Done", "target": "rescue_call"}
+            ]
+        },
+        "pressure_dressing": {
+            "id": "pressure_dressing",
+            "question": "Pack the wound with cloth if it's deep, and maintain constant pressure. Done?",
+            "source": "TCCC",
+            "gps_context": false,
+            "branches": [
+                {"label": "Done", "target": "rescue_call"}
+            ]
+        },
+        "wound_assessment": {
+            "id": "wound_assessment",
+            "question": "Please describe the injury or take a photo so I can help assess it.",
+            "source": "WHO Wound Management",
+            "gps_context": false,
+            "branches": [
+                {"label": "It's a broken bone", "target": "splint_protocol"},
+                {"label": "Minor cut", "target": "clean_wound"}
+            ]
+        },
+        "lost_protocol": {
+            "id": "lost_protocol",
+            "question": "Do you have mobile signal to make a call?",
+            "source": "NASAR",
+            "gps_context": true,
+            "branches": [
+                {"label": "Yes", "target": "rescue_call"},
+                {"label": "No", "target": "shelter_protocol"}
+            ]
+        },
+        "rescue_call": {
+            "id": "rescue_call",
+            "question": "I'm generating a script with your GPS coordinates. Read this to emergency services.",
+            "source": "NASAR",
+            "gps_context": true,
+            "branches": [
+                {"label": "Continue", "target": "shelter_protocol"}
+            ]
+        },
+        "splint_protocol": {
+            "id": "splint_protocol",
+            "question": "Keep the injured area still. Find rigid objects (sticks, poles) and pad them. Do not try to straighten the bone. Done?",
+            "source": "Red Cross",
+            "gps_context": false,
+            "branches": [
+                {"label": "Done", "target": "rescue_call"}
+            ]
+        },
+        "clean_wound": {
+            "id": "clean_wound",
+            "question": "Wash the wound with clean water. Apply a bandage. Keep it dry.",
+            "source": "WHO",
+            "gps_context": false,
+            "branches": [
+                {"label": "Done", "target": "lost_protocol"}
+            ]
+        },
+        "shelter_protocol": {
+            "id": "shelter_protocol",
+            "question": "Stay where you are. Find or build shelter to protect against wind and rain. Conserve your energy.",
+            "source": "FEMA",
+            "gps_context": false,
+            "branches": [
+                {"label": "End Session", "target": "end"}
+            ]
+        }
+    }
+}

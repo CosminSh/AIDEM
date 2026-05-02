@@ -1,0 +1,312 @@
+﻿METADATA & SOURCES
+* RC = American Red Cross Wilderness & Remote First Aid
+* WHO = WHO Wound Management Guidelines
+* NASAR = National Association for Search and Rescue
+* TCCC = Tactical Combat Casualty Care (civilian adaptation)
+* EWMA = European Wound Management Association
+* MAYO = Mayo Clinic First Aid
+* WFA = Wilderness First Aid Curriculum & Doctrine Guidelines (BSA/SOLO Schools)
+________________
+
+
+DECISION TREE — QUESTIONS
+ROOT
+Q: Can you reach emergency services right now? (phone call, satellite communicator, someone nearby with signal)
+* YES → RESCUER_MODE
+* NO → Q_INJURED
+Q_INJURED
+Q: Are you or anyone with you injured?
+* YES → Q_LIFE_THREATENING
+* NO → Q_LOST
+Q_LIFE_THREATENING
+Q: Is the injury life-threatening? Signs: heavy bleeding that won't stop, not breathing normally, unconscious, severe shock.
+* YES → CRITICAL_TRIAGE
+* NO → Q_CAN_MOVE
+* UNSURE → CRITICAL_TRIAGE (always err on the side of caution)
+Q_CAN_MOVE
+Q: Can you walk or move under your own power?
+* YES → WOUND_ASSESSMENT
+* NO → SHELTER_IN_PLACE
+Q_LOST
+Q: Do you know where you are, and can you safely get back on your own?
+* YES → SELF_NAVIGATION
+* NO → LOST_PROTOCOL
+CRITICAL_TRIAGE
+Q: What is the main problem? Look quickly: heavy bleeding, not breathing, unconscious, or something else?
+* BLEEDING → SEVERE_BLEEDING
+* NOT BREATHING → AIRWAY_BREATHING
+* UNCONSCIOUS → AIRWAY_BREATHING
+* SHOCK → SHOCK_PROTOCOL
+* OTHER → SEVERE_BLEEDING
+SHELTER_ASSESSMENT
+Q: How is the weather and temperature right now? Is it getting dark, cold, or wet?
+* CONDITIONS FINE / DAYLIGHT → WAIT_AND_SIGNAL
+* GETTING DARK OR COLD → SHELTER_BUILDING
+* ALREADY COLD / WET → SHELTER_BUILDING
+________________
+
+
+PROTOCOLS
+RESCUER_MODE — Rescuer Contact Mode
+(Source: RC) — GPS coordinates must be displayed on this screen
+1. Your GPS coordinates are shown on screen. Read them clearly to the operator.
+2. Tell them: your name, coordinates, altitude if readable, what happened, how many people, any injuries. (App provides pre-filled rescue script)
+3. Follow their instructions exactly. They are trained for this.
+4. Stay where you are unless they tell you to move.
+5. Keep the line open if possible. If you lose signal, stay in the same spot — they now know where you are.
+Re-entry prompt: "Have you lost contact with rescuers and need further guidance?"
+________________
+
+
+SEVERE_BLEEDING — Control Severe Bleeding
+(Source: RC, TCCC) — IMMEDIATE priority
+1. Expose the wound. Cut or tear away clothing — you need to see the source of the bleeding.
+2. Apply firm, direct pressure with the cleanest material available — gauze, a clean cloth, or your bare hand. Press hard and do not let go.
+3. Keep steady pressure for at least 10 minutes without peeking. Releasing pressure early is the most common mistake.
+4. Is the wound on an arm or leg?
+   * LIMB WOUND → TOURNIQUET
+   * TORSO / HEAD / GROIN → WOUND_PACKING
+After bleeding controlled → WOUND_ASSESSMENT
+________________
+
+
+TOURNIQUET — Apply a Tourniquet
+(Source: TCCC, RC) — IMMEDIATE priority
+⚠️ WARNING: Use only for life-threatening bleeding on a limb that cannot be controlled by direct pressure. Do NOT apply to neck, torso, or head.
+1. Position the tourniquet 2–3 inches above the wound, between the wound and the heart. Never place directly over a joint — go above the joint if needed.
+2. Tighten firmly until all bleeding stops. It should be painful — if not painful, it may not be tight enough.
+3. Note the time of application. Write it on the person's forehead or arm if you have a pen. Tell rescuers this time. This is critical.
+4. Do not remove the tourniquet. Do not cover it up. Rescuers must be able to see it.
+5. Once applied, move on to treat other injuries and keep the patient calm and warm.
+After → SHOCK_PROTOCOL
+________________
+
+
+WOUND_PACKING — Neck, Shoulder, Groin, or Torso
+(Source: RC, TCCC) — IMMEDIATE priority
+⚠️ Use when bleeding is from neck, shoulder, groin, armpit, or back where a tourniquet cannot be applied.
+1. Pack the wound tightly with gauze, clean cloth, or any absorbent material. Push it deep into the wound.
+2. Apply firm pressure with both hands on top of the packing. Do not stop pressing.
+3. Maintain continuous pressure for at least 10 minutes. Do not release to check.
+4. If bleeding soaks through, add more material on top — do not remove packing already in place.
+5. Get evacuation underway as fast as possible. This injury requires hospital care.
+After → SHOCK_PROTOCOL
+________________
+
+
+AIRWAY_BREATHING — Unresponsive or Not Breathing
+(Source: RC, WFA) — IMMEDIATE priority
+1. Tap the person's shoulder firmly and shout "Are you okay?" Check for a response.
+2. If no response: tilt their head back gently with one hand on the forehead and two fingers lifting the chin. This opens the airway.
+3. Look, listen, and feel for breathing for no more than 10 seconds. Look for chest rise, listen for air, feel for breath on your cheek.
+4. If they ARE breathing: place them in the recovery position — on their side, top knee bent forward to stop them rolling. Monitor constantly.
+5. If they are NOT breathing and you ARE trained in CPR: begin CPR — 30 chest compressions followed by 2 rescue breaths. Push hard and fast in the center of the chest.
+6. If you are NOT trained in CPR: perform hands-only chest compressions — push hard and fast in the center of the chest, about 100–120 times per minute, until help arrives.
+After → SHOCK_PROTOCOL
+________________
+
+
+SHOCK_PROTOCOL — Treat for Shock
+(Source: RC, MAYO, WFA) — HIGH priority
+Signs of shock: Pale/cold/clammy skin · Rapid weak pulse · Rapid shallow breathing · Nausea or vomiting · Dizziness or confusion · Extreme thirst
+1. Treat the cause first — stop bleeding, restore breathing. Shock cannot be reversed until its cause is addressed.
+2. Lay the person down on their back. Do not sit them up.
+3. Elevate their legs and feet approximately 10–12 inches if no leg injury is suspected. Helps blood return to vital organs.
+4. Keep them still. Do not let them walk around.
+5. Keep them warm. Cover with a jacket, sleeping bag, or any available insulation. Cold worsens shock.
+6. Loosen any tight clothing around the neck, chest, or waist.
+7. Do not give food or water unless fully conscious, not nauseous, and evacuation is many hours away.
+8. Talk to them. Reassure them. Keep them calm. Anxiety makes shock worse.
+9. Monitor breathing, pulse, and level of consciousness every 5–10 minutes. Note any changes.
+After → EVACUATION_PLANNING
+________________
+
+
+WOUND_ASSESSMENT — Assess the Wound
+(Source: RC, EWMA)
+Image prompt: "If possible, take a photo of the wound so I can help you assess it."
+Triage questions to ask:
+* Is it still bleeding?
+* Is it a cut, puncture, scrape, or animal bite?
+* How deep does it appear to be?
+* Is it on the face, hand, joint, or over bone?
+Wound type routing:
+Type
+	Description
+	Route
+	Special Note
+	Laceration
+	A cut or tear
+	WOUND_CLEANING
+	—
+	Abrasion
+	Skin scraped off
+	WOUND_CLEANING
+	High infection risk — wide surface exposure
+	Puncture
+	Deep narrow wound
+	WOUND_CLEANING
+	Do NOT close. High infection risk.
+	Animal bite
+	Any animal
+	WOUND_CLEANING
+	Do NOT close. Requires evacuation for professional care.
+	Avulsion
+	Chunk of skin torn away
+	SEVERE_BLEEDING
+	Control bleeding first. If skin still attached, gently replace and cover. Evacuation required.
+	________________
+
+
+WOUND_CLEANING — Clean and Dress the Wound
+(Source: RC, WHO, EWMA, WildSafe) — MODERATE priority
+1. Control any remaining bleeding first. Do not clean a wound that is still actively bleeding.
+2. Wash your hands thoroughly or use gloves if available.
+3. Rinse the wound with large amounts of clean water under pressure — a water bottle with a small hole works well. Use at least half a litre.
+4. Gently clean around the wound and remove visible debris (dirt, grit, leaves) with clean gauze or cloth. Do NOT scrub inside the wound.
+5. For abrasions: clean carefully — highest risk for infection because skin surface is exposed over a wide area.
+6. When to close a wound: Small, clean cuts less than 1 cm wide may be closed with closure strips or tape if available.
+   * Do NOT close: animal bites · puncture wounds · wounds more than 6–8 hours old · heavily contaminated wounds · wounds on the hands
+7. Apply antibiotic ointment if available — thin layer over wound surface only.
+8. Cover with sterile dressing or cleanest material available. Secure in place.
+9. Change dressing every day, or sooner if wet, dirty, or fallen off.
+After → WOUND_MONITORING
+________________
+
+
+WOUND_MONITORING — Monitor for Infection
+(Source: WHO, RC, DAN Wilderness Wound Care) — Check every 12 hours
+Signs of infection — watch for these:
+* Increasing pain at the wound site — pain that gets worse, not better
+* Spreading redness around the wound edges
+* Swelling that increases after the first 24 hours
+* Warmth or heat around the wound
+* Discharge — especially yellow, green, or foul-smelling pus
+* Red streaks spreading outward from the wound — URGENT, indicates spreading infection
+* Fever, chills, or feeling generally unwell
+* Wound edges separating or not holding
+Action by severity:
+* Mild: Re-clean thoroughly with fresh water. Replace dressing. Monitor more frequently.
+* Moderate: Re-clean, redress, and begin evacuation planning. Infection is progressing.
+* Severe (red streaks / fever / systemic symptoms): EVACUATE IMMEDIATELY. This is potentially life-threatening sepsis.
+Signs of normal healing:
+* Pain decreasing each day
+* Redness limited to wound edges and reducing
+* No discharge, or only small amount of clear fluid
+* Wound edges staying together and beginning to close
+________________
+
+
+LOST_PROTOCOL — You Are Lost — First Steps
+(Source: NASAR) — HIGH priority — GPS coordinates displayed
+1. Stop. Do not keep walking. The moment you are unsure where you are, stopping is the most important decision you can make. Most people who get into serious trouble do so by continuing to move when lost.
+2. Your GPS coordinates are shown on screen. Remember them or write them down. If you get any signal, these are what you give rescuers.
+3. Stay calm. Take three slow, deep breaths. Panic leads to poor decisions. You are not in immediate danger — you are lost, and people are trained to find you.
+4. Find a landmark and stay near it. A large tree, a rock, a clearing. Hug it — literally touching it helps calm panic and keeps you in place. (NASAR Hug-a-Tree program)
+5. Look for a small clearing near your anchor if possible — you are easier to spot from the air in open ground than under tree cover.
+6. Leave footprints and clues around you. Searchers follow tracks. Make a mark on the ground showing where you are.
+After → SIGNALING_PROTOCOL, parallel → SHELTER_ASSESSMENT
+________________
+
+
+SIGNALING_PROTOCOL — Signal for Rescue
+(Source: NASAR, Field & Stream, BeaverCraft Wilderness) — HIGH priority
+Rule of Three: Three is the universal distress signal. Three whistle blasts. Three mirror flashes. Three fires. Three shouts. Repeat at regular intervals.
+Method 1 — Whistle (best if you have one)
+1. Blow three short, sharp blasts.
+2. Wait 30 seconds.
+3. Repeat every few minutes.
+4. A whistle carries far further than a human voice and uses almost no energy.
+Method 2 — Signal Mirror or Reflective Surface
+1. Use a signal mirror, phone screen, foil, or any shiny surface.
+2. Hold the reflective surface toward the sun.
+3. Extend your other hand toward the target (aircraft or searcher) and split two fingers to frame it.
+4. Angle the reflection through your split fingers toward the target.
+5. Flash three times, pause, repeat. Visible for many miles in clear conditions.
+Method 3 — Ground-to-Air Symbols (for aerial search)
+1. In a clearing, stamp, arrange rocks, or break branches to make a large X or SOS. Each letter/symbol should be at least 3 metres long to be visible from the air.
+2. Use contrast — dark rocks on light ground, or trampled vegetation.
+3. X = need assistance. SOS = emergency.
+4. Lie flat if a helicopter flies over — a horizontal human shape contrasts better against the ground than a standing figure.
+Method 4 — Fire and Smoke Signal
+1. Build the fire in the most open, visible area you can safely reach.
+2. Once going, add green leaves, wet grass, or damp wood to create thick white/grey smoke — visible for miles.
+3. Keep the fire controlled and away from dry vegetation.
+4. Three fires in a triangle is the classic distress signal if you have materials for multiple fires.
+5. Never leave a fire unattended.
+Method 5 — Phone Screen Flash (night use)
+1. At night, flash the phone screen or torch three times toward any light source or sound.
+2. Conserve battery — signal in bursts rather than leaving torch on continuously.
+3. Keep phone on battery-saving mode between signals.
+________________
+
+
+SHELTER_BUILDING — Build an Emergency Shelter
+(Source: WFA, Backpacker Magazine, University of Maine Outdoor Leadership) — HIGH priority
+Site selection:
+* Find a naturally sheltered spot — base of a large tree, rock face, or hillside that blocks wind
+* Avoid low ground, dry riverbeds, or valley floors — cold air and water collect there
+* Check overhead for dead branches that could fall
+* Stay close enough to your anchor landmark that searchers can still find you
+Option A — Debris Hut (best for cold nights, no tools)
+1. Find a strong branch at least twice your height — this is your ridgepole.
+2. Prop one end on a rock, stump, or forked branch about 3 feet off the ground. Other end on the ground.
+3. Lean smaller branches along both sides of the ridgepole to form a ribbed frame.
+4. Cover the entire frame with thick layers of leaves, grass, bark, and pine needles — at least 2 feet deep.
+5. The shelter should be just big enough for your body. Smaller is warmer.
+6. Crawl in feet-first and pull debris in behind you.
+7. Insulate the ground inside with leaves and dry grass.
+Option B — Lean-To (quick, good for rain/wind, less warm)
+1. Find two trees about shoulder width apart.
+2. Tie, prop, or wedge a horizontal branch between them at about shoulder height.
+3. Lean branches from this bar to the ground at a 45-degree angle.
+4. Cover the leaning branches with leaves, bark, and debris.
+5. Sit or sleep under the angled roof with your back to the wind.
+6. Less effective for cold than a debris hut — build a fire in front if possible.
+⚠️ Ground insulation note: You lose more body heat to cold ground than to air. Always insulate the ground with at least 4–6 inches of dry leaves, grass, or pine needles before getting in.
+After → SIGNALING_PROTOCOL
+________________
+
+
+SHELTER_IN_PLACE — You Cannot Move
+(Source: WFA, RC) — HIGH priority — GPS coordinates displayed
+1. Do not attempt to move with an injury you cannot walk on. You risk making it worse and moving away from where rescuers will look.
+2. Your GPS coordinates are shown on screen. Send them the moment you get any signal.
+3. Treat your injury first. Then focus on warmth and shelter.
+4. If others are with you, send one person to get help if they can safely navigate out. They must take your GPS coordinates with them.
+5. Signal continuously — whistle, mirror, fire, or phone flash. Make yourself as visible as possible from the air.
+6. Stay warm. Insulate yourself from the ground. Cover with any available material.
+________________
+
+
+WAIT_AND_SIGNAL — Stay Put and Signal
+(Source: NASAR) — GPS coordinates displayed
+1. Conditions are workable. Focus on signaling every 5–10 minutes using your best available method.
+2. Stay near your anchor landmark. Keep monitoring coordinates — if you must move for any reason, note the change.
+3. Prepare shelter materials now, before you need them. It takes time and is much easier while still warm with daylight.
+4. Conserve water. Drink only if thirsty. You can safely go 24 hours without water in mild conditions.
+________________
+
+
+SELF_NAVIGATION — Navigating Out Safely
+(Source: WFA, RC) — MODERATE priority — GPS coordinates displayed
+1. Check your coordinates and note your starting position before you move.
+2. Treat any wounds before you start walking. Even minor injuries become serious with continued exertion.
+3. Follow a watercourse downhill if you have no trail — streams and rivers lead to lower ground, roads, and people.
+4. Move slowly and carefully. A second injury dramatically changes your situation.
+5. If in doubt about the route, stop and reassess. Continuing in the wrong direction tires you and takes you further from help.
+6. If conditions deteriorate or you become less certain, stop and switch to LOST_PROTOCOL. Always better to stop than push on into uncertainty.
+________________
+
+
+EVACUATION_PLANNING — Plan Evacuation
+(Source: WFA, RC) — HIGH priority — GPS coordinates displayed
+1. Keep trying to contact rescue services. Send GPS coordinates the moment you have any signal.
+2. Assess whether the patient can walk. If yes, plan the safest shortest route to help. If no, shelter in place and signal.
+3. Monitor the injured person continuously. Watch for worsening shock, increasing pain, or decreased consciousness — signs the situation is getting worse.
+4. Improvise a stretcher if needed: two sturdy branches and a jacket, sleeping bag, or tarp. Two to four carriers minimum.
+5. Prioritise warmth and stability during movement. Keep the injured person horizontal and insulated.
+________________
+
+
+That's the full content of all 23 nodes. Everything above maps 1:1 to the JSON file — same structure, same sources, same routing logic. You can import it into whatever format your app needs.
