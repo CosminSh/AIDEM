@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.survivalaid" "\0"
-            VALUE "FileDescription", "survival_aid_app" "\0"
+            VALUE "CompanyName", "Survival AId Team" "\0"
+            VALUE "FileDescription", "Survival AId - Emergency Assistant" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "survival_aid_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.survivalaid. All rights reserved." "\0"
-            VALUE "OriginalFilename", "survival_aid_app.exe" "\0"
-            VALUE "ProductName", "survival_aid_app" "\0"
+            VALUE "InternalName", "SurvivalAId" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026. All rights reserved." "\0"
+            VALUE "OriginalFilename", "SurvivalAId.exe" "\0"
+            VALUE "ProductName", "Survival AId" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
