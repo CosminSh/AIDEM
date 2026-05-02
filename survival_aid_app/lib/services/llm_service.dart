@@ -1,207 +1,198 @@
-/// LLM Service for Survival AId
-/// 
-/// Architecture:
-///   - [LlmService.generateResponse] is the single entry point.
-///   - In production, this calls MediaPipe GenAI with the bundled Gemma 2B model.
-///   - During development/Windows testing, it falls back to [_AdaptiveMock],
-///     a rule-based engine that demonstrates the same adaptive reasoning Gemma provides.
+import 'dart:async';
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'context_compaction_service.dart';
 
+/// The LLM service. Wraps flutter_gemma for real on-device Gemma inference.
+/// Falls back to [_AdaptiveMock] when the model is not yet loaded.
 class LlmService {
-  // Future production hook:
-  // LlmInferenceEngine? _engine;
+  InferenceModel? _model;
+  bool _isModelLoaded = false;
 
-  bool _isInitialized = false;
+  bool get isModelLoaded => _isModelLoaded;
 
-  Future<void> init() async {
-    // Production: load model from assets
-    // _engine = await LlmInferenceEngine.create('assets/models/gemma-2b-it-gpu-int4.bin');
-    _isInitialized = true;
+  /// System prompt injected at the start of every chat session.
+  /// This is the core of the intelligence — it tells Gemma exactly how to behave.
+  String _buildSystemPrompt({
+    required String situationContext,
+    required String knowledgeBase,
+  }) {
+    return '''You are Survival AId, an expert offline wilderness emergency assistant.
+You are running entirely on the user's device. There is no internet. Every answer could save a life.
+
+SITUATION CONTEXT (what you already know about this emergency):
+$situationContext
+
+RELEVANT REFERENCE MATERIAL (Red Cross / CDC / NASAR):
+$knowledgeBase
+
+YOUR CRITICAL RULES:
+1. Read the situation context carefully before responding. Do NOT ask about things already established.
+2. If you lack critical information to give safe advice, ask ONE specific, urgent question.
+3. Never suggest using something the user has confirmed they don't have.
+4. Give numbered, step-by-step instructions when advising action.
+5. Acknowledge constraints and immediately give the best alternative.
+6. Speak calmly and directly. No jargon. Short sentences. Lives depend on clarity.
+7. If the situation is life-threatening and beyond first aid, always end with the appropriate emergency signal method.''';
   }
 
-  /// Generates a contextually-adaptive response from the survival assistant.
-  ///
-  /// [conversationHistory] — all prior messages, oldest first.
-  /// [currentProtocolContext] — the current protocol node question/instruction.
-  /// [userMessage] — the user's free-form input.
-  Future<String> generateResponse({
-    required List<String> conversationHistory,
-    required String currentProtocolContext,
+  /// Initialize — get the active model from flutter_gemma (must be installed first).
+  Future<bool> init() async {
+    try {
+      _model = await FlutterGemma.getActiveModel(
+        maxTokens: 2048,
+        preferredBackend: PreferredBackend.gpu,
+      );
+      _isModelLoaded = true;
+      return true;
+    } catch (e) {
+      _isModelLoaded = false;
+      return false;
+    }
+  }
+
+  /// Generates a response and streams tokens as they arrive.
+  /// Returns a Stream<String> where each event is a new token.
+  Stream<String> generateResponseStream({
     required String userMessage,
-  }) async {
-    if (!_isInitialized) await init();
+    required String situationContext,
+    required String knowledgeBase,
+    required List<String> recentHistory,
+  }) async* {
+    if (!_isModelLoaded || _model == null) {
+      // Fallback to adaptive mock
+      final response = _AdaptiveMock.respond(
+        userMessage: userMessage,
+        situationContext: situationContext,
+      );
+      // Stream the mock word by word for typewriter effect
+      for (final word in response.split(' ')) {
+        yield '$word ';
+        await Future.delayed(const Duration(milliseconds: 30));
+      }
+      return;
+    }
 
-    // === Production path (Gemma 2B via MediaPipe) ===
-    // final prompt = _buildPrompt(conversationHistory, currentProtocolContext, userMessage);
-    // return await _engine!.generateResponse(prompt);
+    try {
+      final systemInstruction = _buildSystemPrompt(
+        situationContext: situationContext,
+        knowledgeBase: knowledgeBase,
+      );
 
-    // === Development path: adaptive rule-based mock ===
-    return _AdaptiveMock.respond(
-      history: conversationHistory,
-      protocolContext: currentProtocolContext,
-      userMessage: userMessage,
-    );
+      final chat = await _model!.createChat(
+        systemInstruction: systemInstruction,
+      );
+
+      // Add recent history context
+      for (int i = 0; i < recentHistory.length - 1; i++) {
+        final msg = recentHistory[i];
+        if (msg.startsWith('User: ')) {
+          await chat.addQueryChunk(Message.text(
+            text: msg.substring(6),
+            isUser: true,
+          ));
+        }
+      }
+
+      // Add the current user message
+      await chat.addQueryChunk(Message.text(
+        text: userMessage,
+        isUser: true,
+      ));
+
+      // Stream the response
+      await for (final response in chat.generateChatResponseAsync()) {
+        if (response is TextResponse && response.token.isNotEmpty) {
+          yield response.token;
+        }
+      }
+
+      await chat.close();
+    } catch (e) {
+      yield '\n\n[Error: ${e.toString()}]';
+    }
   }
 
-  String _buildPrompt(List<String> history, String context, String userMessage) {
-    final historyText = history.takeLast(6).join('\n');
-    return """<start_of_turn>system
-You are Survival AId, an offline wilderness emergency assistant. 
-Your role is to ADAPT to the user's actual situation, resources, and constraints.
-Never repeat a step they just said they can't do. Always offer a realistic alternative.
-Speak calmly, directly, and in plain language. No jargon.
-Current emergency protocol context: "$context"
-<end_of_turn>
-<start_of_turn>conversation_history
-$historyText
-<end_of_turn>
-<start_of_turn>user
-$userMessage
-<end_of_turn>
-<start_of_turn>model
-""";
+  /// Non-streaming call — used for context compaction (background task).
+  Future<String> generateOnce(String prompt) async {
+    if (!_isModelLoaded || _model == null) {
+      return ''; // Compaction silently skipped if model not loaded
+    }
+
+    try {
+      final chat = await _model!.createChat();
+      await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
+
+      final buffer = StringBuffer();
+      await for (final response in chat.generateChatResponseAsync()) {
+        if (response is TextResponse) buffer.write(response.token);
+      }
+      await chat.close();
+      return buffer.toString();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Future<void> close() async {
+    await _model?.close();
+    _model = null;
+    _isModelLoaded = false;
   }
 }
 
-/// Takes strings from the end of a list (helper since Dart lacks .takeLast)
-extension _ListTakeLast<T> on List<T> {
-  List<T> takeLast(int n) => length <= n ? this : sublist(length - n);
-}
-
-/// Adaptive mock engine. Detects constraints and resource gaps from what the user typed,
-/// and provides real alternative wilderness medicine/survival advice.
+/// Adaptive rule-based fallback — used when the model is still downloading.
+/// Detects resource constraints and gives real, field-applicable alternative advice.
 class _AdaptiveMock {
   static String respond({
-    required List<String> history,
-    required String protocolContext,
     required String userMessage,
+    required String situationContext,
   }) {
     final msg = userMessage.toLowerCase();
+    final ctx = situationContext.toLowerCase();
 
-    // === Detect resource/capability gaps ===
-    final bool lacksWater = _lacks(msg, ['water', 'liquid', 'drink', 'clean water', 'running water']);
-    final bool lacksBandage = _lacks(msg, ['bandage', 'cloth', 'dressing', 'gauze', 'wrap']);
-    final bool lacksKit = _lacks(msg, ['kit', 'supplies', 'first aid', 'equipment', 'gear']);
-    final bool lacksTourniquet = _lacks(msg, ['tourniquet']);
-    final bool lacksPhone = _lacks(msg, ['phone', 'signal', 'cell', 'service', 'reception', 'call']);
-    final bool lacksFireMaking = _lacks(msg, ['fire', 'lighter', 'matches', 'flint']);
-    final bool alone = msg.contains('alone') || msg.contains('by myself') || msg.contains('just me');
-    final bool bleeding = msg.contains('bleed') || msg.contains('blood') || msg.contains('cut');
-    final bool pain = msg.contains('pain') || msg.contains('hurt') || msg.contains('painful');
-    final bool unconscious = msg.contains('unconscious') || msg.contains('passed out') || msg.contains('not waking');
+    final lacksWater = _lacks(msg, ['water', 'clean water', 'running water']);
+    final lacksBandage = _lacks(msg, ['bandage', 'cloth', 'dressing', 'gauze']);
+    final lacksTourniquet = _lacks(msg, ['tourniquet']);
+    final lacksSignal = _lacks(msg, ['signal', 'phone', 'cell', 'reception', 'call']);
+    final lacksFireMaking = _lacks(msg, ['fire', 'lighter', 'matches', 'flint']);
+    final isAlone = msg.contains('alone') || msg.contains('by myself');
+    final isUnconscious = msg.contains('unconscious') || msg.contains('not waking');
 
-    // === Specific adaptive responses ===
-
-    // Wound + no water
-    if (lacksWater && (protocolContext.contains('wound') || protocolContext.contains('wash') || protocolContext.contains('clean') || bleeding)) {
-      return "Without water, don't leave the wound untreated. Improvise:\n\n"
-          "• Use any clear liquid — diluted sports drink, even fresh urine in an extreme case (it's sterile when fresh).\n"
-          "• Irrigate gently by squeezing liquid from a cloth above the wound to flush debris out.\n"
-          "• Avoid rubbing alcohol directly — it damages tissue. Use it diluted if that's all you have.\n\n"
-          "Once flushed, cover with the cleanest material available (inside of a shirt, a bag) and apply firm pressure. "
-          "What do you have to cover it with?";
+    if (lacksWater && (ctx.contains('wound') || ctx.contains('bleed') || msg.contains('wound') || msg.contains('cut'))) {
+      return "Without water, here's how to clean the wound:\n\n1. Use any clear liquid available — diluted sports drink works, even fresh urine is sterile.\n2. Squeeze the liquid from a cloth above the wound to flush debris out — don't rub.\n3. Cover with the cleanest available material (inside of a shirt is cleaner than outside).\n\nWhat do you have to cover it with?";
     }
 
-    // Wound + no bandage
-    if (lacksBandage && (protocolContext.contains('wound') || protocolContext.contains('bandage') || protocolContext.contains('dress'))) {
-      return "No bandage needed — improvise a dressing from what you have:\n\n"
-          "• Tear a strip from the inside of a shirt or sock (inside = cleaner).\n"
-          "• Fold it into a thick pad and press firmly over the wound.\n"
-          "• Tie it snugly with another strip — tight enough to stop bleeding, but you should still feel your pulse below it.\n\n"
-          "Do NOT use leaves, moss, or soil — they introduce bacteria. Once covered, elevate the limb above heart level if possible. "
-          "Is the bleeding still active or has it slowed?";
+    if (lacksBandage && (ctx.contains('wound') || msg.contains('wound') || msg.contains('cut'))) {
+      return "No bandage — improvise one:\n\n1. Tear a strip from the INSIDE of a shirt or sock (inside = cleaner).\n2. Fold into a thick pad and press firmly onto the wound.\n3. Tie snugly with another strip — tight enough to feel resistance, but you should still feel pulse below it.\n4. Elevate the limb above heart level.\n\nIs the bleeding still active or slowing?";
     }
 
-    // No tourniquet for severe bleeding
-    if (lacksTourniquet && (protocolContext.contains('tourniquet') || protocolContext.contains('bleed'))) {
-      return "No tourniquet? A field tourniquet will work:\n\n"
-          "1. Cut or tear a strip of clothing at least 2 inches wide (narrow strips cause more damage).\n"
-          "2. Wrap it TWICE around the limb, 2-3 inches above the wound.\n"
-          "3. Tie a half-knot, place a stick or pen on top, tie another knot over it.\n"
-          "4. Twist the stick until bleeding stops completely — don't loosen it.\n"
-          "5. Note the time. Tourniquet can stay on up to 2 hours.\n\n"
-          "Have you been able to stop the bleeding?";
+    if (lacksTourniquet && (ctx.contains('bleed') || msg.contains('bleed'))) {
+      return "No tourniquet — make a field one:\n\n1. Cut/tear a strip of clothing AT LEAST 2 inches wide (narrow strips cause more damage).\n2. Wrap it TWICE around the limb, 2-3 inches above the wound.\n3. Tie a half-knot, place a stick on top, tie another knot over it.\n4. Twist the stick until bleeding stops completely — then secure it.\n5. Note the time. Leave on for up to 2 hours.\n\nHas the bleeding slowed?";
     }
 
-    // No phone signal
-    if (lacksPhone && (protocolContext.contains('call') || protocolContext.contains('signal') || protocolContext.contains('rescue'))) {
-      return "No signal — that's why we plan for this. Do these in order:\n\n"
-          "1. Try moving to high ground (even 50m of elevation can restore a signal bar).\n"
-          "2. Try SMS — texts use a fraction of the bandwidth of a call and may get through on weak signals.\n"
-          "3. If no signal at all: switch your phone to airplane mode to conserve battery, turn it on for 2 minutes every hour.\n\n"
-          "Once your situation is stable, focus on making yourself visible (I can guide you through signaling methods). "
-          "Are you in an open area or under tree cover?";
+    if (lacksSignal) {
+      return "No signal — priority actions:\n\n1. Try moving to higher ground — even 50m elevation can restore a bar.\n2. Try SMS first — texts transmit on weaker signals than calls.\n3. Switch to airplane mode between attempts to conserve battery.\n\nMeanwhile: what do you have available to signal visually? (Any reflective surface, clothing, ability to make fire?)";
     }
 
-    // Alone + injured
-    if (alone && (bleeding || pain)) {
-      return "Being alone changes things — you have to be your own triage team. Here's your priority order:\n\n"
-          "1. STOP any life-threatening bleeding first (everything else can wait).\n"
-          "2. Make yourself visible — if you can't move far, create a signal near you.\n"
-          "3. Conserve heat and energy — this buys you time.\n"
-          "4. DO NOT push yourself to walk out if the injury is serious — a bad decision while alone can turn survivable into fatal.\n\n"
-          "Tell me: can you walk? And do you know roughly which direction safety is?";
+    if (isUnconscious) {
+      return "If they're unconscious:\n\n1. Check breathing — watch the chest for 10 seconds.\n2. If NOT breathing: start CPR (30 compressions, 2 rescue breaths). Push hard and fast.\n3. If breathing: recovery position — on their side, top knee bent forward, head tilted slightly back.\n4. Do NOT leave alone. Check breathing every 2 minutes.\n\nAre they breathing?";
     }
 
-    // Person is unconscious
-    if (unconscious) {
-      return "If someone is unconscious:\n\n"
-          "1. Check breathing — watch the chest for 10 seconds. If not breathing, begin CPR (30 compressions, 2 rescue breaths).\n"
-          "2. If breathing: roll them into the RECOVERY POSITION — on their side, top knee bent forward, head tilted slightly back to keep airway open.\n"
-          "3. Do NOT leave them alone unless you absolutely must go for help.\n"
-          "4. Check for response every few minutes — call their name loudly.\n\n"
-          "Are they breathing?";
+    if (isAlone) {
+      return "Being alone changes your priorities. In order:\n\n1. CONTROL any active bleeding — this is first, always.\n2. Make yourself visible from above — create a signal near your position.\n3. Conserve body temperature — insulation from ground is critical.\n4. DO NOT push yourself to walk out if injured — one bad decision alone can be fatal.\n\nCan you walk? And do you know roughly which direction safety is?";
     }
 
-    // No fire-making ability
-    if (lacksFireMaking && (protocolContext.contains('fire') || protocolContext.contains('warm') || protocolContext.contains('signal'))) {
-      return "No lighter or matches? Friction fire is very hard without practice. Focus on alternatives:\n\n"
-          "• WARMTH: Layer everything you have — clothing, a space blanket, even dry leaves stuffed inside a jacket insulate well.\n"
-          "• SIGNAL: A bright X made of clothing on open ground is visible to search aircraft for miles. Make it as large as possible.\n"
-          "• SHELTER: Get out of the wind. A natural windbreak (boulder, dense bush) reduces heat loss massively.\n\n"
-          "How cold is it roughly, and do you have any kind of outer layer?";
-    }
-
-    // No kit / nothing
-    if (lacksKit) {
-      return "No kit is harder, but people survive with improvisation every year. Let's work with what you have.\n\n"
-          "Tell me specifically:\n"
-          "• What's the injury or situation?\n"
-          "• What do you have on you right now — clothing, bag, phone, food, anything?\n"
-          "• Are you alone?\n\n"
-          "With those details I can give you a specific plan using only what's available.";
-    }
-
-    // Generic: ask clarifying questions
-    if (msg.length < 30 || msg.contains('what') || msg.contains('how') || msg.contains('should')) {
-      final contextSnippet = protocolContext.split('.').first;
-      return "I want to give you advice that actually works for your situation.\n\n"
-          "Right now we're at: \"$contextSnippet.\"\n\n"
-          "To adapt: tell me what resources you have nearby, if anyone else is with you, "
-          "and the most urgent thing you're dealing with right now. "
-          "The more detail you give, the better I can help.";
-    }
-
-    // Fallback — still better than the old canned message
-    return "Got it. Based on what you've said, let's adapt the plan.\n\n"
-        "Can you tell me: what do you actually have available right now? "
-        "Even small things — clothing, a bag, any tools — change what's possible. "
-        "I'll give you a step-by-step that works with only what you have.";
+    // Generic context-gathering response
+    return "To give you the most useful advice, I need to understand your situation better.\n\nTell me:\n• What happened — describe the injury or situation?\n• What do you have with you right now?\n• Are you alone, and do you know where you are?\n\nThe more specific you are, the better I can help.";
   }
 
   static bool _lacks(String msg, List<String> keywords) {
-    for (final kw in keywords) {
-      if ((msg.contains("no $kw") ||
-          msg.contains("don't have $kw") ||
-          msg.contains("dont have $kw") ||
-          msg.contains("without $kw") ||
-          msg.contains("no access to $kw") ||
-          msg.contains("can't use $kw") ||
-          msg.contains("cant use $kw") ||
-          msg.contains("lost my $kw") ||
-          msg.contains("left my $kw"))) {
-        return true;
-      }
-    }
-    return false;
+    return keywords.any((kw) =>
+        msg.contains('no $kw') ||
+        msg.contains("don't have $kw") ||
+        msg.contains('dont have $kw') ||
+        msg.contains('without $kw') ||
+        msg.contains('lost my $kw') ||
+        msg.contains("can't use $kw"));
   }
 }

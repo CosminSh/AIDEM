@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../widgets/chat_list_view.dart';
 import '../widgets/options_panel.dart';
 import '../../providers/global_providers.dart';
+import '../../models/protocol.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   const ActiveSessionScreen({super.key});
@@ -12,15 +13,27 @@ class ActiveSessionScreen extends ConsumerStatefulWidget {
   ConsumerState<ActiveSessionScreen> createState() => _ActiveSessionScreenState();
 }
 
-class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
+class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+  late AnimationController _typingDotController;
+
+  @override
+  void initState() {
+    super.initState();
+    _typingDotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
 
   @override
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
+    _typingDotController.dispose();
     super.dispose();
   }
 
@@ -43,7 +56,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(() => _isSending = true);
     _textController.clear();
 
-    // Send to the session notifier which will pass it to Gemma
     await ref.read(sessionProvider.notifier).handleFreeformInput(text);
 
     setState(() => _isSending = false);
@@ -53,9 +65,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
-    final String phaseTitle = session.currentNode?.id.toUpperCase().replaceAll('_', ' ') ?? "ASSESSMENT";
+    final String phaseTitle =
+        session.currentNode?.id.toUpperCase().replaceAll('_', ' ') ?? 'ASSESSMENT';
 
-    // Auto-scroll when new messages arrive
     _scrollToBottom();
 
     return Scaffold(
@@ -67,7 +79,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "CURRENT PHASE",
+              'CURRENT PHASE',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 10,
@@ -89,14 +101,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: TextButton.icon(
-              onPressed: () {
-                // TODO: Navigate to My Location screen
-              },
+              onPressed: () {},
               icon: const Icon(Icons.my_location, size: 18),
-              label: const Text("MY LOCATION"),
+              label: const Text('MY LOCATION'),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.accentBlue,
-                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                textStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ),
           ),
@@ -105,25 +116,117 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       body: Column(
         children: [
           const Divider(color: AppColors.border, height: 1),
+
+          // Situation context chip (shows what Gemma knows)
+          if (session.situationSummary.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppColors.surface,
+              child: Row(
+                children: [
+                  const Icon(Icons.psychology, color: AppColors.accentBlue, size: 14),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Context: ',
+                    style: TextStyle(
+                      color: AppColors.accentBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      session.situationSummary,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Chat history
           Expanded(
             child: ChatListView(
               messages: session.chatHistory,
               scrollController: _scrollController,
             ),
           ),
+
+          // Streaming tokens (live typewriter as Gemma generates)
+          if (session.isLlmTyping && session.streamingBuffer.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    session.streamingBuffer,
+                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
+                  ),
+                ),
+              ),
+            ),
+
+          // Gemma typing indicator (3 dots)
+          if (session.isLlmTyping && session.streamingBuffer.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _typingDotController,
+                    builder: (_, __) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(3, (i) {
+                          final opacity = ((_typingDotController.value * 3 - i) % 1.0).clamp(0.2, 1.0);
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Opacity(
+                              opacity: opacity,
+                              child: const CircleAvatar(
+                                radius: 4,
+                                backgroundColor: AppColors.accentBlue,
+                              ),
+                            ),
+                          );
+                        }),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
           const Divider(color: AppColors.border, height: 1),
 
-          // Option Buttons Area (protocol tree choices)
-          if (session.currentNode != null && session.currentNode!.branches.isNotEmpty)
+          // Protocol option buttons
+          if (session.currentNode != null && session.currentNode!.branches.isNotEmpty && !session.isLlmTyping)
             OptionsPanel(
-              branches: session.currentNode!.branches,
+              branches: session.currentNode!.branches
+                  .where((b) => b.target != 'start') // hide self-loop button
+                  .toList(),
               onSelected: (branch) {
                 ref.read(sessionProvider.notifier).handleUserSelection(branch);
                 _scrollToBottom();
               },
             ),
 
-          // Free-form Gemma Input Area
+          // Free-form Gemma input
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Container(
@@ -131,7 +234,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: session.isLlmTyping
+                      ? AppColors.accentBlue.withOpacity(0.5)
+                      : AppColors.border,
+                ),
               ),
               child: Row(
                 children: [
@@ -139,36 +246,37 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                     child: TextField(
                       controller: _textController,
                       style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
-                        hintText: "Ask Gemma anything...",
-                        hintStyle: TextStyle(color: AppColors.textSecondary),
+                      decoration: InputDecoration(
+                        hintText: session.isLlmTyping
+                            ? 'Gemma is responding...'
+                            : 'Describe your situation in detail...',
+                        hintStyle: const TextStyle(color: AppColors.textSecondary),
                         border: InputBorder.none,
                       ),
                       onSubmitted: (_) => _sendMessage(),
                       textInputAction: TextInputAction.send,
-                      maxLines: 1,
+                      maxLines: null,
+                      enabled: !session.isLlmTyping,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Mic button
                   IconButton(
                     icon: const Icon(Icons.mic, color: AppColors.textSecondary),
-                    onPressed: () {
-                      // TODO: wire speech_to_text
-                    },
+                    onPressed: session.isLlmTyping ? null : () {},
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
                   const SizedBox(width: 8),
-                  // Send button
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     child: Material(
-                      color: AppColors.accentBlue,
+                      color: _isSending || session.isLlmTyping
+                          ? AppColors.border
+                          : AppColors.accentBlue,
                       borderRadius: BorderRadius.circular(20),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: _isSending ? null : _sendMessage,
+                        onTap: (_isSending || session.isLlmTyping) ? null : _sendMessage,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: _isSending

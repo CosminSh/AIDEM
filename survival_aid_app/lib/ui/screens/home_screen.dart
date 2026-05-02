@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../widgets/emergency_button.dart';
 import '../../providers/global_providers.dart';
 import 'active_session_screen.dart';
+import 'model_setup_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -16,7 +17,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(sessionProvider.notifier).initialize());
+    Future.microtask(() async {
+      ref.read(sessionProvider.notifier).initialize();
+
+      // Check if Gemma model is installed; route to setup if not
+      final setupNotifier = ref.read(modelSetupServiceProvider.notifier);
+      final isInstalled = await setupNotifier.checkIfInstalled();
+      if (!isInstalled && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ModelSetupScreen()),
+        );
+      } else {
+        // Model is ready — initialize LLM service
+        final llm = ref.read(llmServiceProvider);
+        await llm.init();
+      }
+    });
   }
 
   @override

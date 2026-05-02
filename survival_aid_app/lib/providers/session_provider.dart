@@ -8,6 +8,9 @@ class SessionState {
   final bool isEmergencyActive;
   final bool isPracticeMode;
   final bool isProtocolLoaded;
+  final bool isLlmTyping;
+  final String streamingBuffer; // tokens arriving from Gemma in real-time
+  final String situationSummary; // compact situation for UI display
 
   SessionState({
     this.currentNode,
@@ -15,6 +18,9 @@ class SessionState {
     required this.isEmergencyActive,
     required this.isPracticeMode,
     this.isProtocolLoaded = false,
+    this.isLlmTyping = false,
+    this.streamingBuffer = '',
+    this.situationSummary = '',
   });
 
   SessionState copyWith({
@@ -23,13 +29,20 @@ class SessionState {
     bool? isEmergencyActive,
     bool? isPracticeMode,
     bool? isProtocolLoaded,
+    bool? isLlmTyping,
+    String? streamingBuffer,
+    String? situationSummary,
+    bool clearCurrentNode = false,
   }) {
     return SessionState(
-      currentNode: currentNode ?? this.currentNode,
+      currentNode: clearCurrentNode ? null : (currentNode ?? this.currentNode),
       chatHistory: chatHistory ?? this.chatHistory,
       isEmergencyActive: isEmergencyActive ?? this.isEmergencyActive,
       isPracticeMode: isPracticeMode ?? this.isPracticeMode,
       isProtocolLoaded: isProtocolLoaded ?? this.isProtocolLoaded,
+      isLlmTyping: isLlmTyping ?? this.isLlmTyping,
+      streamingBuffer: streamingBuffer ?? this.streamingBuffer,
+      situationSummary: situationSummary ?? this.situationSummary,
     );
   }
 }
@@ -48,11 +61,18 @@ class SessionNotifier extends Notifier<SessionState> {
   Future<void> initialize() async {
     final protocolService = ref.read(protocolServiceProvider);
     await protocolService.loadProtocol();
+
+    // Also initialize the LLM (non-blocking — will use mock until model is ready)
+    final llm = ref.read(llmServiceProvider);
+    llm.init(); // fire and forget
+
     state = state.copyWith(isProtocolLoaded: true);
   }
 
   void startEmergency() {
     _initSession(practice: false);
+    // Clear previous session context when starting a new emergency
+    ref.read(contextCompactionServiceProvider).clearSession();
   }
 
   void startPractice() {
@@ -64,14 +84,18 @@ class SessionNotifier extends Notifier<SessionState> {
 
     final protocolService = ref.read(protocolServiceProvider);
     final startNode = protocolService.startNode;
-    
+
     state = state.copyWith(
       isEmergencyActive: true,
       isPracticeMode: practice,
       currentNode: startNode,
+      streamingBuffer: '',
+      situationSummary: '',
       chatHistory: [
         ChatMessage(
-          text: practice ? "[PRACTICE MODE] " + startNode.question : startNode.question,
+          text: practice
+              ? '[PRACTICE MODE] ${startNode.question}'
+              : startNode.question,
           author: MessageAuthor.ai,
           timestamp: DateTime.now(),
         ),
@@ -89,56 +113,118 @@ class SessionNotifier extends Notifier<SessionState> {
 
     final protocolService = ref.read(protocolServiceProvider);
     final nextNode = protocolService.getNode(branch.target);
-    
-    if (nextNode != null) {
+
+    if (nextNode != null && branch.target != 'start') {
+      // A protocol button was tapped — add the node question to chat
+      // but also trigger Gemma to give context-aware commentary on the step
       updatedHistory.add(ChatMessage(
         text: nextNode.question,
         author: MessageAuthor.ai,
         timestamp: DateTime.now(),
       ));
-      
+
       state = state.copyWith(
         currentNode: nextNode,
         chatHistory: updatedHistory,
       );
+
+      // Optionally: silently update context compaction with the selection
+      ref.read(contextCompactionServiceProvider).addExchange(
+        userMessage: branch.label,
+        aiResponse: nextNode.question,
+      );
     } else if (branch.target == 'end') {
       state = state.copyWith(isEmergencyActive: false);
+    } else {
+      // "start" self-loop — let Gemma handle the free-form input
+      state = state.copyWith(chatHistory: updatedHistory);
     }
   }
 
+  /// The main pipeline: user types → context built → Gemma streams response → context compacted.
   Future<void> handleFreeformInput(String userText) async {
-    // 1. Append user message immediately so UI feels responsive
+    if (userText.trim().isEmpty) return;
+
+    // 1. Immediately show user message
     final List<ChatMessage> withUser = List<ChatMessage>.from(state.chatHistory)
       ..add(ChatMessage(
         text: userText,
         author: MessageAuthor.user,
         timestamp: DateTime.now(),
       ));
-    state = state.copyWith(chatHistory: withUser);
-
-    // 2. Build conversation history for context window
-    final history = state.chatHistory
-        .map((m) => "${m.author == MessageAuthor.ai ? 'Assistant' : 'User'}: ${m.text}")
-        .toList();
-
-    // 3. Get current protocol context
-    final protocolContext = state.currentNode?.question ?? "General wilderness emergency.";
-
-    // 4. Call LLM (Gemma via mock/production)
-    final llm = ref.read(llmServiceProvider);
-    final response = await llm.generateResponse(
-      conversationHistory: history,
-      currentProtocolContext: protocolContext,
-      userMessage: userText,
+    state = state.copyWith(
+      chatHistory: withUser,
+      isLlmTyping: true,
+      streamingBuffer: '',
     );
 
-    // 5. Append AI response
+    // 2. Build context for Gemma
+    final compactionService = ref.read(contextCompactionServiceProvider);
+    final protocolService = ref.read(protocolServiceProvider);
+    final llm = ref.read(llmServiceProvider);
+
+    final situationContext = compactionService.getPromptContext();
+    final recentHistory = compactionService.getRecentMessages(count: 8);
+    final knowledgeBase = state.currentNode != null
+        ? protocolService.getDocumentationForNode(state.currentNode!.id)
+        : protocolService.getDocumentationForNode('start');
+
+    // 3. Stream Gemma's response token by token
+    final responseBuffer = StringBuffer();
+
+    await for (final token in llm.generateResponseStream(
+      userMessage: userText,
+      situationContext: situationContext.isEmpty
+          ? 'No prior context — this is the first message.'
+          : situationContext,
+      knowledgeBase: knowledgeBase.isNotEmpty
+          ? knowledgeBase
+          : 'General wilderness emergency. Apply Red Cross first aid principles.',
+      recentHistory: recentHistory,
+    )) {
+      responseBuffer.write(token);
+      // Update streaming buffer in state so UI can show live typing
+      state = state.copyWith(streamingBuffer: responseBuffer.toString());
+    }
+
+    final fullResponse = responseBuffer.toString().trim();
+
+    // 4. Finalize: move streaming buffer to chat history
     final withResponse = List<ChatMessage>.from(state.chatHistory)
       ..add(ChatMessage(
-        text: response,
+        text: fullResponse,
         author: MessageAuthor.ai,
         timestamp: DateTime.now(),
       ));
-    state = state.copyWith(chatHistory: withResponse);
+    state = state.copyWith(
+      chatHistory: withResponse,
+      isLlmTyping: false,
+      streamingBuffer: '',
+    );
+
+    // 5. Update compaction service (background)
+    await compactionService.addExchange(
+      userMessage: userText,
+      aiResponse: fullResponse,
+    );
+
+    // 6. Update situation summary display
+    final ctx = compactionService.context;
+    if (ctx.summary.isNotEmpty) {
+      state = state.copyWith(situationSummary: ctx.summary);
+    } else if (ctx.confirmedLacks.isNotEmpty || ctx.confirmedResources.isNotEmpty) {
+      // Build a mini-summary from extracted facts
+      final parts = <String>[];
+      if (ctx.isAlone) parts.add('alone');
+      if (ctx.injuryType != null) parts.add(ctx.injuryType!);
+      if (ctx.confirmedLacks.isNotEmpty) parts.add('no ${ctx.confirmedLacks.join('/')}');
+      state = state.copyWith(situationSummary: parts.join(' · '));
+    }
+
+    // 7. Trigger async compaction after every 4 exchanges
+    final msgCount = state.chatHistory.where((m) => m.author == MessageAuthor.user).length;
+    if (msgCount % 4 == 0) {
+      compactionService.compact((prompt) => llm.generateOnce(prompt));
+    }
   }
 }

@@ -2,12 +2,14 @@
   "nodes": {
     "start": {
       "id": "start",
-      "question": "Are you or anyone else injured?",
+      "question": "I'm here to help. Tell me what's happening — describe the situation, where you are, and the most urgent problem. The more you tell me, the better I can guide you.",
       "source": "Red Cross Wilderness First Aid",
-      "gps_context": false,
+      "gps_context": true,
       "branches": [
-        {"label": "Yes", "target": "injury_assessment"},
-        {"label": "No, just lost or need rescue", "target": "lost_protocol"}
+        {"label": "Someone is severely bleeding", "target": "bleeding_protocol"},
+        {"label": "Someone is injured (not bleeding)", "target": "triage_selection"},
+        {"label": "I'm lost / need rescue", "target": "lost_protocol"},
+        {"label": "Let me describe the situation...", "target": "start"}
       ]
     },
     "injury_assessment": {

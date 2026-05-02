@@ -5,6 +5,8 @@ import '../services/gps_service.dart';
 import '../services/emergency_number_service.dart';
 import '../services/session_log_service.dart';
 import '../services/llm_service.dart';
+import '../services/context_compaction_service.dart';
+import '../services/model_setup_service.dart';
 
 // --- Services ---
 
@@ -27,9 +29,17 @@ final sessionLogServiceProvider = Provider<SessionLogService>((ref) {
 });
 
 final llmServiceProvider = Provider<LlmService>((ref) {
-  final service = LlmService();
+  return LlmService();
+});
+
+final contextCompactionServiceProvider = Provider<ContextCompactionService>((ref) {
+  final service = ContextCompactionService();
   service.init();
   return service;
+});
+
+final modelSetupServiceProvider = NotifierProvider<ModelSetupService, ModelSetupState>(() {
+  return ModelSetupService();
 });
 
 // --- State Management ---
@@ -46,9 +56,6 @@ final gpsStreamProvider = StreamProvider<GpsCoordinates>((ref) {
 });
 
 final countryProvider = FutureProvider<String>((ref) async {
-  // In a real app, this would use reverse geocoding on the GPS coordinates
-  // For offline capabilities, a local bounding-box database could be used
-  // Stubbing to a default country for now.
   return 'US';
 });
 
