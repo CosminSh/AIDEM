@@ -113,9 +113,22 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
     try {
       final pathLower = filePath.toLowerCase();
-      final fileType = pathLower.endsWith('.bin') || pathLower.endsWith('.tflite')
+      
+      // Strict validation for supported formats
+      final isBinary = pathLower.endsWith('.bin') || pathLower.endsWith('.tflite');
+      final isLiteRT = pathLower.endsWith('.litertlm');
+      final isTask = pathLower.endsWith('.task');
+
+      if (!isBinary && !isLiteRT && !isTask) {
+        throw Exception(
+          'Unsupported file format. Please provide a .litertlm, .bin, or .tflite model file.\n'
+          'Compressed archives (.tar.gz, .zip) are not supported directly.'
+        );
+      }
+
+      final fileType = isBinary
           ? ModelFileType.binary
-          : (pathLower.endsWith('.litertlm') ? ModelFileType.litertlm : ModelFileType.task);
+          : (isLiteRT ? ModelFileType.litertlm : ModelFileType.task);
 
       print('Installing model ($fileType) from: $filePath');
       await FlutterGemma.installModel(
