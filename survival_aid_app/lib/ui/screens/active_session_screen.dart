@@ -215,7 +215,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           const Divider(color: AppColors.border, height: 1),
 
           // Protocol option buttons
-          if (session.currentNode != null && session.currentNode!.branches.isNotEmpty && !session.isLlmTyping)
+          // Hide buttons on 'start' node to encourage free-form description
+          if (session.currentNode != null && 
+              session.currentNode!.id != 'start' &&
+              session.currentNode!.branches.isNotEmpty && 
+              !session.isLlmTyping)
             OptionsPanel(
               branches: session.currentNode!.branches
                   .where((b) => b.target != 'start') // hide self-loop button

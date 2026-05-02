@@ -62,14 +62,17 @@ class SessionNotifier extends Notifier<SessionState> {
     final protocolService = ref.read(protocolServiceProvider);
     await protocolService.loadProtocol();
 
-    // Also initialize the LLM (non-blocking — will use mock until model is ready)
+    // Also initialize the LLM
     final llm = ref.read(llmServiceProvider);
-    llm.init(); // fire and forget
+    await llm.init();
 
     state = state.copyWith(isProtocolLoaded: true);
   }
 
-  void startEmergency() {
+  Future<void> startEmergency() async {
+    // Re-verify/Initialize LLM on start to ensure it's ready
+    await ref.read(llmServiceProvider).init();
+    
     _initSession(practice: false);
     // Clear previous session context when starting a new emergency
     ref.read(contextCompactionServiceProvider).clearSession();

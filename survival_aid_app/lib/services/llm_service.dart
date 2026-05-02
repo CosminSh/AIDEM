@@ -37,11 +37,23 @@ YOUR CRITICAL RULES:
 
   /// Initialize — get the active model from flutter_gemma (must be installed first).
   Future<bool> init() async {
+    if (_isModelLoaded && _model != null) return true;
+    
     try {
-      _model = await FlutterGemma.getActiveModel(
-        maxTokens: 2048,
-        preferredBackend: PreferredBackend.gpu,
-      );
+      // Try GPU first
+      try {
+        _model = await FlutterGemma.getActiveModel(
+          maxTokens: 2048,
+          preferredBackend: PreferredBackend.gpu,
+        );
+      } catch (gpuError) {
+        // Fallback to CPU
+        _model = await FlutterGemma.getActiveModel(
+          maxTokens: 1024, // Lower context for CPU
+          preferredBackend: PreferredBackend.cpu,
+        );
+      }
+      
       _isModelLoaded = true;
       return true;
     } catch (e) {
@@ -59,10 +71,16 @@ YOUR CRITICAL RULES:
     required List<String> recentHistory,
   }) async* {
     if (!_isModelLoaded || _model == null) {
+      // Try one last-ditch init if we aren't loaded yet
+      await init();
+    }
+
+    if (!_isModelLoaded || _model == null) {
       // Fallback to adaptive mock
       final response = _AdaptiveMock.respond(
         userMessage: userMessage,
         situationContext: situationContext,
+        historyCount: recentHistory.length,
       );
       // Stream the mock word by word for typewriter effect
       for (final word in response.split(' ')) {
@@ -146,6 +164,7 @@ class _AdaptiveMock {
   static String respond({
     required String userMessage,
     required String situationContext,
+    int historyCount = 0,
   }) {
     final msg = userMessage.toLowerCase();
     final ctx = situationContext.toLowerCase();
@@ -180,6 +199,13 @@ class _AdaptiveMock {
 
     if (isAlone) {
       return "Being alone changes your priorities. In order:\n\n1. CONTROL any active bleeding — this is first, always.\n2. Make yourself visible from above — create a signal near your position.\n3. Conserve body temperature — insulation from ground is critical.\n4. DO NOT push yourself to walk out if injured — one bad decision alone can be fatal.\n\nCan you walk? And do you know roughly which direction safety is?";
+    }
+
+    // If we've already asked once and they are still replying, try to be slightly more proactive
+    if (historyCount > 2) {
+      if (msg.contains('lost') || msg.contains('mountain') || msg.contains('forest')) {
+        return "I understand you are lost. My Gemma brain is still initializing, but here is the critical rule for being lost: STAY WHERE YOU ARE. Moving makes rescue 10x harder. \n\nAre you in a safe spot out of the wind? And do you have any way to make yourself visible from the air?";
+      }
     }
 
     // Generic context-gathering response
