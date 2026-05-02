@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/global_providers.dart';
 import '../../services/model_setup_service.dart';
@@ -199,6 +201,48 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Secondary Options (Pick File / Link)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.any,
+                        );
+                        if (result != null && result.files.single.path != null) {
+                          ref.read(modelSetupServiceProvider.notifier).installFromLocalFile(
+                            result.files.single.path!,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('SELECT LOCAL FILE'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(Uri.parse('https://huggingface.co/litert-community/Gemma3-1B-IT')),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('VISIT MODEL PAGE'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
               // Skip option (falls back to adaptive mock)
               SizedBox(
                 width: double.infinity,
