@@ -22,17 +22,16 @@ You are running entirely on the user's device. There is no internet. Every answe
 SITUATION CONTEXT (what you already know about this emergency):
 $situationContext
 
-RELEVANT REFERENCE MATERIAL (Red Cross / CDC / NASAR):
+RELEVANT REFERENCE MATERIAL (Use this for accuracy):
 $knowledgeBase
 
 YOUR CRITICAL RULES:
-1. Read the situation context carefully before responding. Do NOT ask about things already established.
-2. If you lack critical information to give safe advice, ask ONE specific, urgent question.
-3. Never suggest using something the user has confirmed they don't have.
-4. Give numbered, step-by-step instructions when advising action.
-5. Acknowledge constraints and immediately give the best alternative.
-6. Speak calmly and directly. No jargon. Short sentences. Lives depend on clarity.
-7. If the situation is life-threatening and beyond first aid, always end with the appropriate emergency signal method.''';
+1. READ THE HISTORY: Do NOT repeat the same general introductory advice (like 'Stay calm', 'Stop moving', or 'Here are your steps') if you have already said it in this conversation.
+2. BE CONVERSATIONAL: Acknowledge what the user just told you. If they said they are fine, don't tell them they are not injured again.
+3. BE EFFICIENT: If you've already given the immediate safety steps, move on to specific diagnosis or situational awareness.
+4. ONE QUESTION: If you lack critical information, ask ONE specific, urgent question to move the situation forward.
+5. NO JARGON: Speak directly. Short sentences. 
+6. PERSISTENCE: If the situation is life-threatening, ensure they understand the next critical action before discussing secondary details.''';
   }
 
   /// Initialize — get the active model from flutter_gemma (must be installed first).
@@ -100,13 +99,18 @@ YOUR CRITICAL RULES:
         systemInstruction: systemInstruction,
       );
 
-      // Add recent history context
-      for (int i = 0; i < recentHistory.length - 1; i++) {
+      // Add recent history context (both User and AI)
+      for (int i = 0; i < recentHistory.length; i++) {
         final msg = recentHistory[i];
         if (msg.startsWith('User: ')) {
           await chat.addQueryChunk(Message.text(
             text: msg.substring(6),
             isUser: true,
+          ));
+        } else if (msg.startsWith('AI: ')) {
+          await chat.addQueryChunk(Message.text(
+            text: msg.substring(4),
+            isUser: false,
           ));
         }
       }
