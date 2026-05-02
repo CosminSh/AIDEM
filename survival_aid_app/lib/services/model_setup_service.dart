@@ -36,8 +36,8 @@ class ModelSetupState {
 
 class ModelSetupService extends Notifier<ModelSetupState> {
   static const String _modelUrl =
-      'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it.litertlm';
-  static const String _modelFileName = 'gemma3-1b-it.litertlm';
+      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-e2b-it.litertlm';
+  static const String _modelFileName = 'gemma-4-e2b-it.litertlm';
 
   @override
   ModelSetupState build() {
@@ -78,7 +78,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
     try {
       await FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
+        modelType: ModelType.gemma4,
       ).fromNetwork(
         _modelUrl,
         token: huggingFaceToken,
@@ -119,7 +119,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
       print('Installing model ($fileType) from: $filePath');
       await FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
+        modelType: ModelType.gemma4,
         fileType: fileType,
       ).fromFile(filePath).install();
       

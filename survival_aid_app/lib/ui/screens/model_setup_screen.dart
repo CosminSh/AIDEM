@@ -88,13 +88,13 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _InfoRow(icon: Icons.memory, label: 'Model', value: 'Gemma 3 1B (Google)'),
+                  _InfoRow(icon: Icons.psychology, label: 'Model', value: 'Gemma 4 E2B (Google)'),
                   SizedBox(height: 8),
-                  _InfoRow(icon: Icons.storage, label: 'Size', value: '~1.2 GB'),
+                  _InfoRow(icon: Icons.list_alt, label: 'Size', value: '~2.1 GB'),
                   SizedBox(height: 8),
-                  _InfoRow(icon: Icons.wifi_off, label: 'After install', value: '100% offline'),
+                  _InfoRow(icon: Icons.airplanemode_active, label: 'After install', value: '100% offline'),
                   SizedBox(height: 8),
-                  _InfoRow(icon: Icons.speed, label: 'Inference', value: 'GPU-accelerated'),
+                  _InfoRow(icon: Icons.speed, label: 'Inference', value: 'Next-Gen GPU reasoning'),
                 ],
               ),
             ),
