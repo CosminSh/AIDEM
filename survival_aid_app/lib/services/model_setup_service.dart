@@ -50,11 +50,17 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
   Future<bool> checkIfInstalled() async {
     try {
-      final installed = await FlutterGemma.isModelInstalled(_modelFileName);
-      if (installed) {
+      // First check if the specific Gemma 3 model is installed
+      final isGemma3Installed = await FlutterGemma.isModelInstalled(_modelFileName);
+      
+      // Also check if there's any active inference model already configured
+      final hasActive = FlutterGemma.hasActiveModel();
+
+      if (isGemma3Installed || hasActive) {
         state = state.copyWith(status: ModelStatus.ready, statusMessage: 'Model ready');
         return true;
       }
+      
       state = state.copyWith(status: ModelStatus.notInstalled, statusMessage: 'Model not installed');
       return false;
     } catch (e) {
@@ -106,9 +112,18 @@ class ModelSetupService extends Notifier<ModelSetupState> {
     );
 
     try {
+      final pathLower = filePath.toLowerCase();
+      final fileType = pathLower.endsWith('.bin') || pathLower.endsWith('.tflite')
+          ? ModelFileType.binary
+          : (pathLower.endsWith('.litertlm') ? ModelFileType.litertlm : ModelFileType.task);
+
+      print('Installing model ($fileType) from: $filePath');
       await FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
+        fileType: fileType,
       ).fromFile(filePath).install();
+      
+      print('Installation successful');
 
       state = state.copyWith(
         status: ModelStatus.ready,
