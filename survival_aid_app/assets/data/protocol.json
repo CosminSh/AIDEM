@@ -1,0 +1,333 @@
+{
+  "nodes": {
+    "start": {
+      "id": "start",
+      "question": "Are you or anyone else injured?",
+      "source": "Red Cross Wilderness First Aid",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "injury_assessment"},
+        {"label": "No, just lost or need rescue", "target": "lost_protocol"}
+      ]
+    },
+    "injury_assessment": {
+      "id": "injury_assessment",
+      "question": "Is there severe, life-threatening bleeding?",
+      "source": "TCCC / Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "bleeding_protocol"},
+        {"label": "No", "target": "triage_selection"}
+      ]
+    },
+    "triage_selection": {
+      "id": "triage_selection",
+      "question": "What type of injury or emergency are we dealing with?",
+      "source": "Red Cross / WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Broken Bone", "target": "splint_protocol"},
+        {"label": "Severe Allergic Reaction", "target": "anaphylaxis_protocol"},
+        {"label": "Snake Bite", "target": "snake_bite_protocol"},
+        {"label": "Heat Exhaustion / Stroke", "target": "heat_protocol"},
+        {"label": "Burn", "target": "burn_protocol"},
+        {"label": "Head Injury", "target": "concussion_protocol"},
+        {"label": "Cold / Hypothermia", "target": "hypothermia_protocol"},
+        {"label": "Spinal Injury Suspected", "target": "spinal_protocol"},
+        {"label": "Minor Wound", "target": "clean_wound"}
+      ]
+    },
+    "anaphylaxis_protocol": {
+      "id": "anaphylaxis_protocol",
+      "question": "Is the person having trouble breathing, or has their face/tongue swollen? Do they have an Epinephrine Auto-Injector (EpiPen)?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes, have EpiPen", "target": "administer_epipen"},
+        {"label": "No EpiPen", "target": "anaphylaxis_no_epi"}
+      ]
+    },
+    "administer_epipen": {
+      "id": "administer_epipen",
+      "question": "Inject into the outer thigh. Hold for 3 seconds. Massage the area for 10 seconds. Note the time. Seek rescue immediately.",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "anaphylaxis_no_epi": {
+      "id": "anaphylaxis_no_epi",
+      "question": "Keep them upright. Monitor breathing. This is a critical life-threatening emergency. Call for rescue immediately.",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "snake_bite_protocol": {
+      "id": "snake_bite_protocol",
+      "question": "Move away from the snake. Keep the person calm and still. Keep the bitten limb at or below heart level.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Next", "target": "snake_bite_donts"}
+      ]
+    },
+    "snake_bite_donts": {
+      "id": "snake_bite_donts",
+      "question": "DO NOT: use a tourniquet, apply ice, cut the wound, or try to suck out the venom. Seek rescue.",
+      "source": "CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "heat_protocol": {
+      "id": "heat_protocol",
+      "question": "Is the person confused, having a seizure, or has stopped sweating? (Signs of Heat Stroke)",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes (Heat Stroke)", "target": "heat_stroke"},
+        {"label": "No (Exhaustion)", "target": "heat_exhaustion"}
+      ]
+    },
+    "heat_stroke": {
+      "id": "heat_stroke",
+      "question": "Move to shade. Cool them rapidly by any means: douse with water, fan, or use ice packs on armpits/groin. This is an emergency.",
+      "source": "CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "heat_exhaustion": {
+      "id": "heat_exhaustion",
+      "question": "Move to shade. Sip water. Loosen clothing. If symptoms worsen or they vomit, seek rescue.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "spinal_protocol": {
+      "id": "spinal_protocol",
+      "question": "Do not move the person. Manually stabilize the head and neck in the position found. Keep them calm. Do not tilt the head to clear the airway.",
+      "source": "Red Cross WFA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "bleeding_protocol": {
+      "id": "bleeding_protocol",
+      "question": "Apply firm, direct pressure immediately. Do you have a tourniquet?",
+      "source": "TCCC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "apply_tourniquet"},
+        {"label": "No", "target": "pressure_dressing"}
+      ]
+    },
+    "apply_tourniquet": {
+      "id": "apply_tourniquet",
+      "question": "Place the tourniquet 2-3 inches above the wound. Tighten until bleeding stops. Note the time. Done?",
+      "source": "TCCC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "pressure_dressing": {
+      "id": "pressure_dressing",
+      "question": "Pack the wound with cloth if it's deep, and maintain constant pressure. Do not remove blood-soaked pads. Done?",
+      "source": "TCCC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "burn_protocol": {
+      "id": "burn_protocol",
+      "question": "Is the burn larger than the user's palm or on the face/hands?",
+      "source": "WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "severe_burn"},
+        {"label": "No", "target": "minor_burn"}
+      ]
+    },
+    "severe_burn": {
+      "id": "severe_burn",
+      "question": "Do not apply ice. Cover loosely with a clean, dry dressing. Do not pop blisters. Seek rescue.",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "minor_burn": {
+      "id": "minor_burn",
+      "question": "Cool the burn with running water (not ice) for 10-20 minutes. Cover with a loose bandage.",
+      "source": "WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "concussion_protocol": {
+      "id": "concussion_protocol",
+      "question": "Is the person unconscious, seizing, or having trouble speaking?",
+      "source": "Red Cross WFA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "severe_head_injury"},
+        {"label": "No", "target": "monitor_head_injury"}
+      ]
+    },
+    "severe_head_injury": {
+      "id": "severe_head_injury",
+      "question": "Keep them still. Do not move the neck. Monitor breathing. This is a critical emergency.",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "hypothermia_protocol": {
+      "id": "hypothermia_protocol",
+      "question": "Is the person shivering uncontrollably or acting confused?",
+      "source": "FEMA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "active_rewarming"},
+        {"label": "No", "target": "passive_rewarming"}
+      ]
+    },
+    "active_rewarming": {
+      "id": "active_rewarming",
+      "question": "Get them out of the wind. Replace wet clothes with dry ones. Wrap in blankets/sleeping bag. Provide warm (not hot) sweet drinks if conscious.",
+      "source": "Ready.gov",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "lost_protocol": {
+      "id": "lost_protocol",
+      "question": "Do you have mobile signal to make a call?",
+      "source": "NASAR",
+      "gps_context": true,
+      "branches": [
+        {"label": "Yes", "target": "rescue_call"},
+        {"label": "No", "target": "signaling_protocol"}
+      ]
+    },
+    "signaling_protocol": {
+      "id": "signaling_protocol",
+      "question": "Let's help rescuers find you. What do you currently have with you?",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Whistle or loud voice", "target": "signal_whistle"},
+        {"label": "Mirror, glass, or phone screen", "target": "signal_mirror"},
+        {"label": "I can make a fire", "target": "signal_fire"},
+        {"label": "None of the above", "target": "signal_none"}
+      ]
+    },
+    "signal_whistle": {
+      "id": "signal_whistle",
+      "question": "The universal distress signal is 3 short blasts, pause, 3 short blasts. Repeat every few minutes. Stay in place and keep listening for a response.",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Got it. What else can I do?", "target": "signal_ground_to_air"},
+        {"label": "Done", "target": "shelter_protocol"}
+      ]
+    },
+    "signal_mirror": {
+      "id": "signal_mirror",
+      "question": "Aim reflected sunlight toward aircraft or distant ridges in a slow sweeping motion. Even a phone screen in the sun can be seen for miles. Combine with whistle blasts if possible.",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Got it. What else can I do?", "target": "signal_ground_to_air"},
+        {"label": "Done", "target": "shelter_protocol"}
+      ]
+    },
+    "signal_fire": {
+      "id": "signal_fire",
+      "question": "Build your fire in a clearing, not under trees. Add green leaves, plastic, or rubber to create thick smoke during the day. Three fires in a triangle is the international distress signal.",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Got it. What else can I do?", "target": "signal_ground_to_air"},
+        {"label": "Done", "target": "shelter_protocol"}
+      ]
+    },
+    "signal_none": {
+      "id": "signal_none",
+      "question": "That's okay. Find the highest open ground near you. Lay out bright-colored clothing or gear in a large X shape on the ground — search aircraft look for these patterns. Stay put and conserve energy.",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "signal_ground_to_air"}
+      ]
+    },
+    "signal_ground_to_air": {
+      "id": "signal_ground_to_air",
+      "question": "Most importantly: STAY WHERE YOU ARE unless in immediate danger. Rescuers work outward from your last known location. Moving makes you much harder to find.",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Understood", "target": "shelter_protocol"}
+      ]
+    },
+    "water_purification_info": {
+      "id": "water_purification_info",
+      "question": "Boil water for 1 minute (3 mins at altitude). If boiling is impossible, use a filter, then disinfect (tablets). Done?",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "shelter_protocol"}
+      ]
+    },
+    "rescue_call": {
+      "id": "rescue_call",
+      "question": "I'm generating a script with your GPS coordinates. Read this to emergency services.",
+      "source": "NASAR",
+      "gps_context": true,
+      "branches": [
+        {"label": "Continue", "target": "shelter_protocol"}
+      ]
+    },
+    "splint_protocol": {
+      "id": "splint_protocol",
+      "question": "Keep the injured area still. Find rigid objects (sticks, poles) and pad them. Do not try to straighten the bone. Done?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "clean_wound": {
+      "id": "clean_wound",
+      "question": "Wash the wound with clean water. Apply a bandage. Keep it dry.",
+      "source": "WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "lost_protocol"}
+      ]
+    },
+    "shelter_protocol": {
+      "id": "shelter_protocol",
+      "question": "Stay where you are. Find or build shelter to protect against wind and rain. Conserve your energy.",
+      "source": "FEMA",
+      "gps_context": false,
+      "branches": [
+        {"label": "End Session", "target": "end"}
+      ]
+    }
+  }
+}

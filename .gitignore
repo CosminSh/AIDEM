@@ -8,3 +8,15 @@ Thumbs.db
 
 # Local server logs
 *.log
+
+# Large binaries and SDKs
+*.bin
+*.task
+*.zip
+*.tar.gz
+*.exe
+scratch/
+flutter/
+android_sdk/
+java/
+Assets/
