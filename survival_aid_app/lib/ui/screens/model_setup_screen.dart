@@ -13,6 +13,14 @@ class ModelSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
+  final TextEditingController _tokenController = TextEditingController();
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -128,13 +136,54 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
 
             const SizedBox(height: 24),
 
+            // Token Input Field
+            if (setupState.status != ModelStatus.downloading) ...[
+              const Text(
+                'HuggingFace Token (Required for gated models)',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _tokenController,
+                obscureText: true,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'hf_...',
+                  hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.5)),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppColors.radius),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppColors.radius),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppColors.radius),
+                    borderSide: const BorderSide(color: AppColors.accentBlue),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            const SizedBox(height: 8),
+
             // Download Button
             if (setupState.status != ModelStatus.downloading) ...[
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: () => ref.read(modelSetupServiceProvider.notifier).downloadAndInstall(),
+                  onPressed: () {
+                    final token = _tokenController.text.trim();
+                    ref.read(modelSetupServiceProvider.notifier).downloadAndInstall(
+                      huggingFaceToken: token.isNotEmpty ? token : null,
+                    );
+                  },
                   icon: const Icon(Icons.download_rounded),
                   label: const Text(
                     'DOWNLOAD & INSTALL GEMMA',
