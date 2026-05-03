@@ -5,8 +5,14 @@ import 'package:path_provider/path_provider.dart';
 /// Represents what we know about the user's emergency situation.
 class SituationContext {
   final String summary;
-  final List<String> confirmedResources; // things they have
-  final List<String> confirmedLacks;     // things they don't have
+  final String locationDetails; // coordinates, landmarks, trailhead
+  final String incidentType;    // fall, bite, lost, medical
+  final String hazards;         // weather, terrain, animals
+  final String accessInfo;      // best way for rescuers to arrive
+  final int patientCount;
+  final String urgencyLevel;    // critical, stable, worsening
+  final List<String> confirmedResources;
+  final List<String> confirmedLacks;
   final String? injuryType;
   final String? environment;
   final bool isAlone;
@@ -14,6 +20,12 @@ class SituationContext {
 
   const SituationContext({
     required this.summary,
+    required this.locationDetails,
+    required this.incidentType,
+    required this.hazards,
+    required this.accessInfo,
+    required this.patientCount,
+    required this.urgencyLevel,
     required this.confirmedResources,
     required this.confirmedLacks,
     this.injuryType,
@@ -24,6 +36,12 @@ class SituationContext {
 
   factory SituationContext.empty() => SituationContext(
         summary: '',
+        locationDetails: 'Unknown',
+        incidentType: 'Unknown',
+        hazards: 'None reported',
+        accessInfo: 'Unknown',
+        patientCount: 1,
+        urgencyLevel: 'Unknown',
         confirmedResources: [],
         confirmedLacks: [],
         isAlone: false,
@@ -32,6 +50,12 @@ class SituationContext {
 
   factory SituationContext.fromJson(Map<String, dynamic> json) => SituationContext(
         summary: json['summary'] ?? '',
+        locationDetails: json['location_details'] ?? 'Unknown',
+        incidentType: json['incident_type'] ?? 'Unknown',
+        hazards: json['hazards'] ?? 'None reported',
+        accessInfo: json['access_info'] ?? 'Unknown',
+        patientCount: json['patient_count'] ?? 1,
+        urgencyLevel: json['urgency_level'] ?? 'Unknown',
         confirmedResources: List<String>.from(json['resources'] ?? []),
         confirmedLacks: List<String>.from(json['lacks'] ?? []),
         injuryType: json['injury_type'],
@@ -42,6 +66,12 @@ class SituationContext {
 
   Map<String, dynamic> toJson() => {
         'summary': summary,
+        'location_details': locationDetails,
+        'incident_type': incidentType,
+        'hazards': hazards,
+        'access_info': accessInfo,
+        'patient_count': patientCount,
+        'urgency_level': urgencyLevel,
         'resources': confirmedResources,
         'lacks': confirmedLacks,
         'injury_type': injuryType,
@@ -52,6 +82,12 @@ class SituationContext {
 
   SituationContext copyWith({
     String? summary,
+    String? locationDetails,
+    String? incidentType,
+    String? hazards,
+    String? accessInfo,
+    int? patientCount,
+    String? urgencyLevel,
     List<String>? confirmedResources,
     List<String>? confirmedLacks,
     String? injuryType,
@@ -59,6 +95,12 @@ class SituationContext {
     bool? isAlone,
   }) => SituationContext(
         summary: summary ?? this.summary,
+        locationDetails: locationDetails ?? this.locationDetails,
+        incidentType: incidentType ?? this.incidentType,
+        hazards: hazards ?? this.hazards,
+        accessInfo: accessInfo ?? this.accessInfo,
+        patientCount: patientCount ?? this.patientCount,
+        urgencyLevel: urgencyLevel ?? this.urgencyLevel,
         confirmedResources: confirmedResources ?? this.confirmedResources,
         confirmedLacks: confirmedLacks ?? this.confirmedLacks,
         injuryType: injuryType ?? this.injuryType,
@@ -71,16 +113,22 @@ class SituationContext {
   String toPromptString() {
     if (summary.isEmpty) return 'No situation context yet.';
 
-    final buffer = StringBuffer(summary);
+    final buffer = StringBuffer();
+    buffer.writeln('SUMMARY: $summary');
+    buffer.writeln('LOCATION: $locationDetails');
+    buffer.writeln('INCIDENT: $incidentType');
+    buffer.writeln('HAZARDS: $hazards');
+    buffer.writeln('ACCESS: $accessInfo');
+    buffer.writeln('PATIENTS: $patientCount');
+    buffer.writeln('URGENCY: $urgencyLevel');
+    
     if (confirmedResources.isNotEmpty) {
-      buffer.write('\nAvailable resources: ${confirmedResources.join(', ')}.');
+      buffer.write('Resources: ${confirmedResources.join(', ')}. ');
     }
     if (confirmedLacks.isNotEmpty) {
-      buffer.write('\nConfirmed missing: ${confirmedLacks.join(', ')}.');
+      buffer.write('Missing: ${confirmedLacks.join(', ')}. ');
     }
-    if (injuryType != null) buffer.write('\nInjury type: $injuryType.');
-    if (environment != null) buffer.write('\nEnvironment: $environment.');
-    if (isAlone) buffer.write('\nPerson is alone.');
+    if (isAlone) buffer.write('Person is alone.');
     return buffer.toString();
   }
 
@@ -147,14 +195,20 @@ class ContextCompactionService {
     if (_rawBuffer.isEmpty) return;
 
     final conversation = _rawBuffer.join('\n');
-    final prompt = '''Analyze this emergency conversation and extract key facts.
+    final prompt = '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
 Return ONLY a JSON object with these exact keys (no markdown, no explanation):
 {
-  "summary": "one sentence describing what happened and current status",
-  "resources": ["list", "of", "things", "person has available"],
-  "lacks": ["list", "of", "things", "person said they don't have"],
-  "injury_type": "wound/fracture/lost/snake_bite/burn/etc or null",
-  "environment": "forest/desert/mountain/urban/etc or null",
+  "summary": "one sentence describing current status",
+  "location_details": "GPS, landmarks, or 'Unknown'",
+  "incident_type": "fall/bite/lost/medical/etc",
+  "hazards": "weather/terrain/animals or 'None'",
+  "access_info": "trail name, heli access, or distance to road",
+  "patient_count": 1,
+  "urgency_level": "critical/stable/worsening",
+  "resources": ["list", "of", "things", "person has"],
+  "lacks": ["list", "of", "things", "person needs"],
+  "injury_type": "specific injury if known",
+  "environment": "forest/desert/mountain/etc",
   "is_alone": true or false
 }
 

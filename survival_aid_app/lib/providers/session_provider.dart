@@ -329,7 +329,16 @@ class SessionNotifier extends Notifier<SessionState> {
     buffer.writeln(state.situationSummary.isNotEmpty ? state.situationSummary : 'No summary available.');
     buffer.writeln();
     
-    buffer.writeln('## Extracted Context & Decisions');
+    buffer.writeln('## Emergency Dispatch Intake (ETHANE)');
+    buffer.writeln('- **Exact Location:** ${ctx.locationDetails}');
+    buffer.writeln('- **Type of Incident:** ${ctx.incidentType}');
+    buffer.writeln('- **Hazards:** ${ctx.hazards}');
+    buffer.writeln('- **Access & Egress:** ${ctx.accessInfo}');
+    buffer.writeln('- **Number of Patients:** ${ctx.patientCount}');
+    buffer.writeln('- **Urgency Level:** ${ctx.urgencyLevel}');
+    buffer.writeln();
+    
+    buffer.writeln('## Internal Context & Decisions');
     buffer.writeln('- **Injury Type:** ${ctx.injuryType ?? "Unknown"}');
     buffer.writeln('- **Environment:** ${ctx.environment ?? "Unknown"}');
     buffer.writeln('- **Is Alone:** ${ctx.isAlone}');
