@@ -7,6 +7,7 @@ import '../services/session_log_service.dart';
 import '../services/llm_service.dart';
 import '../services/context_compaction_service.dart';
 import '../services/model_setup_service.dart';
+import '../services/session_persistence_service.dart';
 
 // --- Services ---
 
@@ -40,6 +41,10 @@ final contextCompactionServiceProvider = Provider<ContextCompactionService>((ref
 
 final modelSetupServiceProvider = NotifierProvider<ModelSetupService, ModelSetupState>(() {
   return ModelSetupService();
+});
+
+final sessionPersistenceServiceProvider = Provider<SessionPersistenceService>((ref) {
+  return SessionPersistenceService();
 });
 
 // --- State Management ---

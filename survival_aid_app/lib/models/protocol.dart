@@ -53,4 +53,16 @@ class ChatMessage {
     required this.author,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'author': author.index,
+        'timestamp': timestamp.toIso8601String(),
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+        text: json['text'] as String,
+        author: MessageAuthor.values[json['author'] as int],
+        timestamp: DateTime.parse(json['timestamp'] as String),
+      );
 }

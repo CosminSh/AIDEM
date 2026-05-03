@@ -36,7 +36,7 @@ class ChatBubble extends StatelessWidget {
               ),
             ],
           ),
-          child: Text(
+          child: SelectableText(
             message.text,
             style: const TextStyle(
               color: AppColors.textPrimary,

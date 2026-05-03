@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/chat_list_view.dart';
 import '../widgets/options_panel.dart';
@@ -17,6 +19,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   bool _isSending = false;
   late AnimationController _typingDotController;
 
@@ -33,6 +36,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     _typingDotController.dispose();
     super.dispose();
   }
@@ -55,11 +59,35 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
     setState(() => _isSending = true);
     _textController.clear();
+    _focusNode.requestFocus();
 
     await ref.read(sessionProvider.notifier).handleFreeformInput(text);
 
     setState(() => _isSending = false);
     _scrollToBottom();
+    _focusNode.requestFocus();
+  }
+
+  Future<void> _exportChat() async {
+    final markdown = ref.read(sessionProvider.notifier).generateMarkdownExport();
+    
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Please select an output file:',
+      fileName: 'survival_aid_export.md',
+      type: FileType.custom,
+      allowedExtensions: ['md'],
+    );
+
+    if (outputFile != null) {
+      final file = File(outputFile);
+      await file.writeAsString(markdown);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Chat exported to $outputFile')),
+        );
+      }
+    }
   }
 
   @override
@@ -98,6 +126,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            tooltip: 'Export Chat',
+            onPressed: _exportChat,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: TextButton.icon(
@@ -249,6 +282,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   Expanded(
                     child: TextField(
                       controller: _textController,
+                      focusNode: _focusNode,
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: session.isLlmTyping
@@ -260,7 +294,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       onSubmitted: (_) => _sendMessage(),
                       textInputAction: TextInputAction.send,
                       maxLines: null,
-                      enabled: !session.isLlmTyping,
                     ),
                   ),
                   const SizedBox(width: 8),

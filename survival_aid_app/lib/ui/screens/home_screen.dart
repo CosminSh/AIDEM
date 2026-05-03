@@ -90,6 +90,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (!session.isProtocolLoaded)
                     const CircularProgressIndicator(color: AppColors.accentBlue)
                   else ...[
+                    if (session.isEmergencyActive) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 70,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentRed,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppColors.radius),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.history, color: Colors.white),
+                              const SizedBox(width: 12),
+                              Text(
+                                "RESUME ${session.isPracticeMode ? 'PRACTICE' : 'EMERGENCY'}",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "OR START NEW",
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     EmergencyButton(
                       onPressed: () {
                         ref.read(sessionProvider.notifier).startEmergency();

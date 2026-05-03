@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/protocol.dart';
 import 'global_providers.dart';
+import '../services/session_persistence_service.dart';
 
 class SessionState {
   final ProtocolNode? currentNode;
@@ -67,6 +68,33 @@ class SessionNotifier extends Notifier<SessionState> {
     await llm.init();
 
     state = state.copyWith(isProtocolLoaded: true);
+    
+    // Restore previous session if available
+    final persistence = ref.read(sessionPersistenceServiceProvider);
+    final restored = await persistence.loadSession();
+    
+    if (restored != null && restored.isEmergencyActive) {
+      state = state.copyWith(
+        isEmergencyActive: true,
+        isPracticeMode: restored.isPracticeMode,
+        currentNode: restored.currentNodeId != null 
+            ? protocolService.getNode(restored.currentNodeId!) 
+            : null,
+        chatHistory: restored.chatHistory,
+        situationSummary: restored.situationSummary,
+      );
+    }
+  }
+
+  void _persist() {
+    final persistence = ref.read(sessionPersistenceServiceProvider);
+    persistence.saveSession(PersistedSession(
+      chatHistory: state.chatHistory,
+      currentNodeId: state.currentNode?.id,
+      isEmergencyActive: state.isEmergencyActive,
+      isPracticeMode: state.isPracticeMode,
+      situationSummary: state.situationSummary,
+    ));
   }
 
   Future<void> startEmergency() async {
@@ -76,10 +104,12 @@ class SessionNotifier extends Notifier<SessionState> {
     _initSession(practice: false);
     // Clear previous session context when starting a new emergency
     ref.read(contextCompactionServiceProvider).clearSession();
+    _persist();
   }
 
   void startPractice() {
     _initSession(practice: true);
+    _persist();
   }
 
   void _initSession({required bool practice}) {
@@ -138,10 +168,12 @@ class SessionNotifier extends Notifier<SessionState> {
       );
     } else if (branch.target == 'end') {
       state = state.copyWith(isEmergencyActive: false);
+      ref.read(sessionPersistenceServiceProvider).clearSession();
     } else {
       // "start" self-loop — let Gemma handle the free-form input
       state = state.copyWith(chatHistory: updatedHistory);
     }
+    _persist();
   }
 
   /// The main pipeline: user types → context built → Gemma streams response → context compacted.
@@ -160,6 +192,7 @@ class SessionNotifier extends Notifier<SessionState> {
       isLlmTyping: true,
       streamingBuffer: '',
     );
+    _persist();
 
     // 2. Build context for Gemma
     final compactionService = ref.read(contextCompactionServiceProvider);
@@ -229,5 +262,43 @@ class SessionNotifier extends Notifier<SessionState> {
     if (msgCount % 4 == 0) {
       compactionService.compact((prompt) => llm.generateOnce(prompt));
     }
+    
+    _persist();
+  }
+
+  String generateMarkdownExport() {
+    final compactionService = ref.read(contextCompactionServiceProvider);
+    final ctx = compactionService.context;
+    
+    final buffer = StringBuffer();
+    buffer.writeln('# Survival AId Session Export');
+    buffer.writeln('Generated on: ${DateTime.now().toLocal()}');
+    buffer.writeln('Mode: ${state.isPracticeMode ? "PRACTICE" : "EMERGENCY"}');
+    buffer.writeln();
+    
+    buffer.writeln('## Situation Summary');
+    buffer.writeln(state.situationSummary.isNotEmpty ? state.situationSummary : 'No summary available.');
+    buffer.writeln();
+    
+    buffer.writeln('## Extracted Context & Decisions');
+    buffer.writeln('- **Injury Type:** ${ctx.injuryType ?? "Unknown"}');
+    buffer.writeln('- **Environment:** ${ctx.environment ?? "Unknown"}');
+    buffer.writeln('- **Is Alone:** ${ctx.isAlone}');
+    buffer.writeln('- **Resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}');
+    buffer.writeln('- **Lacks:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}');
+    buffer.writeln('- **Current Protocol Node:** ${state.currentNode?.id ?? "None"}');
+    buffer.writeln();
+    
+    buffer.writeln('## Chat History');
+    buffer.writeln();
+    for (final msg in state.chatHistory) {
+      final role = msg.author == MessageAuthor.ai ? 'Gemma' : 'User';
+      final timestamp = msg.timestamp.toLocal().toString().split('.')[0];
+      buffer.writeln('### [$timestamp] $role');
+      buffer.writeln(msg.text);
+      buffer.writeln();
+    }
+    
+    return buffer.toString();
   }
 }
