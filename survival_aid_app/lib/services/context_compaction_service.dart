@@ -117,7 +117,7 @@ class ContextCompactionService {
     required String aiResponse,
   }) async {
     _rawBuffer.add('User: $userMessage');
-    _rawBuffer.add('Assistant: $aiResponse');
+    _rawBuffer.add('AI: $aiResponse');
     _messageCount++;
 
     // Extract quick facts from user message without LLM
