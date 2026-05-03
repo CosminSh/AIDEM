@@ -136,6 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 16),
                     ],
                     EmergencyButton(
+                      key: const ValueKey('start_emergency'),
                       onPressed: () async {
                         await ref.read(sessionProvider.notifier).startEmergency();
                         if (context.mounted) {

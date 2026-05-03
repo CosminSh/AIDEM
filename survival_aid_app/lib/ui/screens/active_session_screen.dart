@@ -281,6 +281,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 children: [
                   Expanded(
                     child: TextField(
+                      key: const ValueKey('chat_input'),
                       controller: _textController,
                       focusNode: _focusNode,
                       style: const TextStyle(color: AppColors.textPrimary),
@@ -312,6 +313,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                           : AppColors.accentBlue,
                       borderRadius: BorderRadius.circular(20),
                       child: InkWell(
+                        key: const ValueKey('send_button'),
                         borderRadius: BorderRadius.circular(20),
                         onTap: (_isSending || session.isLlmTyping) ? null : _sendMessage,
                         child: Padding(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/protocol.dart';
 import 'global_providers.dart';
@@ -70,16 +71,20 @@ class SessionNotifier extends Notifier<SessionState> {
   }
 
   Future<void> initialize() async {
-    final protocolService = ref.read(protocolServiceProvider);
-    await protocolService.loadProtocol();
+    try {
+      final protocolService = ref.read(protocolServiceProvider);
+      await protocolService.loadProtocol();
 
-    // Also initialize the LLM
-    final llm = ref.read(llmServiceProvider);
-    await llm.init();
+      // Also initialize the LLM
+      final llm = ref.read(llmServiceProvider);
+      await llm.init();
 
-    await refreshHistory();
-
-    state = state.copyWith(isProtocolLoaded: true);
+      await refreshHistory();
+    } catch (e) {
+      debugPrint('Initialization error: $e');
+    } finally {
+      state = state.copyWith(isProtocolLoaded: true);
+    }
   }
 
   Future<void> refreshHistory() async {
@@ -300,7 +305,7 @@ class SessionNotifier extends Notifier<SessionState> {
     } else if (ctx.confirmedLacks.isNotEmpty || ctx.confirmedResources.isNotEmpty) {
       // Build a mini-summary from extracted facts
       final parts = <String>[];
-      if (ctx.isAlone) parts.add('alone');
+      if (ctx.isAlone == true) parts.add('alone');
       if (ctx.injuryType != null) parts.add(ctx.injuryType!);
       if (ctx.confirmedLacks.isNotEmpty) parts.add('no ${ctx.confirmedLacks.join('/')}');
       state = state.copyWith(situationSummary: parts.join(' · '));
@@ -341,7 +346,7 @@ class SessionNotifier extends Notifier<SessionState> {
     buffer.writeln('## Internal Context & Decisions');
     buffer.writeln('- **Injury Type:** ${ctx.injuryType ?? "Unknown"}');
     buffer.writeln('- **Environment:** ${ctx.environment ?? "Unknown"}');
-    buffer.writeln('- **Is Alone:** ${ctx.isAlone}');
+    buffer.writeln('- **Is Alone:** ${ctx.isAlone ?? "Unknown"}');
     buffer.writeln('- **Resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}');
     buffer.writeln('- **Lacks:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}');
     buffer.writeln('- **Current Protocol Node:** ${state.currentNode?.id ?? "None"}');

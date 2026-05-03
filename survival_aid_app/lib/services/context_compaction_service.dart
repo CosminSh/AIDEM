@@ -15,10 +15,10 @@ class SituationContext {
   final List<String> confirmedLacks;
   final String? injuryType;
   final String? environment;
-  final bool isAlone;
+  final bool? isAlone;
   final DateTime lastUpdated;
 
-  const SituationContext({
+  SituationContext({
     required this.summary,
     required this.locationDetails,
     required this.incidentType,
@@ -30,7 +30,7 @@ class SituationContext {
     required this.confirmedLacks,
     this.injuryType,
     this.environment,
-    required this.isAlone,
+    this.isAlone,
     required this.lastUpdated,
   });
 
@@ -44,7 +44,7 @@ class SituationContext {
         urgencyLevel: 'Unknown',
         confirmedResources: [],
         confirmedLacks: [],
-        isAlone: false,
+        isAlone: null,
         lastUpdated: DateTime.now(),
       );
 
@@ -60,7 +60,7 @@ class SituationContext {
         confirmedLacks: List<String>.from(json['lacks'] ?? []),
         injuryType: json['injury_type'],
         environment: json['environment'],
-        isAlone: json['is_alone'] ?? false,
+        isAlone: json['is_alone'],
         lastUpdated: DateTime.tryParse(json['last_updated'] ?? '') ?? DateTime.now(),
       );
 
@@ -128,7 +128,11 @@ class SituationContext {
     if (confirmedLacks.isNotEmpty) {
       buffer.write('Lacks: ${confirmedLacks.join(', ')}. ');
     }
-    if (isAlone) buffer.write('The person is alone.');
+    if (isAlone != null) {
+      buffer.write(isAlone! ? 'The person is alone.' : 'The person is NOT alone.');
+    } else {
+      buffer.write('Solo status: Unknown.');
+    }
     return buffer.toString();
   }
 
@@ -209,7 +213,7 @@ Return ONLY a JSON object with these exact keys (no markdown, no explanation):
   "lacks": ["list", "of", "things", "person needs"],
   "injury_type": "specific injury if known",
   "environment": "forest/desert/mountain/etc",
-  "is_alone": true or false
+  "is_alone": true, false, or null (if unknown)
 }
 
 Conversation:
@@ -273,10 +277,14 @@ JSON:''';
       }
     }
 
-    // Detect alone
-    bool isAlone = _context.isAlone;
+    // Detect alone status from explicit user messages only — never assume
+    bool? isAlone = _context.isAlone;
     if (msg.contains('alone') || msg.contains('by myself') || msg.contains('just me')) {
       isAlone = true;
+    } else if (msg.contains('with me') || msg.contains('my friend') || msg.contains('my wife') ||
+        msg.contains('my husband') || msg.contains('my son') || msg.contains('my daughter') ||
+        msg.contains('my child') || msg.contains('we are') || msg.contains("we're")) {
+      isAlone = false;
     }
 
     _context = _context.copyWith(
