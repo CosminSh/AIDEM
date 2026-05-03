@@ -65,8 +65,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           
           // Main Content
           Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 80.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -90,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (!session.isProtocolLoaded)
                     const CircularProgressIndicator(color: AppColors.accentBlue)
                   else ...[
-                    if (session.isEmergencyActive) ...[
+                    if (session.isEmergencyActive && session.currentSessionId != null) ...[
                       SizedBox(
                         width: double.infinity,
                         height: 70,
@@ -136,12 +136,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 16),
                     ],
                     EmergencyButton(
-                      onPressed: () {
-                        ref.read(sessionProvider.notifier).startEmergency();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
-                        );
+                      onPressed: () async {
+                        await ref.read(sessionProvider.notifier).startEmergency();
+                        if (context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+                          );
+                        }
                       },
                     ),
                     const SizedBox(height: 60),
@@ -149,12 +151,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: double.infinity,
                       height: 56,
                       child: OutlinedButton(
-                        onPressed: () {
-                          ref.read(sessionProvider.notifier).startPractice();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
-                          );
+                        onPressed: () async {
+                          await ref.read(sessionProvider.notifier).startPractice();
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+                            );
+                          }
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.border),
@@ -171,6 +175,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 40),
+                    if (session.sessionHistory.isNotEmpty) ...[
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "PREVIOUS CONVERSATIONS",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 300),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: session.sessionHistory.length,
+                          itemBuilder: (context, index) {
+                            final s = session.sessionHistory[index];
+                            final timeAgo = _formatTimeAgo(s.lastUpdated);
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: ListTile(
+                                leading: Icon(
+                                  s.isPracticeMode ? Icons.school : Icons.emergency,
+                                  color: s.isPracticeMode ? AppColors.accentBlue : AppColors.accentRed,
+                                ),
+                                title: Text(
+                                  s.situationSummary.isNotEmpty ? s.situationSummary : "New Conversation",
+                                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  "$timeAgo · ${s.chatHistory.length} messages",
+                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: AppColors.textSecondary),
+                                  onPressed: () => ref.read(sessionProvider.notifier).deleteSession(s.id),
+                                ),
+                                onTap: () async {
+                                  await ref.read(sessionProvider.notifier).resumeSession(s.id);
+                                  if (context.mounted) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -179,5 +247,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inDays > 0) return "${diff.inDays}d ago";
+    if (diff.inHours > 0) return "${diff.inHours}h ago";
+    if (diff.inMinutes > 0) return "${diff.inMinutes}m ago";
+    return "Just now";
   }
 }

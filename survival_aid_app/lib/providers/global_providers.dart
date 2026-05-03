@@ -34,9 +34,7 @@ final llmServiceProvider = Provider<LlmService>((ref) {
 });
 
 final contextCompactionServiceProvider = Provider<ContextCompactionService>((ref) {
-  final service = ContextCompactionService();
-  service.init();
-  return service;
+  return ContextCompactionService();
 });
 
 final modelSetupServiceProvider = NotifierProvider<ModelSetupService, ModelSetupState>(() {

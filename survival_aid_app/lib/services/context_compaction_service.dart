@@ -92,16 +92,23 @@ class SituationContext {
 /// every N messages.
 class ContextCompactionService {
   static const int _compactEveryN = 4;
-  static const String _filename = 'session_context.json';
 
   SituationContext _context = SituationContext.empty();
   final List<String> _rawBuffer = []; // raw recent messages pending compaction
   int _messageCount = 0;
+  String? _activeSessionId;
 
   SituationContext get context => _context;
 
-  Future<void> init() async {
-    await _loadFromDisk();
+  Future<void> init(String? sessionId) async {
+    _activeSessionId = sessionId;
+    if (sessionId != null) {
+      await _loadFromDisk(sessionId);
+    } else {
+      _context = SituationContext.empty();
+      _rawBuffer.clear();
+      _messageCount = 0;
+    }
   }
 
   /// Call this after every user message and AI response pair.
@@ -119,6 +126,10 @@ class ContextCompactionService {
     // Keep buffer bounded
     if (_rawBuffer.length > 20) {
       _rawBuffer.removeRange(0, _rawBuffer.length - 20);
+    }
+    
+    if (_activeSessionId != null) {
+      await _saveToDisk(_activeSessionId!);
     }
   }
 
@@ -160,7 +171,9 @@ JSON:''';
         final jsonStr = result.substring(jsonStart, jsonEnd + 1);
         final parsed = jsonDecode(jsonStr) as Map<String, dynamic>;
         _context = SituationContext.fromJson(parsed);
-        await _saveToDisk();
+        if (_activeSessionId != null) {
+          await _saveToDisk(_activeSessionId!);
+        }
       }
     } catch (_) {
       // Compaction failed — keep existing context, it's not critical
@@ -178,7 +191,7 @@ JSON:''';
       'tourniquet': ['no tourniquet', "don't have tourniquet"],
       'signal': ['no signal', 'no service', 'no reception', "can't call"],
       'fire': ['no fire', 'no lighter', 'no matches', "can't make fire"],
-      'shelter': ['no shelter', 'exposed', 'no tent', 'no cover'],
+      'shelter': ['no shelter', 'exposed', 'no test', 'no cover'],
     };
 
     final updatedLacks = List<String>.from(_context.confirmedLacks);
@@ -219,21 +232,23 @@ JSON:''';
     );
   }
 
-  Future<void> _saveToDisk() async {
+  Future<void> _saveToDisk(String sessionId) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$_filename');
+      final file = File('${dir.path}/context_$sessionId.json');
       await file.writeAsString(jsonEncode(_context.toJson()));
     } catch (_) {}
   }
 
-  Future<void> _loadFromDisk() async {
+  Future<void> _loadFromDisk(String sessionId) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$_filename');
+      final file = File('${dir.path}/context_$sessionId.json');
       if (await file.exists()) {
         final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
         _context = SituationContext.fromJson(json);
+      } else {
+        _context = SituationContext.empty();
       }
     } catch (_) {
       _context = SituationContext.empty();
@@ -244,11 +259,13 @@ JSON:''';
     _context = SituationContext.empty();
     _rawBuffer.clear();
     _messageCount = 0;
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$_filename');
-      if (await file.exists()) await file.delete();
-    } catch (_) {}
+    if (_activeSessionId != null) {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/context_$_activeSessionId.json');
+        if (await file.exists()) await file.delete();
+      } catch (_) {}
+    }
   }
 }
 

@@ -10,8 +10,10 @@ class SessionState {
   final bool isPracticeMode;
   final bool isProtocolLoaded;
   final bool isLlmTyping;
-  final String streamingBuffer; // tokens arriving from Gemma in real-time
-  final String situationSummary; // compact situation for UI display
+  final String streamingBuffer;
+  final String? currentSessionId;
+  final String situationSummary;
+  final List<PersistedSession> sessionHistory;
 
   SessionState({
     this.currentNode,
@@ -21,7 +23,9 @@ class SessionState {
     this.isProtocolLoaded = false,
     this.isLlmTyping = false,
     this.streamingBuffer = '',
-    this.situationSummary = '',
+    this.currentSessionId,
+    required this.situationSummary,
+    this.sessionHistory = const [],
   });
 
   SessionState copyWith({
@@ -32,8 +36,11 @@ class SessionState {
     bool? isProtocolLoaded,
     bool? isLlmTyping,
     String? streamingBuffer,
+    String? currentSessionId,
     String? situationSummary,
+    List<PersistedSession>? sessionHistory,
     bool clearCurrentNode = false,
+    bool clearSessionId = false,
   }) {
     return SessionState(
       currentNode: clearCurrentNode ? null : (currentNode ?? this.currentNode),
@@ -43,7 +50,9 @@ class SessionState {
       isProtocolLoaded: isProtocolLoaded ?? this.isProtocolLoaded,
       isLlmTyping: isLlmTyping ?? this.isLlmTyping,
       streamingBuffer: streamingBuffer ?? this.streamingBuffer,
+      currentSessionId: clearSessionId ? null : (currentSessionId ?? this.currentSessionId),
       situationSummary: situationSummary ?? this.situationSummary,
+      sessionHistory: sessionHistory ?? this.sessionHistory,
     );
   }
 }
@@ -56,6 +65,7 @@ class SessionNotifier extends Notifier<SessionState> {
       chatHistory: [],
       isEmergencyActive: false,
       isPracticeMode: false,
+      situationSummary: '',
     );
   }
 
@@ -67,14 +77,60 @@ class SessionNotifier extends Notifier<SessionState> {
     final llm = ref.read(llmServiceProvider);
     await llm.init();
 
+    await refreshHistory();
+
     state = state.copyWith(isProtocolLoaded: true);
-    
-    // Restore previous session if available
+  }
+
+  Future<void> refreshHistory() async {
     final persistence = ref.read(sessionPersistenceServiceProvider);
-    final restored = await persistence.loadSession();
+    final history = await persistence.getAllSessions();
+    state = state.copyWith(sessionHistory: history);
+  }
+
+  void _persist() {
+    if (state.currentSessionId == null) return;
     
-    if (restored != null && restored.isEmergencyActive) {
+    final persistence = ref.read(sessionPersistenceServiceProvider);
+    persistence.saveSession(PersistedSession(
+      id: state.currentSessionId!,
+      chatHistory: state.chatHistory,
+      currentNodeId: state.currentNode?.id,
+      isEmergencyActive: state.isEmergencyActive,
+      isPracticeMode: state.isPracticeMode,
+      situationSummary: state.situationSummary,
+      lastUpdated: DateTime.now(),
+    ));
+    refreshHistory();
+  }
+
+  Future<void> startEmergency() async {
+    await ref.read(llmServiceProvider).init();
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    await ref.read(contextCompactionServiceProvider).init(newId);
+    
+    _initSession(practice: false, sessionId: newId);
+    _persist();
+  }
+
+  Future<void> startPractice() async {
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    await ref.read(contextCompactionServiceProvider).init(newId);
+    
+    _initSession(practice: true, sessionId: newId);
+    _persist();
+  }
+
+  Future<void> resumeSession(String id) async {
+    final persistence = ref.read(sessionPersistenceServiceProvider);
+    final restored = await persistence.loadSession(id);
+    
+    if (restored != null) {
+      final protocolService = ref.read(protocolServiceProvider);
+      await ref.read(contextCompactionServiceProvider).init(id);
+      
       state = state.copyWith(
+        currentSessionId: id,
         isEmergencyActive: true,
         isPracticeMode: restored.isPracticeMode,
         currentNode: restored.currentNodeId != null 
@@ -86,39 +142,29 @@ class SessionNotifier extends Notifier<SessionState> {
     }
   }
 
-  void _persist() {
+  Future<void> deleteSession(String id) async {
     final persistence = ref.read(sessionPersistenceServiceProvider);
-    persistence.saveSession(PersistedSession(
-      chatHistory: state.chatHistory,
-      currentNodeId: state.currentNode?.id,
-      isEmergencyActive: state.isEmergencyActive,
-      isPracticeMode: state.isPracticeMode,
-      situationSummary: state.situationSummary,
-    ));
+    await persistence.deleteSession(id);
+    if (state.currentSessionId == id) {
+      state = state.copyWith(
+        isEmergencyActive: false,
+        clearSessionId: true,
+        chatHistory: [],
+        situationSummary: '',
+        clearCurrentNode: true,
+      );
+    }
+    await refreshHistory();
   }
 
-  Future<void> startEmergency() async {
-    // Re-verify/Initialize LLM on start to ensure it's ready
-    await ref.read(llmServiceProvider).init();
-    
-    _initSession(practice: false);
-    // Clear previous session context when starting a new emergency
-    ref.read(contextCompactionServiceProvider).clearSession();
-    _persist();
-  }
-
-  void startPractice() {
-    _initSession(practice: true);
-    _persist();
-  }
-
-  void _initSession({required bool practice}) {
+  void _initSession({required bool practice, required String sessionId}) {
     if (!state.isProtocolLoaded) return;
 
     final protocolService = ref.read(protocolServiceProvider);
     final startNode = protocolService.startNode;
 
     state = state.copyWith(
+      currentSessionId: sessionId,
       isEmergencyActive: true,
       isPracticeMode: practice,
       currentNode: startNode,
@@ -168,7 +214,10 @@ class SessionNotifier extends Notifier<SessionState> {
       );
     } else if (branch.target == 'end') {
       state = state.copyWith(isEmergencyActive: false);
-      ref.read(sessionPersistenceServiceProvider).clearSession();
+      if (state.currentSessionId != null) {
+        ref.read(sessionPersistenceServiceProvider).deleteSession(state.currentSessionId!);
+        ref.read(contextCompactionServiceProvider).clearSession();
+      }
     } else {
       // "start" self-loop — let Gemma handle the free-form input
       state = state.copyWith(chatHistory: updatedHistory);
