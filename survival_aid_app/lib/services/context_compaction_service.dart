@@ -114,21 +114,21 @@ class SituationContext {
     if (summary.isEmpty) return 'No situation context yet.';
 
     final buffer = StringBuffer();
-    buffer.writeln('SUMMARY: $summary');
-    buffer.writeln('LOCATION: $locationDetails');
-    buffer.writeln('INCIDENT: $incidentType');
-    buffer.writeln('HAZARDS: $hazards');
-    buffer.writeln('ACCESS: $accessInfo');
-    buffer.writeln('PATIENTS: $patientCount');
-    buffer.writeln('URGENCY: $urgencyLevel');
+    buffer.writeln('Summary: $summary');
+    buffer.writeln('Current Location: $locationDetails');
+    buffer.writeln('Type of incident: $incidentType');
+    buffer.writeln('Environmental hazards: $hazards');
+    buffer.writeln('Access details: $accessInfo');
+    buffer.writeln('Patients: $patientCount');
+    buffer.writeln('Current urgency: $urgencyLevel');
     
     if (confirmedResources.isNotEmpty) {
-      buffer.write('Resources: ${confirmedResources.join(', ')}. ');
+      buffer.write('Available resources: ${confirmedResources.join(', ')}. ');
     }
     if (confirmedLacks.isNotEmpty) {
-      buffer.write('Missing: ${confirmedLacks.join(', ')}. ');
+      buffer.write('Lacks: ${confirmedLacks.join(', ')}. ');
     }
-    if (isAlone) buffer.write('Person is alone.');
+    if (isAlone) buffer.write('The person is alone.');
     return buffer.toString();
   }
 
