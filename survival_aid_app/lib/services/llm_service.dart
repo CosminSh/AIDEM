@@ -2,92 +2,62 @@ import 'dart:async';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'context_compaction_service.dart';
 
-/// The LLM service. Wraps flutter_gemma for real on-device Gemma inference.
-/// Falls back to [_AdaptiveMock] when the model is not yet loaded.
 class LlmService {
   InferenceModel? _model;
   bool _isModelLoaded = false;
 
   bool get isModelLoaded => _isModelLoaded;
 
-  /// System prompt injected at the start of every chat session.
-  /// This is the core of the intelligence — it tells Gemma exactly how to behave.
   String _buildSystemPrompt({
     required String situationContext,
     required String knowledgeBase,
   }) {
-    return '''You are Gemma, an expert offline emergency assistant built into the Survival AId app. You are calm, direct, and genuinely helpful — like a skilled paramedic friend on the phone. You run entirely on the user's device with no internet. Your responses could save a life.
+    return '''You are a skilled wilderness paramedic. You are calm, authoritative, and provide detailed medical guidance.
+You run entirely on-device.
 
-WHAT YOU ALREADY KNOW ABOUT THIS SITUATION:
 $situationContext
 
-REFERENCE MATERIAL (use for medical accuracy):
+REFERENCE MATERIAL:
 $knowledgeBase
 
----
-YOUR CORE IDENTITY & APPROACH:
+EMERGENCY TIER SYSTEM:
+- TIER 1 (CRITICAL): Life-threatening (Bleeding, Unconscious). Action: Be brief, focus on immediate survival, recommend 911.
+- TIER 2 (MODERATE): Stable but serious (Fractures, Deep cuts). Action: Provide detailed, multi-step first aid (splinting, pressure).
+- TIER 3 (MINOR): Self-manageable (Scrapes, Sprains). Action: Provide thorough care instructions (cleaning, RICE method) and evacuation guidance.
 
-You are a skilled wilderness medic helping someone in real-time. You are NOT a summary bot.
+STRICT STYLE RULES (MANDATORY):
+1. MOVE FAST: If a fact is known (e.g. "no bleeding"), NEVER ask about it again.
+2. NEVER PARROT: Do not repeat the user's words.
+3. NO SYMPATHY AFTER TURN 1: After the first message, STOP being sympathetic. Just medical facts.
+4. DETAIL WHEN SAFE: For TIER 2 and 3, give detailed, practical instructions. Use available resources (cloth, sticks, tape).
+5. ONE QUESTION MAXIMUM: Ask only one question per response.
+6. NO VERBATIM REPEATS: Do not repeat your previous sentence. Rephrase or add detail.
 
-Your conversation style:
-- **NO PARROTING**: Do not repeat the situation summary or the user's last sentence back to them (e.g., Avoid "A bug bite on your leg, I hear you're in the park"). Just move directly to the next assessment or advice.
-- **NATURAL FLOW**: Acknowledge information extremely briefly if at all (e.g., "Understood." or "Okay."). Focus 100% on the NEXT action.
-- **STRICT NON-REPETITION**: If you asked a question and the user answered it (even vaguely), DO NOT ask it again. Move to the next medical or situational priority.
-- **HUMAN PROSE**: Write in natural, flowing paragraphs. Never use bold text, headers, or bullet points in your chat messages.
-
----
-EMERGENCY TIER SYSTEM — determine this internally and act:
-
-TIER 1 — CRITICAL (Life-threatening):
-Uncontrolled bleeding, spinal/neck injury, unconscious, breathing stopped.
-Action: Immediately recommend 911/112. Give the single most vital instruction (e.g., "Don't move his head.").
-
-TIER 2 — MODERATE (Serious but stable):
-Deep cuts, suspected fractures, significant falls.
-Action: Give progressive first-aid steps (Elevation, Splinting). Check for shock.
-
-TIER 3 — MINOR (Self-manageable):
-Scrapes, minor bites, sprains.
-Action: Simple care steps (Clean with water, Rest, Ice).
-
----
-INFORMATION GATHERING — weave these into advice:
-
-Never ask more than ONE question at a time. Do not interrogate.
-1. Where are they? (Home/Wild/Park?)
-2. Are they alone?
-3. Age of the patient?
-4. What resources do they have?
-
----
-WHAT NOT TO DO:
-- **NEVER repeat the "WHAT YOU ALREADY KNOW" section to the user.**
-- Never ask the same question twice in a row.
-- Never use the phrase "I understand you are in an emergency."
-- Never stall. If you have no more questions, tell them how to monitor the situation or how to get to safety.
-- Never give the same advice twice. If they say "I'm doing it," move to the next step.
-''';
+EXAMPLE CONVERSATION:
+User: I fell and hit my head.
+AI: I'm sorry. Check for bleeding and ensure the scene is safe. Are you dizzy?
+User: No bleeding, just a bit dizzy.
+AI: Stay still. Do not move your neck. Are you alone?
+User: Yes, alone.
+AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a whistle or 3 flashes of light. Do you have a phone signal?''';
   }
 
-  /// Initialize — get the active model from flutter_gemma (must be installed first).
   Future<bool> init() async {
     if (_isModelLoaded && _model != null) return true;
-    
+
     try {
-      // Try GPU first
       try {
         _model = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
         );
       } catch (gpuError) {
-        // Fallback to CPU
         _model = await FlutterGemma.getActiveModel(
-          maxTokens: 1024, // Lower context for CPU
+          maxTokens: 1024,
           preferredBackend: PreferredBackend.cpu,
         );
       }
-      
+
       _isModelLoaded = true;
       return true;
     } catch (e) {
@@ -96,8 +66,6 @@ WHAT NOT TO DO:
     }
   }
 
-  /// Generates a response and streams tokens as they arrive.
-  /// Returns a Stream<String> where each event is a new token.
   Stream<String> generateResponseStream({
     required String userMessage,
     required String situationContext,
@@ -105,18 +73,15 @@ WHAT NOT TO DO:
     required List<String> recentHistory,
   }) async* {
     if (!_isModelLoaded || _model == null) {
-      // Try one last-ditch init if we aren't loaded yet
       await init();
     }
 
     if (!_isModelLoaded || _model == null) {
-      // Fallback to adaptive mock
-      final response = _AdaptiveMock.respond(
+      final response = AdaptiveMock.respond(
         userMessage: userMessage,
         situationContext: situationContext,
         historyCount: recentHistory.length,
       );
-      // Stream the mock word by word for typewriter effect
       for (final word in response.split(' ')) {
         yield '$word ';
         await Future.delayed(const Duration(milliseconds: 30));
@@ -134,29 +99,33 @@ WHAT NOT TO DO:
         systemInstruction: systemInstruction,
       );
 
-      // Add recent history context (both User and AI)
+      // Add history with strict role alternation (essential for 2b stability)
+      bool lastWasUser = false;
       for (int i = 0; i < recentHistory.length; i++) {
         final msg = recentHistory[i];
         if (msg.startsWith('User: ')) {
+          if (lastWasUser) continue;
           await chat.addQueryChunk(Message.text(
             text: msg.substring(6),
             isUser: true,
           ));
+          lastWasUser = true;
         } else if (msg.startsWith('AI: ')) {
+          if (!lastWasUser && i > 0) continue;
           await chat.addQueryChunk(Message.text(
             text: msg.substring(4),
             isUser: false,
           ));
+          lastWasUser = false;
         }
       }
 
-      // Add the current user message
+      // Add current user message with a context reminder
       await chat.addQueryChunk(Message.text(
-        text: userMessage,
+        text: "User says: $userMessage\n\n(Reminder: Do not re-ask facts already in confirmed facts or history. If they are stable, guide them to safety/home. If they are critical, stay put.)",
         isUser: true,
       ));
 
-      // Stream the response
       await for (final response in chat.generateChatResponseAsync()) {
         if (response is TextResponse && response.token.isNotEmpty) {
           yield response.token;
@@ -169,10 +138,9 @@ WHAT NOT TO DO:
     }
   }
 
-  /// Non-streaming call — used for context compaction (background task).
   Future<String> generateOnce(String prompt) async {
     if (!_isModelLoaded || _model == null) {
-      return ''; // Compaction silently skipped if model not loaded
+      return '';
     }
 
     try {
@@ -197,9 +165,7 @@ WHAT NOT TO DO:
   }
 }
 
-/// Adaptive rule-based fallback — used when the model is still downloading.
-/// Detects resource constraints and gives real, field-applicable alternative advice.
-class _AdaptiveMock {
+class AdaptiveMock {
   static String respond({
     required String userMessage,
     required String situationContext,
@@ -208,47 +174,58 @@ class _AdaptiveMock {
     final msg = userMessage.toLowerCase();
     final ctx = situationContext.toLowerCase();
 
+    if (_isBackInjury(msg) || (msg.contains('fell') && msg.contains('back'))) {
+      return "CRITICAL: Do not move him. Call 911 now. Keep him completely still — his spine may be injured. Do not let him sit up, stand, or walk. Support his head in the position you found him. Is he breathing normally?";
+    }
+
+    if (msg.contains('bleeding') && (msg.contains('heavy') || msg.contains('a lot') || msg.contains("won't stop") || msg.contains(' spurting'))) {
+      return "CRITICAL: Apply firm pressure directly to the wound with whatever is available — shirt, towel, anything. If blood soaks through, add more layers without removing the first. Call 911 while doing this. If the bleeding is from an arm or leg and won't stop, a tourniquet may be needed 2-3 inches above the wound. Are you near any help?";
+    }
+
+    if (msg.contains('unconscious') || msg.contains('not waking') || msg.contains('not breathing')) {
+      return "Call 911 immediately. Check if he is breathing by looking at his chest for 10 seconds. If not breathing, start CPR — push hard and fast on the center of his chest, 30 compressions then 2 breaths. If breathing, put him on his side in recovery position. Keep his airway clear. Do not leave him alone.";
+    }
+
     final lacksWater = _lacks(msg, ['water', 'clean water', 'running water']);
     final lacksBandage = _lacks(msg, ['bandage', 'cloth', 'dressing', 'gauze']);
     final lacksTourniquet = _lacks(msg, ['tourniquet']);
     final lacksSignal = _lacks(msg, ['signal', 'phone', 'cell', 'reception', 'call']);
-    final lacksFireMaking = _lacks(msg, ['fire', 'lighter', 'matches', 'flint']);
     final isAlone = msg.contains('alone') || msg.contains('by myself');
     final isUnconscious = msg.contains('unconscious') || msg.contains('not waking');
 
-    if (lacksWater && (ctx.contains('wound') || ctx.contains('bleed') || msg.contains('wound') || msg.contains('cut'))) {
-      return "Without water, here's how to clean the wound:\n\n1. Use any clear liquid available — diluted sports drink works, even fresh urine is sterile.\n2. Squeeze the liquid from a cloth above the wound to flush debris out — don't rub.\n3. Cover with the cleanest available material (inside of a shirt is cleaner than outside).\n\nWhat do you have to cover it with?";
+    if (lacksWater && (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
+      return "Without water, use any clear liquid available to clean the wound — diluted sports drink works, even fresh urine is sterile. Flush by squeezing liquid from a cloth above the wound, don't rub. Cover with the cleanest available material, the inside of a shirt works. What can you use to cover it?";
     }
 
-    if (lacksBandage && (ctx.contains('wound') || msg.contains('wound') || msg.contains('cut'))) {
-      return "No bandage — improvise one:\n\n1. Tear a strip from the INSIDE of a shirt or sock (inside = cleaner).\n2. Fold into a thick pad and press firmly onto the wound.\n3. Tie snugly with another strip — tight enough to feel resistance, but you should still feel pulse below it.\n4. Elevate the limb above heart level.\n\nIs the bleeding still active or slowing?";
+    if (lacksBandage && (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
+      return "Improvise a bandage. Tear a strip from the INSIDE of a shirt or sock — inside is cleaner. Fold into a thick pad and press firmly onto the wound. Tie snugly with another strip, tight enough to feel resistance but you should still feel a pulse below it. Elevate the limb above heart level. Is the bleeding still active or slowing?";
     }
 
-    if (lacksTourniquet && (ctx.contains('bleed') || msg.contains('bleed'))) {
-      return "No tourniquet — make a field one:\n\n1. Cut/tear a strip of clothing AT LEAST 2 inches wide (narrow strips cause more damage).\n2. Wrap it TWICE around the limb, 2-3 inches above the wound.\n3. Tie a half-knot, place a stick on top, tie another knot over it.\n4. Twist the stick until bleeding stops completely — then secure it.\n5. Note the time. Leave on for up to 2 hours.\n\nHas the bleeding slowed?";
+    if (lacksTourniquet && (msg.contains('bleeding') || msg.contains('blood'))) {
+      return "Make a field tourniquet. Cut or tear a strip of clothing AT LEAST 2 inches wide — narrow strips cause more damage. Wrap it twice around the limb 2-3 inches above the wound. Tie a half-knot, place a stick on top, tie another knot over it. Twist until bleeding stops completely then secure it. Note the time. Leave on for up to 2 hours. Has the bleeding slowed?";
     }
 
-    if (lacksSignal) {
-      return "No signal — priority actions:\n\n1. Try moving to higher ground — even 50m elevation can restore a bar.\n2. Try SMS first — texts transmit on weaker signals than calls.\n3. Switch to airplane mode between attempts to conserve battery.\n\nMeanwhile: what do you have available to signal visually? (Any reflective surface, clothing, ability to make fire?)";
+    if (_isBleeding(msg) && !lacksBandage && !msg.contains('deep') && !msg.contains('bad')) {
+      return "For a minor cut, clean it gently with water if available. Apply pressure with a clean cloth until bleeding stops. Keep it elevated if possible. Cover with a bandage or clean cloth. Keep it dry for 24 hours. If you notice redness, swelling, or pus, seek medical help when possible. Do you have everything you need right now?";
     }
 
-    if (isUnconscious) {
-      return "If they're unconscious:\n\n1. Check breathing — watch the chest for 10 seconds.\n2. If NOT breathing: start CPR (30 compressions, 2 rescue breaths). Push hard and fast.\n3. If breathing: recovery position — on their side, top knee bent forward, head tilted slightly back.\n4. Do NOT leave alone. Check breathing every 2 minutes.\n\nAre they breathing?";
+    if (msg.contains('broken') || msg.contains('fracture') || (msg.contains('fell') && msg.contains('wrist'))) {
+      return "For a suspected fracture, immobilize the area — don't try to straighten it. Apply ice wrapped in cloth to reduce swelling, but never directly on skin. Keep it elevated. Do not give food or water in case you need surgery. Can you splint it with something firm like a stick or magazine rolled around it? Call your brother and get to urgent care if the pain is severe.";
     }
 
-    if (isAlone) {
-      return "Being alone changes your priorities. In order:\n\n1. CONTROL any active bleeding — this is first, always.\n2. Make yourself visible from above — create a signal near your position.\n3. Conserve body temperature — insulation from ground is critical.\n4. DO NOT push yourself to walk out if injured — one bad decision alone can be fatal.\n\nCan you walk? And do you know roughly which direction safety is?";
+    if (lacksSignal && !ctx.contains('signal')) {
+      return "No signal — try moving to higher ground, even 50 meters can restore a bar. Try SMS first, texts work on weaker signals than calls. Switch to airplane mode between attempts to conserve battery. Do you have anything reflective to signal with if you see a plane or rescuer?";
     }
 
-    // If we've already asked once and they are still replying, try to be slightly more proactive
-    if (historyCount > 2) {
-      if (msg.contains('lost') || msg.contains('mountain') || msg.contains('forest')) {
-        return "I understand you are lost. My Gemma brain is still initializing, but here is the critical rule for being lost: STAY WHERE YOU ARE. Moving makes rescue 10x harder. \n\nAre you in a safe spot out of the wind? And do you have any way to make yourself visible from the air?";
-      }
+    if (isAlone && !ctx.contains('alone')) {
+      return "Since you're alone, your priorities are: control any active bleeding first, then make yourself visible from above if possible, then conserve body temperature by insulating from the ground. Do not try to walk out if you're injured — staying put is safer. Can you control the bleeding first?";
     }
 
-    // Generic context-gathering response
-    return "To give you the most useful advice, I need to understand your situation better.\n\nTell me:\n• What happened — describe the injury or situation?\n• What do you have with you right now?\n• Are you alone, and do you know where you are?\n\nThe more specific you are, the better I can help.";
+    if (historyCount > 2 && (msg.contains('lost') || msg.contains('forest') || msg.contains('mountain'))) {
+      return "STAY WHERE YOU ARE. Moving makes rescue 10 times harder. Can you get to high ground? Do you have anything reflective to signal from the air? Keep your phone on for any signal updates.";
+    }
+
+    return "Tell me the most urgent problem right now. What do you have available to help — cloth, water, phone signal? The more specific you are about what you need, the faster I can help.";
   }
 
   static bool _lacks(String msg, List<String> keywords) {
@@ -259,5 +236,13 @@ class _AdaptiveMock {
         msg.contains('without $kw') ||
         msg.contains('lost my $kw') ||
         msg.contains("can't use $kw"));
+  }
+
+  static bool _isBackInjury(String msg) {
+    return msg.contains('back') || msg.contains('spinal') || msg.contains('neck');
+  }
+
+  static bool _isBleeding(String msg) {
+    return msg.contains('bleed') || msg.contains('blood') || msg.contains('cut') || msg.contains('wound');
   }
 }

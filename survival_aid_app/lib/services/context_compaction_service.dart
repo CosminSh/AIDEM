@@ -111,28 +111,17 @@ class SituationContext {
 
   /// Returns a concise string for injection into a Gemma prompt.
   String toPromptString() {
-    if (summary.isEmpty) return 'No situation context yet.';
+    if (summary.isEmpty) return 'CONVERSATION_START';
 
     final buffer = StringBuffer();
+    buffer.writeln('--- CONFIRMED FACTS (DO NOT RE-ASK) ---');
+    buffer.writeln('Incident: $incidentType');
+    buffer.writeln('Hazards: $hazards');
     buffer.writeln('Summary: $summary');
-    buffer.writeln('Current Location: $locationDetails');
-    buffer.writeln('Type of incident: $incidentType');
-    buffer.writeln('Environmental hazards: $hazards');
-    buffer.writeln('Access details: $accessInfo');
-    buffer.writeln('Patients: $patientCount');
-    buffer.writeln('Current urgency: $urgencyLevel');
-    
-    if (confirmedResources.isNotEmpty) {
-      buffer.write('Available resources: ${confirmedResources.join(', ')}. ');
-    }
-    if (confirmedLacks.isNotEmpty) {
-      buffer.write('Lacks: ${confirmedLacks.join(', ')}. ');
-    }
-    if (isAlone != null) {
-      buffer.write(isAlone! ? 'The person is alone.' : 'The person is NOT alone.');
-    } else {
-      buffer.write('Solo status: Unknown.');
-    }
+    if (confirmedResources.isNotEmpty) buffer.writeln('Resources: ${confirmedResources.join(', ')}');
+    if (confirmedLacks.isNotEmpty) buffer.writeln('Lacks: ${confirmedLacks.join(', ')}');
+    buffer.writeln('Status: ${isAlone == true ? 'Person is alone.' : 'Person is NOT alone.'}');
+    buffer.writeln('--- END CONFIRMED FACTS ---');
     return buffer.toString();
   }
 
@@ -154,12 +143,13 @@ class ContextCompactionService {
 
   Future<void> init(String? sessionId) async {
     _activeSessionId = sessionId;
+    _rawBuffer.clear();
+    _messageCount = 0;
+    
     if (sessionId != null) {
       await _loadFromDisk(sessionId);
     } else {
       _context = SituationContext.empty();
-      _rawBuffer.clear();
-      _messageCount = 0;
     }
   }
 
@@ -200,20 +190,29 @@ class ContextCompactionService {
 
     final conversation = _rawBuffer.join('\n');
     final prompt = '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
-Return ONLY a JSON object with these exact keys (no markdown, no explanation):
+Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
+
+EXAMPLE INPUT:
+User: i fell and hit my head
+AI: I'm sorry. Are you bleeding?
+User: no bleeding but i feel dizzy
+AI: Stay still. Are you alone?
+User: yes i'm alone
+
+EXAMPLE OUTPUT:
 {
-  "summary": "one sentence describing current status",
-  "location_details": "GPS, landmarks, or 'Unknown'",
-  "incident_type": "fall/bite/lost/medical/etc",
-  "hazards": "weather/terrain/animals or 'None'",
-  "access_info": "trail name, heli access, or distance to road",
+  "summary": "fell and hit head, dizzy, no bleeding, alone",
+  "location_details": "Unknown",
+  "incident_type": "fall",
+  "hazards": "None",
+  "access_info": "Unknown",
   "patient_count": 1,
-  "urgency_level": "critical/stable/worsening",
-  "resources": ["list", "of", "things", "person has"],
-  "lacks": ["list", "of", "things", "person needs"],
-  "injury_type": "specific injury if known",
-  "environment": "forest/desert/mountain/etc",
-  "is_alone": true, false, or null (if unknown)
+  "urgency_level": "stable",
+  "resources": [],
+  "lacks": [],
+  "injury_type": "head injury",
+  "environment": "Unknown",
+  "is_alone": true
 }
 
 Conversation:
@@ -287,9 +286,16 @@ JSON:''';
       isAlone = false;
     }
 
+    // Detect safety and basic triage status
+    String updatedHazards = _context.hazards;
+    if (msg.contains('safe') || msg.contains('all good') || msg.contains('no danger')) {
+      updatedHazards = 'None (Confirmed)';
+    }
+
     _context = _context.copyWith(
       confirmedLacks: updatedLacks,
       confirmedResources: updatedResources,
+      hazards: updatedHazards,
       isAlone: isAlone,
     );
   }

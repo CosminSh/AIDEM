@@ -44,6 +44,7 @@ app.*.map.json
 /android/app/profile
 # Large Assets
 /assets/models/
+/dist/
 *.bin
 *.task
 *.zip

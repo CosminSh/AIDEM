@@ -52,6 +52,7 @@ class OnboardingDisclaimerScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               ElevatedButton(
+                key: const ValueKey('accept_disclaimer'),
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,

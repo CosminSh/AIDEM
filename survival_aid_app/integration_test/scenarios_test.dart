@@ -54,9 +54,18 @@ void main() {
 
       // 1. Handle Onboarding/Disclaimer
       debugPrint('HANDLING ONBOARDING...');
-      final acceptBtn = find.byType(ElevatedButton);
+      final acceptBtn = find.byKey(const ValueKey('accept_disclaimer'));
       if (acceptBtn.evaluate().isNotEmpty) {
         await tester.tap(acceptBtn);
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+      }
+
+      // 2. Handle Model Setup if it appears
+      debugPrint('CHECKING FOR MODEL SETUP...');
+      final skipBtn = find.byKey(const ValueKey('skip_model_setup'));
+      if (skipBtn.evaluate().isNotEmpty) {
+        debugPrint('Model setup appeared, skipping...');
+        await tester.tap(skipBtn);
         await tester.pumpAndSettle(const Duration(seconds: 2));
       }
 

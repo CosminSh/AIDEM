@@ -1,6 +1,7 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 enum ModelStatus { notInstalled, downloading, ready, error }
 
@@ -35,9 +36,10 @@ class ModelSetupState {
 }
 
 class ModelSetupService extends Notifier<ModelSetupState> {
-  static const String _modelUrl =
-      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-e2b-it.litertlm';
   static const String _modelFileName = 'gemma-4-e2b-it.litertlm';
+  static const String _lastUsedModelKey = 'last_used_model_path';
+  static const String _defaultModelPath = r'G:\Antigravity Projects\Survival AId\Assets\Models\gemma-4-E2B-it.litertlm';
+  static const String _huggingFaceBaseUrl = 'https://huggingface.co/google/gemma-4-2b-it-lite-rt-gguf/resolve/main/gemma4-2b-it-lite-rt-web.zip';
 
   @override
   ModelSetupState build() {
@@ -50,13 +52,38 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
   Future<bool> checkIfInstalled() async {
     try {
-      // First check if the specific Gemma 3 model is installed
-      final isGemma3Installed = await FlutterGemma.isModelInstalled(_modelFileName);
-      
-      // Also check if there's any active inference model already configured
+      // 1. Check if Gemma 4 is already active
       final hasActive = FlutterGemma.hasActiveModel();
+      if (hasActive) {
+        state = state.copyWith(status: ModelStatus.ready, statusMessage: 'Model ready');
+        return true;
+      }
 
-      if (isGemma3Installed || hasActive) {
+      // 2. Check for last used model path or default paths
+      final prefs = await SharedPreferences.getInstance();
+      String? savedPath = prefs.getString(_lastUsedModelKey);
+      
+      // Look for model in relative 'models' folder next to the exe (Portable mode)
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final relativePath = '$exeDir\\models\\$_modelFileName';
+      
+      if (savedPath == null || !File(savedPath).existsSync()) {
+        if (File(relativePath).existsSync()) {
+          savedPath = relativePath;
+        } else if (File(_defaultModelPath).existsSync()) {
+          savedPath = _defaultModelPath;
+        }
+      }
+
+      if (savedPath != null && File(savedPath).existsSync()) {
+        print('Auto-loading model from: $savedPath');
+        await installFromLocalFile(savedPath);
+        if (state.status == ModelStatus.ready) return true;
+      }
+
+      // 3. Fallback check for installed model file name (MediaPipe internal storage)
+      final isGemma4Installed = await FlutterGemma.isModelInstalled(_modelFileName);
+      if (isGemma4Installed) {
         state = state.copyWith(status: ModelStatus.ready, statusMessage: 'Model ready');
         return true;
       }
@@ -64,6 +91,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
       state = state.copyWith(status: ModelStatus.notInstalled, statusMessage: 'Model not installed');
       return false;
     } catch (e) {
+      print('checkIfInstalled error: $e');
       state = state.copyWith(status: ModelStatus.notInstalled);
       return false;
     }
@@ -80,7 +108,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
       await FlutterGemma.installModel(
         modelType: ModelType.gemma4,
       ).fromNetwork(
-        _modelUrl,
+        _huggingFaceBaseUrl,
         token: huggingFaceToken,
       ).withProgress((progress) {
         // progress is an int representing percentage (0-100)
@@ -136,6 +164,10 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         fileType: fileType,
       ).fromFile(filePath).install();
       
+      // Save this path as the last used one
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastUsedModelKey, filePath);
+      
       print('Installation successful');
 
       state = state.copyWith(
@@ -144,6 +176,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         downloadProgress: 1.0,
       );
     } catch (e) {
+      print('installFromLocalFile error: $e');
       state = state.copyWith(
         status: ModelStatus.error,
         errorMessage: e.toString(),

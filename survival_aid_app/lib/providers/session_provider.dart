@@ -254,19 +254,29 @@ class SessionNotifier extends Notifier<SessionState> {
     final llm = ref.read(llmServiceProvider);
 
     final situationContext = compactionService.getPromptContext();
-    final recentHistory = compactionService.getRecentMessages(count: 8);
-    final knowledgeBase = state.currentNode != null
-        ? protocolService.getDocumentationForNode(state.currentNode!.id)
-        : protocolService.getDocumentationForNode('start');
+    final recentHistory = compactionService.getRecentMessages(count: 10);
+    
+    // Map incident types to relevant documentation nodes if current node is 'start'
+    String effectiveNodeId = state.currentNode?.id ?? 'start';
+    if (effectiveNodeId == 'start') {
+      final incident = compactionService.context.incidentType.toLowerCase();
+      if (incident.contains('bleed') || incident.contains('cut')) effectiveNodeId = 'bleeding_protocol';
+      else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow')) effectiveNodeId = 'injury_assessment';
+      else if (incident.contains('heart') || incident.contains('chest')) effectiveNodeId = 'chest_pain_protocol';
+      else if (incident.contains('chok')) effectiveNodeId = 'choking_protocol';
+      else if (incident.contains('seiz')) effectiveNodeId = 'seizure_protocol';
+      else if (incident.contains('frost') || incident.contains('freeze')) effectiveNodeId = 'frostbite_protocol';
+      else if (incident.contains('lost')) effectiveNodeId = 'lost_protocol';
+    }
+
+    final knowledgeBase = protocolService.getDocumentationForNode(effectiveNodeId);
 
     // 3. Stream Gemma's response token by token
     final responseBuffer = StringBuffer();
 
     await for (final token in llm.generateResponseStream(
       userMessage: userText,
-      situationContext: situationContext.isEmpty
-          ? 'No prior context — this is the first message.'
-          : situationContext,
+      situationContext: situationContext,
       knowledgeBase: knowledgeBase.isNotEmpty
           ? knowledgeBase
           : 'General wilderness emergency. Apply Red Cross first aid principles.',
@@ -311,9 +321,9 @@ class SessionNotifier extends Notifier<SessionState> {
       state = state.copyWith(situationSummary: parts.join(' · '));
     }
 
-    // 7. Trigger async compaction after every 4 exchanges
+    // 7. Trigger async compaction after every 2 exchanges
     final msgCount = state.chatHistory.where((m) => m.author == MessageAuthor.user).length;
-    if (msgCount % 4 == 0) {
+    if (msgCount > 0 && msgCount % 2 == 0) {
       compactionService.compact((prompt) => llm.generateOnce(prompt));
     }
     

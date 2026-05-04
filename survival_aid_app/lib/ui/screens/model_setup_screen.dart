@@ -248,6 +248,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                 width: double.infinity,
                 height: 48,
                 child: TextButton(
+                  key: const ValueKey('skip_model_setup'),
                   onPressed: _goToHome,
                   child: const Text(
                     'Skip for now (use offline logic)',

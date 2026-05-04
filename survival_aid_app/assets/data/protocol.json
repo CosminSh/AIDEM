@@ -35,8 +35,13 @@
         {"label": "Burn", "target": "burn_protocol"},
         {"label": "Head Injury", "target": "concussion_protocol"},
         {"label": "Cold / Hypothermia", "target": "hypothermia_protocol"},
+        {"label": "Frostbite", "target": "frostbite_protocol"},
         {"label": "Spinal Injury Suspected", "target": "spinal_protocol"},
-        {"label": "Minor Wound", "target": "clean_wound"}
+        {"label": "Shock (Pale, Weak, Cool)", "target": "shock_protocol"},
+        {"label": "Chest Pain / Heart Attack", "target": "chest_pain_protocol"},
+        {"label": "Choking", "target": "choking_protocol"},
+        {"label": "Seizure", "target": "seizure_protocol"},
+        {"label": "Minor Wound / Blister", "target": "clean_wound"}
       ]
     },
     "anaphylaxis_protocol": {
@@ -329,6 +334,52 @@
       "gps_context": false,
       "branches": [
         {"label": "End Session", "target": "end"}
+      ]
+    },
+    "shock_protocol": {
+      "id": "shock_protocol",
+      "question": "Lay the person flat. Elevate feet 6-12 inches. Cover with a blanket to maintain body heat. Do not give food or drink. Reassure them.",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "frostbite_protocol": {
+      "id": "frostbite_protocol",
+      "question": "Move to a warm area. Remove wet clothing. Do not rub the area. Use lukewarm water (not hot) to rewarm. Cover with dry gauze.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "choking_protocol": {
+      "id": "choking_protocol",
+      "question": "Can they speak or cough? If not, perform 5 back blows followed by 5 abdominal thrusts (Heimlich). Repeat until object is out or they become unconscious.",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Object cleared", "target": "triage_selection"},
+        {"label": "Unconscious", "target": "rescue_call"}
+      ]
+    },
+    "chest_pain_protocol": {
+      "id": "chest_pain_protocol",
+      "question": "Sit them down and keep them calm. If they have aspirin and aren't allergic, have them chew 1 adult or 2-4 baby aspirins. Call rescue immediately.",
+      "source": "AHA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "seizure_protocol": {
+      "id": "seizure_protocol",
+      "question": "Do not restrain them. Clear the area of sharp objects. Place something soft under their head. Note the time. Do not put anything in their mouth.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Seizure ended", "target": "triage_selection"}
       ]
     }
   }
