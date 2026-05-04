@@ -1,12 +1,33 @@
 import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'context_compaction_service.dart';
 
-class LlmService {
-  InferenceModel? _model;
-  bool _isModelLoaded = false;
+enum LlmStatus { loading, ready, mock, error }
 
-  bool get isModelLoaded => _isModelLoaded;
+class LlmState {
+  final LlmStatus status;
+  final String? errorMessage;
+
+  const LlmState({required this.status, this.errorMessage});
+
+  LlmState copyWith({LlmStatus? status, String? errorMessage}) {
+    return LlmState(
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class LlmService extends Notifier<LlmState> {
+  InferenceModel? _model;
+
+  @override
+  LlmState build() {
+    return const LlmState(status: LlmStatus.loading);
+  }
+
+  bool get isModelLoaded => state.status == LlmStatus.ready;
 
   String _buildSystemPrompt({
     required String situationContext,
@@ -43,25 +64,42 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
   }
 
   Future<bool> init() async {
-    if (_isModelLoaded && _model != null) return true;
+    if (state.status == LlmStatus.ready && _model != null) return true;
 
+    state = state.copyWith(status: LlmStatus.loading);
+    print('LLM: Initializing Gemma model...');
+    
     try {
       try {
+        print('LLM: Attempting GPU initialization (2048 tokens)...');
         _model = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
         );
+        print('LLM: GPU initialization successful.');
       } catch (gpuError) {
-        _model = await FlutterGemma.getActiveModel(
-          maxTokens: 1024,
-          preferredBackend: PreferredBackend.cpu,
-        );
+        print('LLM: GPU failed ($gpuError). Attempting CPU (1024 tokens)...');
+        try {
+          _model = await FlutterGemma.getActiveModel(
+            maxTokens: 1024,
+            preferredBackend: PreferredBackend.cpu,
+          );
+          print('LLM: CPU initialization successful.');
+        } catch (cpuError) {
+          print('LLM: CPU (1024) failed ($cpuError). Attempting Conservative CPU (512 tokens)...');
+          _model = await FlutterGemma.getActiveModel(
+            maxTokens: 512,
+            preferredBackend: PreferredBackend.cpu,
+          );
+          print('LLM: Conservative CPU initialization successful.');
+        }
       }
 
-      _isModelLoaded = true;
+      state = state.copyWith(status: LlmStatus.ready);
       return true;
     } catch (e) {
-      _isModelLoaded = false;
+      print('LLM: Final initialization error: $e');
+      state = state.copyWith(status: LlmStatus.mock, errorMessage: e.toString());
       return false;
     }
   }
@@ -72,11 +110,11 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
     required String knowledgeBase,
     required List<String> recentHistory,
   }) async* {
-    if (!_isModelLoaded || _model == null) {
+    if (state.status != LlmStatus.ready || _model == null) {
       await init();
     }
 
-    if (!_isModelLoaded || _model == null) {
+    if (state.status != LlmStatus.ready || _model == null) {
       final response = AdaptiveMock.respond(
         userMessage: userMessage,
         situationContext: situationContext,
@@ -139,7 +177,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
   }
 
   Future<String> generateOnce(String prompt) async {
-    if (!_isModelLoaded || _model == null) {
+    if (state.status != LlmStatus.ready || _model == null) {
       return '';
     }
 
@@ -161,7 +199,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
   Future<void> close() async {
     await _model?.close();
     _model = null;
-    _isModelLoaded = false;
+    state = state.copyWith(status: LlmStatus.loading);
   }
 }
 

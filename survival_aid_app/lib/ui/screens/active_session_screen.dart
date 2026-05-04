@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:survival_aid_app/services/llm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -74,8 +75,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file:',
       fileName: 'survival_aid_export.md',
-      type: FileType.custom,
-      allowedExtensions: ['md'],
+      type: FileType.any,
     );
 
     if (outputFile != null) {
@@ -126,22 +126,90 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           ],
         ),
         actions: [
+          // LLM Status Indicator
+          Consumer(
+            builder: (context, ref, child) {
+              final llmState = ref.watch(llmServiceProvider);
+              Color statusColor;
+              String statusText;
+              
+              switch (llmState.status) {
+                case LlmStatus.ready:
+                  statusColor = AppColors.success;
+                  statusText = 'AI READY';
+                  break;
+                case LlmStatus.loading:
+                  statusColor = AppColors.warning;
+                  statusText = 'LOADING AI...';
+                  break;
+                case LlmStatus.mock:
+                  statusColor = AppColors.warning;
+                  statusText = 'MOCK MODE';
+                  break;
+                case LlmStatus.error:
+                  statusColor = AppColors.accentRed;
+                  statusText = 'AI ERROR';
+                  break;
+                default:
+                  statusColor = AppColors.warning;
+                  statusText = 'UNKNOWN';
+                  break;
+              }
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (llmState.errorMessage != null &&
+                          (llmState.status == LlmStatus.mock || llmState.status == LlmStatus.error)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('AI Error Details: ${llmState.errorMessage}'),
+                            backgroundColor: AppColors.accentRed,
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withOpacity(0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(radius: 3, backgroundColor: statusColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.download_rounded),
             tooltip: 'Export Chat',
             onPressed: _exportChat,
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: TextButton.icon(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
               onPressed: () {},
-              icon: const Icon(Icons.my_location, size: 18),
-              label: const Text('MY LOCATION'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.accentBlue,
-                textStyle:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
+              icon: const Icon(Icons.my_location, size: 20, color: AppColors.accentBlue),
+              tooltip: 'My Location',
             ),
           ),
         ],

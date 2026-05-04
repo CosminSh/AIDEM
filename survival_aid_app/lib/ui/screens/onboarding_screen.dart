@@ -9,10 +9,11 @@ class OnboardingDisclaimerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.gavel_rounded, color: AppColors.accentRed, size: 64),
               const SizedBox(height: 32),
@@ -26,29 +27,21 @@ class OnboardingDisclaimerScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildPoint(
-                        "Not a Substitute for Medical Care",
-                        "This app is a decision support tool based on established protocols. It does NOT replace professional medical treatment.",
-                      ),
-                      _buildPoint(
-                        "Call 112/911 First",
-                        "Always attempt to contact emergency services before relying solely on this application.",
-                      ),
-                      _buildPoint(
-                        "Protocol Based",
-                        "Guidance is derived from Red Cross, WHO, and NASAR wilderness first aid standards.",
-                      ),
-                      _buildPoint(
-                        "Privacy",
-                        "All data and AI processing stay 100% offline on your device.",
-                      ),
-                    ],
-                  ),
-                ),
+              _buildPoint(
+                "Not a Substitute for Medical Care",
+                "This app is a decision support tool based on established protocols. It does NOT replace professional medical treatment.",
+              ),
+              _buildPoint(
+                "Call 112/911 First",
+                "Always attempt to contact emergency services before relying solely on this application.",
+              ),
+              _buildPoint(
+                "Protocol Based",
+                "Guidance is derived from Red Cross, WHO, and NASAR wilderness first aid standards.",
+              ),
+              _buildPoint(
+                "Privacy",
+                "All data and AI processing stay 100% offline on your device.",
               ),
               const SizedBox(height: 32),
               ElevatedButton(

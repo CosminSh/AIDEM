@@ -76,7 +76,7 @@ class SessionNotifier extends Notifier<SessionState> {
       await protocolService.loadProtocol();
 
       // Also initialize the LLM
-      final llm = ref.read(llmServiceProvider);
+      final llm = ref.read(llmServiceProvider.notifier);
       await llm.init();
 
       await refreshHistory();
@@ -110,7 +110,7 @@ class SessionNotifier extends Notifier<SessionState> {
   }
 
   Future<void> startEmergency() async {
-    await ref.read(llmServiceProvider).init();
+    await ref.read(llmServiceProvider.notifier).init();
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     await ref.read(contextCompactionServiceProvider).init(newId);
     
@@ -251,7 +251,7 @@ class SessionNotifier extends Notifier<SessionState> {
     // 2. Build context for Gemma
     final compactionService = ref.read(contextCompactionServiceProvider);
     final protocolService = ref.read(protocolServiceProvider);
-    final llm = ref.read(llmServiceProvider);
+    final llm = ref.read(llmServiceProvider.notifier);
 
     final situationContext = compactionService.getPromptContext();
     final recentHistory = compactionService.getRecentMessages(count: 10);

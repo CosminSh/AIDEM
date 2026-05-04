@@ -29,7 +29,7 @@ final sessionLogServiceProvider = Provider<SessionLogService>((ref) {
   return service;
 });
 
-final llmServiceProvider = Provider<LlmService>((ref) {
+final llmServiceProvider = NotifierProvider<LlmService, LlmState>(() {
   return LlmService();
 });
 

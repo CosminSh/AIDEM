@@ -29,7 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       } else {
         // Model is ready — initialize LLM service
-        final llm = ref.read(llmServiceProvider);
+        final llm = ref.read(llmServiceProvider.notifier);
         await llm.init();
       }
     });
@@ -43,23 +43,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Stack(
         children: [
           // GPS Status Indicator (Top Right)
-          const Positioned(
-            top: 60,
-            right: 24,
-            child: Row(
-              children: [
-                CircleAvatar(radius: 4, backgroundColor: AppColors.success),
-                SizedBox(width: 8),
-                Text(
-                  "GPS READY",
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Row(
+                  children: [
+                    const CircleAvatar(radius: 4, backgroundColor: AppColors.success),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "GPS READY",
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           

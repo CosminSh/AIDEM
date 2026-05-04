@@ -136,10 +136,13 @@ class ModelSetupService extends Notifier<ModelSetupState> {
   Future<void> installFromLocalFile(String filePath) async {
     state = state.copyWith(
       status: ModelStatus.downloading,
-      statusMessage: 'Installing from local file...',
+      statusMessage: 'Copying model to internal storage (this may take a minute)...',
     );
 
     try {
+      if (!await File(filePath).exists()) {
+        throw Exception('File not found at: $filePath');
+      }
       final pathLower = filePath.toLowerCase();
       
       // Strict validation for supported formats
@@ -158,17 +161,21 @@ class ModelSetupService extends Notifier<ModelSetupState> {
           ? ModelFileType.binary
           : (isLiteRT ? ModelFileType.litertlm : ModelFileType.task);
 
-      print('Installing model ($fileType) from: $filePath');
+      print('LLM Setup: Starting installation of ($fileType) from: $filePath');
+      print('LLM Setup: This may take a minute as the model is copied to internal storage...');
+      
       await FlutterGemma.installModel(
         modelType: ModelType.gemma4,
         fileType: fileType,
       ).fromFile(filePath).install();
       
+      print('LLM Setup: Installation call completed.');
+      
       // Save this path as the last used one
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastUsedModelKey, filePath);
       
-      print('Installation successful');
+      print('LLM Setup: SharedPreferences updated.');
 
       state = state.copyWith(
         status: ModelStatus.ready,
@@ -176,7 +183,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         downloadProgress: 1.0,
       );
     } catch (e) {
-      print('installFromLocalFile error: $e');
+      print('LLM Setup: installFromLocalFile error: $e');
       state = state.copyWith(
         status: ModelStatus.error,
         errorMessage: e.toString(),
