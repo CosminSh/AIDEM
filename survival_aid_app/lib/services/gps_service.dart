@@ -30,7 +30,7 @@ class GpsCoordinates {
     double minutesFloat = (absDecimal - degrees) * 60;
     int minutes = minutesFloat.floor();
     double seconds = (minutesFloat - minutes) * 60;
-    return "${degrees}°${minutes}'${seconds.toStringAsFixed(1)}\"$direction";
+    return "$degrees°$minutes'${seconds.toStringAsFixed(1)}\"$direction";
   }
 }
 

@@ -112,7 +112,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         token: huggingFaceToken,
       ).withProgress((progress) {
         // progress is an int representing percentage (0-100)
-        final p = (progress as int);
+        final p = progress;
         state = state.copyWith(
           downloadProgress: p / 100.0,
           statusMessage: 'Downloading Gemma ($p%)...',

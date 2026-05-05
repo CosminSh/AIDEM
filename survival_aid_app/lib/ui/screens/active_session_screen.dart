@@ -290,7 +290,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   ),
                   child: AnimatedBuilder(
                     animation: _typingDotController,
-                    builder: (_, __) {
+                    builder: (_, _) {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(3, (i) {

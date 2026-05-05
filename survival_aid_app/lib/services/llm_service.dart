@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
-import 'context_compaction_service.dart';
 
 enum LlmStatus { loading, ready, mock, error }
 

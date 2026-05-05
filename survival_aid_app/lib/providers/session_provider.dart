@@ -260,13 +260,23 @@ class SessionNotifier extends Notifier<SessionState> {
     String effectiveNodeId = state.currentNode?.id ?? 'start';
     if (effectiveNodeId == 'start') {
       final incident = compactionService.context.incidentType.toLowerCase();
-      if (incident.contains('bleed') || incident.contains('cut')) effectiveNodeId = 'bleeding_protocol';
-      else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow')) effectiveNodeId = 'injury_assessment';
+      if (incident.contains('bleed') || incident.contains('cut')) {
+        effectiveNodeId = 'bleeding_protocol';
+      } else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow')) effectiveNodeId = 'injury_assessment';
       else if (incident.contains('heart') || incident.contains('chest')) effectiveNodeId = 'chest_pain_protocol';
       else if (incident.contains('chok')) effectiveNodeId = 'choking_protocol';
       else if (incident.contains('seiz')) effectiveNodeId = 'seizure_protocol';
       else if (incident.contains('frost') || incident.contains('freeze')) effectiveNodeId = 'frostbite_protocol';
       else if (incident.contains('lost')) effectiveNodeId = 'lost_protocol';
+      else if (incident.contains('earthquake') || incident.contains('shaking')) effectiveNodeId = 'earthquake_protocol';
+      else if (incident.contains('flood') || incident.contains('water level')) effectiveNodeId = 'flood_protocol';
+      else if (incident.contains('wildfire') || incident.contains('fire')) effectiveNodeId = 'wildfire_protocol';
+      else if (incident.contains('storm') || incident.contains('tornado') || incident.contains('hurricane')) effectiveNodeId = 'storm_protocol';
+      else if (incident.contains('water') || incident.contains('drink') || incident.contains('thirst')) effectiveNodeId = 'water_skills';
+      else if (incident.contains('food') || incident.contains('hungry') || incident.contains('eat')) effectiveNodeId = 'food_skills';
+      else if (incident.contains('shelter') || incident.contains('sleep') || incident.contains('cold')) effectiveNodeId = 'shelter_skills';
+      else if (incident.contains('navigat') || incident.contains('where am i') || incident.contains('direction')) effectiveNodeId = 'nav_skills';
+      else if (incident.contains('poison')) effectiveNodeId = 'poisoning_protocol';
     }
 
     final knowledgeBase = protocolService.getDocumentationForNode(effectiveNodeId);

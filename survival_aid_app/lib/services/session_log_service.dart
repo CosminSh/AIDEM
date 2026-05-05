@@ -1,7 +1,6 @@
 import 'dart:async';
 // import 'package:sqflite/sqflite.dart';
 // import 'package:path/path.dart';
-import '../models/protocol.dart';
 import 'gps_service.dart';
 
 class SessionLogService {
