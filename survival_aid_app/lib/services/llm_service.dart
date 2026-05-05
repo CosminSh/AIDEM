@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
@@ -52,11 +54,12 @@ STRICT STYLE RULES (MANDATORY):
 4. DETAIL WHEN SAFE: For TIER 2 and 3, give detailed, practical instructions. Use available resources (cloth, sticks, tape).
 5. ONE QUESTION MAXIMUM: Ask only one question per response.
 6. NO VERBATIM REPEATS: Do not repeat your previous sentence. Rephrase or add detail.
+7. MULTIMODAL AWARENESS: You can see images shared by the user. If an image is provided, analyze it (e.g. identify injuries, hazards, or landmarks) and provide guidance based on what you see.
 
 EXAMPLE CONVERSATION:
-User: I fell and hit my head.
-AI: I'm sorry. Check for bleeding and ensure the scene is safe. Are you dizzy?
-User: No bleeding, just a bit dizzy.
+User: [IMAGE ATTACHED] I fell and hit my head.
+AI: I see the photo you shared. Check for bleeding and ensure the scene is safe. Can you describe any swelling or cuts you see in the photo?
+User: No bleeding, just a big bump.
 AI: Stay still. Do not move your neck. Are you alone?
 User: Yes, alone.
 AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a whistle or 3 flashes of light. Do you have a phone signal?''';
@@ -108,6 +111,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
     required String situationContext,
     required String knowledgeBase,
     required List<String> recentHistory,
+    String? imagePath,
   }) async* {
     if (state.status != LlmStatus.ready || _model == null) {
       await init();
@@ -115,7 +119,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
 
     if (state.status != LlmStatus.ready || _model == null) {
       final response = AdaptiveMock.respond(
-        userMessage: userMessage,
+        userMessage: imagePath != null ? "[IMAGE ATTACHED] $userMessage" : userMessage,
         situationContext: situationContext,
         historyCount: recentHistory.length,
       );
@@ -131,6 +135,16 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
         situationContext: situationContext,
         knowledgeBase: knowledgeBase,
       );
+
+      // Prepare image data if available
+      Uint8List? imageBytes;
+      if (imagePath != null) {
+        try {
+          imageBytes = await File(imagePath).readAsBytes();
+        } catch (e) {
+          print('LLM: Error reading image bytes: $e');
+        }
+      }
 
       final chat = await _model!.createChat(
         systemInstruction: systemInstruction,
@@ -157,10 +171,11 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
         }
       }
 
-      // Add current user message with a context reminder
+      // Add current user message
       await chat.addQueryChunk(Message.text(
-        text: "User says: $userMessage\n\n(Reminder: Do not re-ask facts already in confirmed facts or history. If they are stable, guide them to safety/home. If they are critical, stay put.)",
+        text: userMessage,
         isUser: true,
+        image: imageBytes,
       ));
 
       await for (final response in chat.generateChatResponseAsync()) {

@@ -45,23 +45,27 @@ enum MessageAuthor { ai, user }
 
 class ChatMessage {
   final String text;
+  final String? imagePath;
   final MessageAuthor author;
   final DateTime timestamp;
 
   ChatMessage({
     required this.text,
+    this.imagePath,
     required this.author,
     required this.timestamp,
   });
 
   Map<String, dynamic> toJson() => {
         'text': text,
+        'imagePath': imagePath,
         'author': author.index,
         'timestamp': timestamp.toIso8601String(),
       };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         text: json['text'] as String,
+        imagePath: json['imagePath'] as String?,
         author: MessageAuthor.values[json['author'] as int],
         timestamp: DateTime.parse(json['timestamp'] as String),
       );

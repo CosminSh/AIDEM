@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/protocol.dart';
@@ -36,13 +37,44 @@ class ChatBubble extends StatelessWidget {
               ),
             ],
           ),
-          child: SelectableText(
-            message.text,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              height: 1.4,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.imagePath != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      File(message.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.broken_image, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Image unavailable', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              SelectableText(
+                message.text,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ),

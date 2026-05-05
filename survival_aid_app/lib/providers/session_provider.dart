@@ -231,13 +231,14 @@ class SessionNotifier extends Notifier<SessionState> {
   }
 
   /// The main pipeline: user types → context built → Gemma streams response → context compacted.
-  Future<void> handleFreeformInput(String userText) async {
-    if (userText.trim().isEmpty) return;
+  Future<void> handleFreeformInput(String userText, {String? imagePath}) async {
+    if (userText.trim().isEmpty && imagePath == null) return;
 
     // 1. Immediately show user message
     final List<ChatMessage> withUser = List<ChatMessage>.from(state.chatHistory)
       ..add(ChatMessage(
         text: userText,
+        imagePath: imagePath,
         author: MessageAuthor.user,
         timestamp: DateTime.now(),
       ));
@@ -291,6 +292,7 @@ class SessionNotifier extends Notifier<SessionState> {
           ? knowledgeBase
           : 'General wilderness emergency. Apply Red Cross first aid principles.',
       recentHistory: recentHistory,
+      imagePath: imagePath,
     )) {
       responseBuffer.write(token);
       // Update streaming buffer in state so UI can show live typing

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:survival_aid_app/services/llm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   bool _isSending = false;
+  String? _pendingImagePath;
+  final ImagePicker _picker = ImagePicker();
   late AnimationController _typingDotController;
 
   @override
@@ -31,6 +34,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat();
+
+    Future.microtask(() async {
+      await ref.read(speechServiceProvider.notifier).init();
+    });
   }
 
   @override
@@ -56,17 +63,48 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    if ((text.isEmpty && _pendingImagePath == null) || _isSending) return;
 
-    setState(() => _isSending = true);
+    final imagePath = _pendingImagePath;
+    
+    setState(() {
+      _isSending = true;
+      _pendingImagePath = null;
+    });
+    
     _textController.clear();
     _focusNode.requestFocus();
 
-    await ref.read(sessionProvider.notifier).handleFreeformInput(text);
+    await ref.read(sessionProvider.notifier).handleFreeformInput(text, imagePath: imagePath);
 
     setState(() => _isSending = false);
     _scrollToBottom();
     _focusNode.requestFocus();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _pendingImagePath = image.path;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
+
+  void _clearPendingImage() {
+    setState(() {
+      _pendingImagePath = null;
+    });
   }
 
   Future<void> _exportChat() async {
@@ -87,6 +125,27 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           SnackBar(content: Text('Chat exported to $outputFile')),
         );
       }
+    }
+  }
+
+  Future<void> _toggleDictation() async {
+    final speech = ref.read(speechServiceProvider.notifier);
+    final speechState = ref.read(speechServiceProvider);
+
+    if (speechState.isListening) {
+      await speech.stopListening();
+    } else {
+      await speech.startListening(
+        onResult: (words) {
+          setState(() {
+            _textController.text = words;
+            // Move cursor to end
+            _textController.selection = TextSelection.fromPosition(
+              TextPosition(offset: _textController.text.length),
+            );
+          });
+        },
+      );
     }
   }
 
@@ -331,6 +390,39 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               },
             ),
 
+          // Image Preview Area
+          if (_pendingImagePath != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      File(_pendingImagePath!),
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: -8,
+                    right: -8,
+                    child: IconButton(
+                      icon: const Icon(Icons.cancel, color: AppColors.accentRed, size: 20),
+                      onPressed: _clearPendingImage,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Free-form Gemma input
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -365,12 +457,36 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       maxLines: null,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.mic, color: AppColors.textSecondary),
-                    onPressed: session.isLlmTyping ? null : () {},
+                    icon: const Icon(Icons.camera_alt_rounded, color: AppColors.textSecondary, size: 20),
+                    onPressed: session.isLlmTyping ? null : () => _pickImage(ImageSource.camera),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.image_rounded, color: AppColors.textSecondary, size: 20),
+                    onPressed: session.isLlmTyping ? null : () => _pickImage(ImageSource.gallery),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final speechState = ref.watch(speechServiceProvider);
+                      final isListening = speechState.isListening;
+                      
+                      return IconButton(
+                        icon: Icon(
+                          isListening ? Icons.graphic_eq_rounded : Icons.mic,
+                          color: isListening ? AppColors.accentRed : AppColors.textSecondary,
+                        ),
+                        onPressed: session.isLlmTyping ? null : _toggleDictation,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                   AnimatedContainer(
