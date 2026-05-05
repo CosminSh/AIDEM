@@ -214,8 +214,16 @@ class SessionNotifier extends Notifier<SessionState> {
 
       // Optionally: silently update context compaction with the selection
       ref.read(contextCompactionServiceProvider).addExchange(
-        userMessage: branch.label,
-        aiResponse: nextNode.question,
+        userMessage: ChatMessage(
+          text: branch.label,
+          author: MessageAuthor.user,
+          timestamp: DateTime.now(),
+        ),
+        aiResponse: ChatMessage(
+          text: nextNode.question,
+          author: MessageAuthor.ai,
+          timestamp: DateTime.now(),
+        ),
       );
     } else if (branch.target == 'end') {
       state = state.copyWith(isEmergencyActive: false);
@@ -286,7 +294,7 @@ class SessionNotifier extends Notifier<SessionState> {
     final responseBuffer = StringBuffer();
 
     await for (final token in llm.generateResponseStream(
-      userMessage: userText,
+      userMessage: (userText.isEmpty && imagePath != null) ? "Analyze this image." : userText,
       situationContext: situationContext,
       knowledgeBase: knowledgeBase.isNotEmpty
           ? knowledgeBase
@@ -314,10 +322,16 @@ class SessionNotifier extends Notifier<SessionState> {
       streamingBuffer: '',
     );
 
-    // 5. Update compaction service (background)
+    // 4. Update compaction service and persist
+    final aiMessage = ChatMessage(
+      text: responseBuffer.toString(),
+      author: MessageAuthor.ai,
+      timestamp: DateTime.now(),
+    );
+
     await compactionService.addExchange(
-      userMessage: userText,
-      aiResponse: fullResponse,
+      userMessage: withUser.last,
+      aiResponse: aiMessage,
     );
 
     // 6. Update situation summary display

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import '../models/protocol.dart';
 
 enum LlmStatus { loading, ready, mock, error }
 
@@ -54,7 +55,7 @@ STRICT STYLE RULES (MANDATORY):
 4. DETAIL WHEN SAFE: For TIER 2 and 3, give detailed, practical instructions. Use available resources (cloth, sticks, tape).
 5. ONE QUESTION MAXIMUM: Ask only one question per response.
 6. NO VERBATIM REPEATS: Do not repeat your previous sentence. Rephrase or add detail.
-7. MULTIMODAL AWARENESS: You can see images shared by the user. If an image is provided, analyze it (e.g. identify injuries, hazards, or landmarks) and provide guidance based on what you see.
+7. MULTIMODAL AWARENESS (CRITICAL): You have vision. ALWAYS analyze any shared images FIRST. Describe exactly what you see in the photo (e.g., "I see a deep cut on your finger with some blistering") before giving any medical advice. If an image is provided, do not ask the user to describe it unless the photo is blurry.
 
 EXAMPLE CONVERSATION:
 User: [IMAGE ATTACHED] I fell and hit my head.
@@ -77,6 +78,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
         _model = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
+          supportImage: true,
         );
         print('LLM: GPU initialization successful.');
       } catch (gpuError) {
@@ -85,6 +87,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
           _model = await FlutterGemma.getActiveModel(
             maxTokens: 1024,
             preferredBackend: PreferredBackend.cpu,
+            supportImage: true,
           );
           print('LLM: CPU initialization successful.');
         } catch (cpuError) {
@@ -92,6 +95,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
           _model = await FlutterGemma.getActiveModel(
             maxTokens: 512,
             preferredBackend: PreferredBackend.cpu,
+            supportImage: true,
           );
           print('LLM: Conservative CPU initialization successful.');
         }
@@ -110,7 +114,7 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
     required String userMessage,
     required String situationContext,
     required String knowledgeBase,
-    required List<String> recentHistory,
+    required List<ChatMessage> recentHistory,
     String? imagePath,
   }) async* {
     if (state.status != LlmStatus.ready || _model == null) {
@@ -148,23 +152,45 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
 
       final chat = await _model!.createChat(
         systemInstruction: systemInstruction,
+        supportImage: true,
       );
 
-      // Add history with strict role alternation (essential for 2b stability)
+      // Add history with strict role alternation
       bool lastWasUser = false;
       for (int i = 0; i < recentHistory.length; i++) {
         final msg = recentHistory[i];
-        if (msg.startsWith('User: ')) {
+        final isUser = msg.author == MessageAuthor.user;
+        
+        if (isUser) {
           if (lastWasUser) continue;
-          await chat.addQueryChunk(Message.text(
-            text: msg.substring(6),
-            isUser: true,
-          ));
+          
+          Uint8List? histImageBytes;
+          if (msg.imagePath != null) {
+            try {
+              histImageBytes = await File(msg.imagePath!).readAsBytes();
+            } catch (e) {
+              print('LLM: Error reading history image: $e');
+            }
+          }
+
+          if (histImageBytes != null) {
+            await chat.addQueryChunk(Message.withImage(
+              text: msg.text,
+              isUser: true,
+              imageBytes: histImageBytes,
+            ));
+          } else {
+            await chat.addQueryChunk(Message.text(
+              text: msg.text,
+              isUser: true,
+            ));
+          }
           lastWasUser = true;
-        } else if (msg.startsWith('AI: ')) {
+        } else {
+          // AI Response
           if (!lastWasUser && i > 0) continue;
           await chat.addQueryChunk(Message.text(
-            text: msg.substring(4),
+            text: msg.text,
             isUser: false,
           ));
           lastWasUser = false;
@@ -172,11 +198,18 @@ AI: Since you are alone and dizzy, stay put. Signal for help using 3 blasts of a
       }
 
       // Add current user message
-      await chat.addQueryChunk(Message.text(
-        text: userMessage,
-        isUser: true,
-        image: imageBytes,
-      ));
+      if (imageBytes != null) {
+        await chat.addQueryChunk(Message.withImage(
+          text: userMessage,
+          isUser: true,
+          imageBytes: imageBytes,
+        ));
+      } else {
+        await chat.addQueryChunk(Message.text(
+          text: userMessage,
+          isUser: true,
+        ));
+      }
 
       await for (final response in chat.generateChatResponseAsync()) {
         if (response is TextResponse && response.token.isNotEmpty) {

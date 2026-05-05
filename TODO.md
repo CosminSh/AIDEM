@@ -17,9 +17,9 @@
   - [x] Add `google_fonts` (Inter typeface)
   - [x] Declare asset folders: `assets/data/`, `assets/models/`, `assets/images/`
 - [x] Add `G:\Antigravity Projects\Survival AId\Assets\Models\gemma-2b-it-gpu-int4.bin` to assets
-- [ ] Run `flutter pub get` and verify no dependency conflicts
-- [ ] Confirm app launches on Android emulator (`flutter run`)
-- [ ] Confirm app launches on iOS simulator (if macOS available)
+- [x] Run `flutter pub get` and verify no dependency conflicts
+- [x] Confirm app launches on Android emulator (`flutter run`)
+- [x] Confirm app launches on Windows Desktop (`flutter run -d windows`)
 
 ---
 
@@ -50,13 +50,14 @@
     - [x] Shelter priority (stay vs. move decision) — source: NASAR
     - [x] Water sourcing decision — source: Red Cross WFA
     - [x] Night/weather survival decisions — source: FEMA
-  - [ ] Add `gps_context: true` flag to all relevant nodes
-  - [ ] Add `source` citation to every node
-  - [ ] Add `media` image paths where diagrams exist (tourniquet, pressure points)
-- [ ] Add SQLite session log:
-  - [ ] Create `session_log` table (session_id, node_id, timestamp, user_choice)
-  - [ ] Create `position_log` table (session_id, lat, lon, alt, timestamp)
-  - [ ] Implement `SessionLogService` using `sqflite`
+    - [x] Choking & Drowning (CPR) — source: Red Cross
+    - [x] Frostbite & Ticks — source: Red Cross / CDC
+    - [x] Vehicle Survival — source: NPS
+  - [x] Add `gps_context: true` flag to all relevant nodes
+  - [x] Add `source` citation to every node
+  - [x] Add `media` image paths where diagrams exist (tourniquet, pressure points)
+- [x] Simple JSON session persistence (implemented)
+- [x] JSON context compaction (implemented)
 
 ---
 
@@ -64,23 +65,22 @@
 - [x] Gemma 2B GPU INT4 model downloaded by user
 - [x] `LlmService` stub (stream-based inference, mock output)
 - [x] `PromptManager` (strict system persona, RAG context injection)
-- [ ] Finalize MediaPipe / LiteRT plugin integration:
-  - [ ] Add `mediapipe_genai` (or equivalent) to `pubspec.yaml`
-  - [ ] Copy model to local app documents dir at first launch
-  - [ ] Initialize `LlmInferenceEngine` with INT4 model
-  - [ ] Set `temperature: 0.1`, `maxTokens: 512`
-  - [ ] Implement streaming token-by-token response (`generateStream`)
-- [ ] Connect `LlmService` to `PromptManager`:
-  - [ ] Inject current node text + source into every prompt
-  - [ ] Implement "refuse off-topic" logic (test with unrelated questions)
-  - [ ] Handle ambiguous answers → reclassify to correct branch
-  - [ ] Voice input → Gemma → branch classification pipeline
-- [ ] Wound image triage (Gemma multimodal):
-  - [ ] Camera capture at wound assessment node
-  - [ ] Send image + text prompt to Gemma
-  - [ ] Parse response → route to correct injury sub-tree
-- [ ] LLM loading progress indicator (show % on HomeScreen)
-- [ ] Graceful degradation: if model fails to load, fall back to structured-only mode
+- [x] Finalize MediaPipe / LiteRT plugin integration:
+  - [x] Add `flutter_gemma` to `pubspec.yaml`
+  - [x] Automatic model discovery on first launch
+  - [x] Initialize `LlmInferenceEngine` with `.litertlm` model
+  - [x] Set `maxTokens: 2048`, `preferredBackend: gpu`
+  - [x] Implement streaming token-by-token response (`generateResponseStream`)
+- [x] Connect `LlmService` to `PromptManager`:
+  - [x] Inject current node text + source into every prompt
+  - [x] Implement "refuse off-topic" logic
+  - [x] Handle multimodal context history (remembers images)
+- [x] Wound image triage (Gemma multimodal):
+  - [x] Camera capture/gallery upload in chat
+  - [x] Send image bytes + text prompt to Gemma
+  - [x] Parse response and provide visual-first feedback
+- [x] LLM status indicator (Ready / Loading / Mock / Error)
+- [x] Graceful degradation: if model fails to load, fall back to structured-only mode
 
 ---
 
@@ -141,21 +141,19 @@
 ---
 
 ## 6. 📡 Hardware & Platform Features
-- [ ] **GPS (offline GNSS)**:
-  - [ ] Request `ACCESS_FINE_LOCATION` (Android) / `NSLocationWhenInUse` (iOS)
-  - [ ] Stream real-time position via `geolocator`
-  - [ ] Log position every 30 seconds to SQLite during active session
-  - [ ] Display last known position if GPS signal drops
-- [ ] **Voice Input (hands-free)**:
-  - [ ] Integrate `speech_to_text` package
-  - [ ] Show real-time transcription in chat input field
-  - [ ] Feed transcription → Gemma for intent classification
-  - [ ] Handle short/panicked/incomplete responses gracefully
-- [ ] **Camera (wound triage)**:
-  - [ ] Integrate `camera` package
-  - [ ] Capture still image at wound assessment node
-  - [ ] Pass image to Gemma multimodal pipeline
-  - [ ] Display Gemma's classification result before advancing tree
+- [x] **GPS (offline GNSS)**:
+  - [x] Request permissions for location access
+  - [x] Stream real-time position via `geolocator`
+  - [x] Display coordinates in DMS format
+  - [x] Share location to AI context with one tap
+- [x] **Voice Input (hands-free)**:
+  - [x] Integrate `speech_to_text` package
+  - [x] Pulse UI feedback during recording
+  - [x] Transcription automatically populates chat input
+- [x] **Camera (wound triage)**:
+  - [x] Integrate `image_picker` (Camera/Gallery)
+  - [x] Send visual data to multimodal pipeline
+  - [x] AI analysis of injuries from shared photos
 
 ---
 
@@ -204,3 +202,50 @@
 - [ ] Track recording during self-evacuation
 - [ ] Multi-person triage support
 - [ ] Long-term off-grid medical care module
+- [ ] Migrate JSON persistence to SQLite for "Black Box" flight-recorder style logging
+- [ ] Implement path-based GPS tracking (breadcrumbs)
+
+---
+
+## 🚀 10. Protocol Expansion Phase (Work in Progress)
+
+### 🏥 Medical / Injury Gaps
+- [x] Burns protocol (Thermal, Chemical, Electrical, Sunburn)
+- [x] Eye injury (Foreign object, Chemical splash, Snow blindness)
+- [x] Dental emergency (Broken tooth, Lost filling, Abscess)
+- [x] Blister management (Pop or not, Padding, Infection watch)
+- [x] Sprain / fracture improvised splinting
+- [x] Allergic reaction (Mild) - Rashes, hives, itching
+- [x] Ear / nose bleed (Altitude/Dry conditions)
+- [x] Chest pain / heart attack (AHA protocols)
+- [x] Diabetic emergency (Hypo/Hyperglycemia)
+- [x] Seizure protocol & monitoring
+- [x] Eye washing / chemical exposure
+
+### 🔥 Survival Skills Gaps
+- [x] Fire starting (The four core priorities)
+- [x] Rope / knot skills (Improvised cordage, key knots)
+- [x] Signaling kit improvisation (Mirror/Whistle alternatives)
+- [x] Animal hazard awareness (Bear, Boar, Wolf)
+- [x] River crossing safety
+- [x] Avalanche protocol
+
+### 🗺️ Navigation Gaps
+- [x] Watch compass method
+- [x] Terrain reading (Ridges, Valleys, Drainages)
+- [x] Pace counting / distance estimation
+
+### 🌋 Disaster Gaps
+- [x] Tsunami protocol
+- [x] Nuclear / radiation protocol (Shelter, iodine, contamination)
+- [x] Civil unrest / urban emergency
+- [x] Lightning protocol
+- [x] Landslide / mudslide protocol
+
+### 🧠 Contextual / Support Nodes
+- [x] Hypothermia prevention (Layering, Caloric intake)
+- [x] Water purification methods (Detailed)
+- [x] Wound infection monitoring
+- [x] Patient monitoring checklist (Vitals, Consciousness)
+- [x] Evacuation decision tree (Wait vs. Move)
+- [x] Mental health / panic management

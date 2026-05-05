@@ -42,17 +42,24 @@ class SpeechService extends Notifier<SpeechState> {
     if (state.isAvailable) return true;
 
     try {
+      print('Speech: Initializing...');
       final available = await _speech.initialize(
         onStatus: (status) {
+          print('Speech status: $status');
           if (status == 'notListening' || status == 'done') {
             state = state.copyWith(isListening: false);
           }
         },
-        onError: (error) => state = state.copyWith(error: error.errorMsg, isListening: false),
+        onError: (error) {
+          print('Speech error: ${error.errorMsg}');
+          state = state.copyWith(error: error.errorMsg, isListening: false);
+        },
       );
       state = state.copyWith(isAvailable: available);
+      print('Speech: Available = $available');
       return available;
     } catch (e) {
+      print('Speech: Init exception: $e');
       state = state.copyWith(isAvailable: false, error: e.toString());
       return false;
     }
@@ -65,20 +72,29 @@ class SpeechService extends Notifier<SpeechState> {
     }
 
     state = state.copyWith(isListening: true, lastWords: '', clearError: true);
+    print('Speech: Starting to listen...');
 
-    await _speech.listen(
-      onResult: (result) {
-        state = state.copyWith(lastWords: result.recognizedWords);
-        onResult(result.recognizedWords);
-      },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 5),
-      cancelOnError: true,
-      partialResults: true,
-    );
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          print('Speech result: ${result.recognizedWords} (final: ${result.finalResult})');
+          state = state.copyWith(lastWords: result.recognizedWords);
+          onResult(result.recognizedWords);
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 5),
+        cancelOnError: true,
+        partialResults: true,
+        listenMode: ListenMode.dictation, // Better for Windows/Desktop
+      );
+    } catch (e) {
+      print('Speech: Listen exception: $e');
+      state = state.copyWith(isListening: false, error: e.toString());
+    }
   }
 
   Future<void> stopListening() async {
+    print('Speech: Stopping...');
     await _speech.stop();
     state = state.copyWith(isListening: false);
   }

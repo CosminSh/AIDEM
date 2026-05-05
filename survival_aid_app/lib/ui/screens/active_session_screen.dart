@@ -135,6 +135,16 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (speechState.isListening) {
       await speech.stopListening();
     } else {
+      final available = await speech.init();
+      if (!available) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Speech recognition not available. Please check your microphone and Windows settings.')),
+          );
+        }
+        return;
+      }
+
       await speech.startListening(
         onResult: (words) {
           setState(() {
@@ -146,6 +156,39 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           });
         },
       );
+      
+      // Check for immediate errors after starting
+      final newState = ref.read(speechServiceProvider);
+      if (newState.error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Dictation Error: ${newState.error}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareLocation() async {
+    try {
+      final gps = ref.read(gpsServiceProvider);
+      final location = await gps.getCurrentLocation();
+      final dms = location.toDms();
+      
+      // Add a special message to chat about location
+      await ref.read(sessionProvider.notifier).handleFreeformInput(
+        "My current GPS coordinates are: $dms",
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location shared: $dms')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error getting location: $e')),
+        );
+      }
     }
   }
 
@@ -266,9 +309,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: IconButton(
-              onPressed: () {},
+              onPressed: _shareLocation,
               icon: const Icon(Icons.my_location, size: 20, color: AppColors.accentBlue),
-              tooltip: 'My Location',
+              tooltip: 'Share My Location',
             ),
           ),
         ],

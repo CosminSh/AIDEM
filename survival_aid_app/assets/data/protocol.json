@@ -9,7 +9,9 @@
         {"label": "Someone is severely bleeding", "target": "bleeding_protocol"},
         {"label": "Someone is injured (not bleeding)", "target": "triage_selection"},
         {"label": "Natural Disaster (Earthquake, Flood, etc.)", "target": "disaster_selection"},
-        {"label": "I'm lost / need rescue", "target": "lost_protocol"},
+        {"label": "Lost / Need Rescue", "target": "lost_protocol"},
+        {"label": "Navigation / Direction", "target": "navigation_selection"},
+        {"label": "Panic / Mental Clarity", "target": "stop_protocol"},
         {"label": "Learn Survival Skills (Water, Food, Shelter)", "target": "skills_selection"},
         {"label": "Let me describe the situation...", "target": "start"}
       ]
@@ -30,11 +32,14 @@
       "source": "Red Cross / WHO",
       "gps_context": false,
       "branches": [
+        {"label": "Dental Emergency", "target": "dental_emergency_protocol"},
+        {"label": "Blister / Foot Pain", "target": "blister_management_protocol"},
         {"label": "Broken Bone", "target": "splint_protocol"},
-        {"label": "Severe Allergic Reaction", "target": "anaphylaxis_protocol"},
+        {"label": "Allergic Reaction", "target": "allergic_triage"},
         {"label": "Snake Bite", "target": "snake_bite_protocol"},
         {"label": "Heat Exhaustion / Stroke", "target": "heat_protocol"},
         {"label": "Burn", "target": "burn_protocol"},
+        {"label": "Eye Injury", "target": "eye_injury_protocol"},
         {"label": "Head Injury", "target": "concussion_protocol"},
         {"label": "Cold / Hypothermia", "target": "hypothermia_protocol"},
         {"label": "Frostbite", "target": "frostbite_protocol"},
@@ -43,9 +48,26 @@
         {"label": "Chest Pain / Heart Attack", "target": "chest_pain_protocol"},
         {"label": "Choking", "target": "choking_protocol"},
         {"label": "Seizure", "target": "seizure_protocol"},
+        {"label": "Drowning / Needs CPR", "target": "drowning_cpr_protocol"},
+        {"label": "Tick / Insect Bite", "target": "tick_removal_protocol"},
+        {"label": "Vehicle Emergency", "target": "vehicle_emergency_protocol"},
+        {"label": "Nosebleed", "target": "nosebleed_protocol"},
+        {"label": "Ear Bleeding", "target": "ear_bleed_protocol"},
+        {"label": "Chest Pain / Heart Attack", "target": "heart_attack_protocol"},
+        {"label": "Diabetic Emergency", "target": "diabetic_triage"},
+        {"label": "Seizure", "target": "seizure_protocol"},
         {"label": "Poisoning", "target": "poisoning_protocol"},
         {"label": "Water / Food Safety", "target": "water_purification_info"},
-        {"label": "Minor Wound / Blister", "target": "clean_wound"}
+        {"label": "Fire Starting", "target": "fire_starting_protocol"},
+        {"label": "Rope / Knot Skills", "target": "rope_knot_protocol"},
+        {"label": "Signaling Improvisation", "target": "signaling_improv_protocol"},
+        {"label": "Animal Hazard", "target": "animal_hazard_triage"},
+        {"label": "River Crossing", "target": "river_crossing_protocol"},
+        {"label": "Avalanche", "target": "avalanche_triage"},
+        {"label": "Navigation Help", "target": "navigation_selection"},
+        {"label": "Minor Wound / Blister", "target": "clean_wound"},
+        {"label": "Wound Infection / Pus", "target": "infection_triage"},
+        {"label": "Patient Monitoring / Vitals", "target": "vitals_triage"}
       ]
     },
     "anaphylaxis_protocol": {
@@ -161,27 +183,47 @@
     },
     "burn_protocol": {
       "id": "burn_protocol",
-      "question": "Is the burn larger than the user's palm or on the face/hands?",
+      "question": "What caused the burn?",
+      "source": "Red Cross / WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Fire, Boiling Water, or Steam", "target": "thermal_burn"},
+        {"label": "Chemical (Liquid or Powder)", "target": "chemical_burn"},
+        {"label": "Electricity / Lightning", "target": "electrical_burn"},
+        {"label": "Sun Exposure", "target": "sunburn_protocol"}
+      ]
+    },
+    "thermal_burn": {
+      "id": "thermal_burn",
+      "question": "Cool under running water for 10-20 mins. Remove jewelry. Cover loosely with clean wrap. Done?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "chemical_burn": {
+      "id": "chemical_burn",
+      "question": "If powder, brush off first. Flush with water for 20 mins. Remove contaminated clothing. Done?",
       "source": "WHO",
       "gps_context": false,
       "branches": [
-        {"label": "Yes", "target": "severe_burn"},
-        {"label": "No", "target": "minor_burn"}
+        {"label": "Done", "target": "triage_selection"}
       ]
     },
-    "severe_burn": {
-      "id": "severe_burn",
-      "question": "Do not apply ice. Cover loosely with a clean, dry dressing. Do not pop blisters. Seek rescue.",
+    "electrical_burn": {
+      "id": "electrical_burn",
+      "question": "Ensure power is off. Check breathing. Treat visible burns as thermal. All cases need medical evaluation. Done?",
       "source": "Red Cross",
-      "gps_context": false,
+      "gps_context": true,
       "branches": [
         {"label": "Done", "target": "rescue_call"}
       ]
     },
-    "minor_burn": {
-      "id": "minor_burn",
-      "question": "Cool the burn with running water (not ice) for 10-20 minutes. Cover with a loose bandage.",
-      "source": "WHO",
+    "sunburn_protocol": {
+      "id": "sunburn_protocol",
+      "question": "Get out of the sun. Cool skin with compresses. Drink extra water. Use aloe vera. Done?",
+      "source": "CDC",
       "gps_context": false,
       "branches": [
         {"label": "Done", "target": "triage_selection"}
@@ -310,16 +352,18 @@
       "source": "NASAR",
       "gps_context": true,
       "branches": [
+        {"label": "Wait vs. Move Decision", "target": "evacuation_triage"},
         {"label": "Continue", "target": "shelter_protocol"}
       ]
     },
     "splint_protocol": {
       "id": "splint_protocol",
-      "question": "Keep the injured area still. Find rigid objects (sticks, poles) and pad them. Do not try to straighten the bone. Done?",
-      "source": "Red Cross",
-      "gps_context": false,
+      "question": "Is there a pulse, sensation, and movement (CSM) distal to the injury? Splint in the position found with rigid supports and padding. Re-check CSM. Done?",
+      "source": "Red Cross / WFA",
+      "gps_context": true,
       "branches": [
-        {"label": "Done", "target": "rescue_call"}
+        {"label": "Done / Stable", "target": "rescue_call"},
+        {"label": "Open Fracture / No Pulse", "target": "rescue_call"}
       ]
     },
     "clean_wound": {
@@ -393,8 +437,13 @@
       "gps_context": false,
       "branches": [
         {"label": "Earthquake", "target": "earthquake_protocol"},
+        {"label": "Tsunami", "target": "tsunami_protocol"},
         {"label": "Flood", "target": "flood_protocol"},
         {"label": "Wildfire", "target": "wildfire_protocol"},
+        {"label": "Nuclear / Radiation", "target": "nuclear_radiation_protocol"},
+        {"label": "Civil Unrest / Urban", "target": "civil_unrest_protocol"},
+        {"label": "Lightning", "target": "lightning_survival_protocol"},
+        {"label": "Landslide / Mudslide", "target": "landslide_mudslide_protocol"},
         {"label": "Tornado / Hurricane", "target": "storm_protocol"}
       ]
     },
@@ -473,6 +522,7 @@
         {"label": "Water Procurement", "target": "water_skills"},
         {"label": "Finding Food", "target": "food_skills"},
         {"label": "Shelter Building", "target": "shelter_skills"},
+        {"label": "Hypothermia Prevention", "target": "hypothermia_prevention_triage"},
         {"label": "Navigation (No Compass)", "target": "nav_skills"}
       ]
     },
@@ -483,6 +533,7 @@
       "gps_context": false,
       "branches": [
         {"label": "Cleaning / Disinfecting", "target": "water_purification_info"},
+        {"label": "Detailed Purification Methods", "target": "water_purification_detailed"},
         {"label": "Build a Solar Still", "target": "solar_still_info"},
         {"label": "Transpiration Bag (Trees)", "target": "transpiration_info"},
         {"label": "Find Water Sources", "target": "finding_water_info"}
@@ -618,6 +669,476 @@
       "gps_context": false,
       "branches": [
         {"label": "Got it", "target": "nav_skills"}
+      ]
+    },
+    "drowning_cpr_protocol": {
+      "id": "drowning_cpr_protocol",
+      "question": "If not breathing, give 2 rescue breaths then 30 chest compressions. Continue at 100-120 bpm. Do not stop until rescuers arrive.",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done / Still trying", "target": "rescue_call"}
+      ]
+    },
+    "tick_removal_protocol": {
+      "id": "tick_removal_protocol",
+      "question": "Use tweezers to pull the tick straight out by the head. Clean with alcohol. Monitor for bullseye rash. Done?",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "vehicle_emergency_protocol": {
+      "id": "vehicle_emergency_protocol",
+      "question": "STAY WITH THE VEHICLE. It is your best shelter and easier for rescuers to spot. Signal with the hood up or bright cloth.",
+      "source": "NPS",
+      "gps_context": true,
+      "branches": [
+        {"label": "I'm safe for now", "target": "signaling_protocol"},
+        {"label": "Need rescue", "target": "rescue_call"}
+      ]
+    },
+    "eye_injury_protocol": {
+      "id": "eye_injury_protocol",
+      "question": "What is the nature of the eye injury?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Chemical Splash", "target": "chemical_eye_splash"},
+        {"label": "Object in Eye (Dust, Wood, etc.)", "target": "foreign_object_eye"},
+        {"label": "Snow Blindness / Pain from Light", "target": "snow_blindness"}
+      ]
+    },
+    "chemical_eye_splash": {
+      "id": "chemical_eye_splash",
+      "question": "Flush with water/saline for 20 mins. Tilt head so affected eye is lower. Hold lids open. Done?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "foreign_object_eye": {
+      "id": "foreign_object_eye",
+      "question": "If loose: blink or flush. If EMBEDDED: DO NOT REMOVE. Cover with a cup shield. Seek rescue. Done?",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "snow_blindness": {
+      "id": "snow_blindness",
+      "question": "Dark environment. Eyes closed. Sunglasses. Cool damp cloth. Done?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "dental_emergency_protocol": {
+      "id": "dental_emergency_protocol",
+      "question": "What is the nature of the dental emergency?",
+      "source": "Wilderness Medicine",
+      "gps_context": false,
+      "branches": [
+        {"label": "Broken or Chipped Tooth", "target": "broken_tooth"},
+        {"label": "Lost Filling or Crown", "target": "lost_filling_crown"},
+        {"label": "Tooth Infection / Abscess", "target": "dental_abscess"},
+        {"label": "Knocked-out Tooth", "target": "avulsed_tooth"}
+      ]
+    },
+    "broken_tooth": {
+      "id": "broken_tooth",
+      "question": "Cover sharp edges with wax or sugar-free gum. If nerve is exposed (severe pain), seek rescue. Done?",
+      "source": "Wilderness Medicine",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"},
+        {"label": "Minor / Safe", "target": "triage_selection"}
+      ]
+    },
+    "lost_filling_crown": {
+      "id": "lost_filling_crown",
+      "question": "Cover with dental wax or sugar-free gum. Avoid hot/cold. Done?",
+      "source": "Wilderness Medicine",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "dental_abscess": {
+      "id": "dental_abscess",
+      "question": "If you have facial swelling or fever, call for rescue immediately. Otherwise, rinse with warm salt water. Done?",
+      "source": "Wilderness Medicine",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "avulsed_tooth": {
+      "id": "avulsed_tooth",
+      "question": "Handle by crown only. Rinse gently. Reinsert into socket if possible. If not, store in milk/saliva. Seek rescue. Done?",
+      "source": "Wilderness Medicine",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "blister_management_protocol": {
+      "id": "blister_management_protocol",
+      "question": "Is the blister small and relatively painless, or large and impeding your travel?",
+      "source": "WFA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Small / Intact", "target": "blister_padding"},
+        {"label": "Large / Painful / High Friction", "target": "how_to_drain_blister"},
+        {"label": "Infected (Pus, Redness)", "target": "blister_infection_watch"}
+      ]
+    },
+    "how_to_drain_blister": {
+      "id": "how_to_drain_blister",
+      "question": "Clean area. Sterilize needle. Puncture at lowest point. Press fluid out. KEEP SKIN ROOF INTACT. Done?",
+      "source": "WFA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "blister_padding"}
+      ]
+    },
+    "blister_padding": {
+      "id": "blister_padding",
+      "question": "Use 'Donut' method with moleskin. Secure with smooth tape. Monitor daily. Done?",
+      "source": "WFA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "blister_infection_watch": {
+      "id": "blister_infection_watch",
+      "question": "If you see red streaks or have a fever, seek rescue. Otherwise, clean and apply dressing. Done?",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "allergic_triage": {
+      "id": "allergic_triage",
+      "question": "Is there difficulty breathing, or swelling of the face/tongue?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes (Anaphylaxis)", "target": "anaphylaxis_protocol"},
+        {"label": "No (Mild Reaction)", "target": "mild_allergic_reaction"}
+      ]
+    },
+    "mild_allergic_reaction": {
+      "id": "mild_allergic_reaction",
+      "question": "Wash the area. Consider oral antihistamines if alert. Monitor for 4 hours. Done?",
+      "source": "Red Cross / WMS",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "nosebleed_protocol": {
+      "id": "nosebleed_protocol",
+      "question": "Sit up, tilt head forward. Pinch nostrils for 10 mins. Done?",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"},
+        {"label": "Still Bleeding (>20 min)", "target": "rescue_call"}
+      ]
+    },
+    "ear_bleed_protocol": {
+      "id": "ear_bleed_protocol",
+      "question": "DO NOT PACK. Cover lightly with dry dressing. Seek rescue immediately. Done?",
+      "source": "Red Cross / WFA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Done", "target": "rescue_call"}
+      ]
+    },
+    "heart_attack_protocol": {
+      "id": "heart_attack_protocol",
+      "question": "Stop all activity. Sit upright. If not allergic, chew one adult aspirin (325mg). Ready for rescue?",
+      "source": "AHA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Ready / Stabilized", "target": "rescue_call"},
+        {"label": "Unconscious / No Pulse", "target": "drowning_cpr_protocol"}
+      ]
+    },
+    "diabetic_triage": {
+      "id": "diabetic_triage",
+      "question": "Is the person shaking, sweating, or confused? (If unsure, treat as Hypoglycemia)",
+      "source": "Red Cross",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes (Low Sugar)", "target": "hypoglycemia_management"},
+        {"label": "No (High Sugar / Other)", "target": "hyperglycemia_management"}
+      ]
+    },
+    "hypoglycemia_management": {
+      "id": "hypoglycemia_management",
+      "question": "Give 15g fast sugar (candy/honey). Wait 15 mins. Are they alert?",
+      "source": "ADA",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "triage_selection"},
+        {"label": "No / Unconscious", "target": "rescue_call"}
+      ]
+    },
+    "hyperglycemia_management": {
+      "id": "hyperglycemia_management",
+      "question": "Encourage drinking water. Allow self-medication. Any vomiting or fruity breath?",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "No", "target": "triage_selection"},
+        {"label": "Yes (Ketoacidosis risk)", "target": "rescue_call"}
+      ]
+    },
+    "seizure_protocol": {
+      "id": "seizure_protocol",
+      "question": "Clear the area. Protect the head. Roll onto their side. Do not restrain. Note the time. Is the seizure lasting >5 mins or repeating?",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Yes (Emergency)", "target": "rescue_call"},
+        {"label": "No (Wait for recovery)", "target": "seizure_recovery"}
+      ]
+    },
+    "seizure_recovery": {
+      "id": "seizure_recovery",
+      "question": "Maintain recovery position. Speak calmly. Do not give food/drink. Are they alert and oriented?",
+      "source": "Epilepsy Foundation",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes", "target": "triage_selection"},
+        {"label": "No / Still confused", "target": "rescue_call"}
+      ]
+    },
+    "fire_starting_protocol": {
+      "id": "fire_starting_protocol",
+      "question": "Do you have the Fire Triangle components: Tinder (dry fiber), Kindling (twigs), and Fuel (logs)?",
+      "source": "SAS Survival Handbook",
+      "gps_context": false,
+      "branches": [
+        {"label": "Yes (Start Ignition)", "target": "fire_ignition_selection"},
+        {"label": "No (Gather Fuel)", "target": "fire_skills"}
+      ]
+    },
+    "fire_ignition_selection": {
+      "id": "fire_ignition_selection",
+      "question": "Choose your ignition source: Friction (Bow Drill), Solar (Magnifier), or Percussion (Flint/Steel). Done?",
+      "source": "US Army FM 21-76",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done / Fire Lit", "target": "fire_layout_selection"},
+        {"label": "Help with Method", "target": "fire_starting_methods"}
+      ]
+    },
+    "fire_layout_selection": {
+      "id": "fire_layout_selection",
+      "question": "Choose a fire structure: Teepee (Fast heat/Drying wood) or Log Cabin (Long-lasting/Cooking). Done?",
+      "source": "SAS Survival Handbook",
+      "gps_context": false,
+      "branches": [
+        {"label": "Done", "target": "triage_selection"},
+        {"label": "Help with Structure", "target": "fire_structure"}
+      ]
+    },
+    "rope_knot_protocol": {
+      "id": "rope_knot_protocol",
+      "question": "Do you have manufactured rope or do you need to make cordage from natural fibers?",
+      "source": "SAS Survival Handbook",
+      "gps_context": false,
+      "branches": [
+        {"label": "I Have Rope", "target": "rope_knot_skills"},
+        {"label": "Make Cordage", "target": "improvised_cordage"}
+      ]
+    },
+    "signaling_improv_protocol": {
+      "id": "signaling_improv_protocol",
+      "question": "Choose your signaling type: Visual (Mirror/Ground Symbols) or Audible (Whistle/Noise).",
+      "source": "NASAR",
+      "gps_context": false,
+      "branches": [
+        {"label": "Visual / Light", "target": "visual_signal_triage"},
+        {"label": "Audible / Sound", "target": "whistle_alternatives"}
+      ]
+    },
+    "visual_signal_triage": {
+      "id": "visual_signal_triage",
+      "question": "Do you need help with Improvised Mirrors or Ground-to-Air Symbols?",
+      "source": "SAS Survival Handbook",
+      "gps_context": false,
+      "branches": [
+        {"label": "Improvised Mirrors", "target": "signaling_improvisation"},
+        {"label": "Ground Symbols", "target": "ground_to_air_codes"}
+      ]
+    },
+    "animal_hazard_triage": {
+      "id": "animal_hazard_triage",
+      "question": "Which animal are you encountering?",
+      "source": "NPS / Parks Canada",
+      "gps_context": true,
+      "branches": [
+        {"label": "Bear", "target": "bear_encounter_protocol"},
+        {"label": "Wolf", "target": "wolf_encounter_protocol"},
+        {"label": "Boar / Other", "target": "boar_encounter_protocol"}
+      ]
+    },
+    "river_crossing_protocol": {
+      "id": "river_crossing_protocol",
+      "question": "Choose wide/shallow water. Unbuckle pack straps. Use a pole. Face upstream. Ready?",
+      "source": "US Army",
+      "gps_context": true,
+      "branches": [
+        {"label": "Ready / Crossed", "target": "triage_selection"},
+        {"label": "Swept Away!", "target": "water_rescue_swimming"}
+      ]
+    },
+    "avalanche_triage": {
+      "id": "avalanche_triage",
+      "question": "Are you currently caught in the slide, or are you performing a rescue for a buried companion?",
+      "source": "AIARE",
+      "gps_context": true,
+      "branches": [
+        {"label": "I am Caught", "target": "avalanche_survival_protocol"},
+        {"label": "Companion Rescue", "target": "avalanche_rescue_steps"}
+      ]
+    },
+    "navigation_selection": {
+      "id": "navigation_selection",
+      "question": "How would you like to find your direction?",
+      "source": "US Army FM 21-76",
+      "gps_context": true,
+      "branches": [
+        {"label": "Watch Compass Method", "target": "watch_compass_method"},
+        {"label": "Stars (Polaris/Cross)", "target": "polaris_info"},
+        {"label": "Terrain Features", "target": "terrain_features_guide"},
+        {"label": "Distance Estimation", "target": "pace_counting_guide"},
+        {"label": "Environmental Signs", "target": "triage_selection"}
+      ]
+    },
+    "tsunami_protocol": {
+      "id": "tsunami_protocol",
+      "question": "GET TO HIGH GROUND (100ft+) or 1 MILE INLAND immediately. Evacuate on foot. Wait for official 'All Clear'. Ready?",
+      "source": "NOAA",
+      "gps_context": true,
+      "branches": [
+        {"label": "I'm safe for now", "target": "disaster_selection"},
+        {"label": "Need rescue", "target": "rescue_call"}
+      ]
+    },
+    "radiation_triage": {
+      "id": "radiation_triage",
+      "question": "Are you sheltered or do you need to decontaminate after being outside?",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Shelter Info", "target": "nuclear_radiation_protocol"},
+        {"label": "Decontamination", "target": "radiation_decontamination"}
+      ]
+    },
+    "civil_unrest_protocol": {
+      "id": "civil_unrest_protocol",
+      "question": "Are you sheltered or currently caught in a crowd/urban area?",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Shelter-in-Place", "target": "civil_unrest_protocol"},
+        {"label": "In a Crowd / Moving", "target": "urban_emergency_safety"}
+      ]
+    },
+    "lightning_triage": {
+      "id": "lightning_triage",
+      "question": "Are you currently outdoors or in a vehicle/building?",
+      "source": "NWS",
+      "gps_context": true,
+      "branches": [
+        {"label": "Outdoors", "target": "lightning_survival_protocol"},
+        {"label": "Building / Vehicle", "target": "lightning_survival_protocol"}
+      ]
+    },
+    "landslide_triage": {
+      "id": "landslide_triage",
+      "question": "Are you currently in a low-lying area or near a steep slope?",
+      "source": "USGS",
+      "gps_context": true,
+      "branches": [
+        {"label": "Near Slope", "target": "landslide_mudslide_protocol"},
+        {"label": "Low Area", "target": "landslide_mudslide_protocol"}
+      ]
+    },
+    "hypothermia_prevention_triage": {
+      "id": "hypothermia_prevention_triage",
+      "question": "Are you currently cold, or are you preparing layers for a cold environment?",
+      "source": "NOLS",
+      "gps_context": true,
+      "branches": [
+        {"label": "COLD Principle", "target": "hypothermia_prevention_cold"},
+        {"label": "Layering System", "target": "layering_system_protocol"}
+      ]
+    },
+    "water_purification_triage": {
+      "id": "water_purification_triage",
+      "question": "What tools do you have for water treatment (Heat, Chemicals, or Sunlight)?",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Boiling", "target": "water_purification_detailed"},
+        {"label": "Chemical / Bleach", "target": "water_purification_detailed"},
+        {"label": "Solar / UV", "target": "water_purification_detailed"}
+      ]
+    },
+    "infection_triage": {
+      "id": "infection_triage",
+      "question": "Is there spreading redness, pus, or fever?",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Monitor Signs (SHARP)", "target": "wound_infection_monitoring"},
+        {"label": "Wilderness Treatment", "target": "infection_treatment_wfa"},
+        {"label": "Next Steps", "target": "rescue_call"}
+      ]
+    },
+    "vitals_triage": {
+      "id": "vitals_triage",
+      "question": "Is the patient alert, and do you need to check pulse/breathing?",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [
+        {"label": "AVPU (Consciousness)", "target": "avpu_responsiveness_scale"},
+        {"label": "Vital Signs (Pulse/Resp)", "target": "patient_monitoring_vitals"},
+        {"label": "Done", "target": "triage_selection"}
+      ]
+    },
+    "evacuation_triage": {
+      "id": "evacuation_triage",
+      "question": "Can the patient walk, or is the terrain/weather too dangerous to move?",
+      "source": "NOLS",
+      "gps_context": true,
+      "branches": [
+        {"label": "Wait vs. Move Logic", "target": "evacuation_decision_logic"},
+        {"label": "Immediate Evac Rules", "target": "evacuation_vs_wait"},
+        {"label": "Back to Rescue", "target": "rescue_call"}
+      ]
+    },
+    "panic_triage": {
+      "id": "panic_triage",
+      "question": "Are you feeling overwhelmed or panicked? Let's take a moment to reset.",
+      "source": "Survival Psychology",
+      "gps_context": false,
+      "branches": [
+        {"label": "S.T.O.P. Rule", "target": "stop_protocol"},
+        {"label": "Box Breathing", "target": "box_breathing_technique"},
+        {"label": "I'm ready now", "target": "start"}
       ]
     }
   }

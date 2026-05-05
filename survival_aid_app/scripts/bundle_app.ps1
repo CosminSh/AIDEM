@@ -1,28 +1,24 @@
-# Bundle Survival AId for distribution
-# This script creates a clean "Release" folder ready to show friends.
+# Master Release Script for Survival AId
+# Consolidates Windows and Android builds into the root 'Releases' folder.
 
-$releaseSource = "build\windows\x64\runner\Release"
-$distFolder = "dist\SurvivalAId"
+$projectRoot = "$PSScriptRoot\..\.."
+$windowsSource = "build\windows\x64\runner\Release"
+$androidSource = "build\app\outputs\flutter-apk\app-release.apk"
+$windowsDist = "$projectRoot\Releases\Windows"
+$androidDist = "$projectRoot\Releases\Android"
 
-if (-not (Test-Path $releaseSource)) {
-    Write-Error "Release build not found. Run 'flutter build windows' first."
-    exit
-}
+# --- 1. HANDLE WINDOWS ---
+if (Test-Path $windowsSource) {
+    Write-Host "--- Packaging Windows Release ---"
+    if (Test-Path $windowsDist) { Remove-Item -Recurse -Force $windowsDist }
+    New-Item -ItemType Directory -Path "$windowsDist\app" -Force
+    New-Item -ItemType Directory -Path "$windowsDist\app\models" -Force
 
-# 1. Clean up and create dist folder
-if (Test-Path $distFolder) { Remove-Item -Recurse -Force $distFolder }
-New-Item -ItemType Directory -Path "$distFolder\app" -Force
-New-Item -ItemType Directory -Path "$distFolder\app\models" -Force
+    Write-Host "Organizing Windows files..."
+    Copy-Item -Path "$windowsSource\*" -Destination "$windowsDist\app" -Recurse
+    Rename-Item -Path "$windowsDist\app\survival_aid_app.exe" -NewName "SurvivalAId.exe"
 
-# 2. Copy all files to the 'app' subfolder (keeping the mess hidden)
-Write-Host "Organizing files..."
-Copy-Item -Path "$releaseSource\*" -Destination "$distFolder\app" -Recurse
-
-# Rename the exe for a better look
-Rename-Item -Path "$distFolder\app\survival_aid_app.exe" -NewName "SurvivalAId.exe"
-
-# 3. Create a README for your friends
-$readmeContent = @"
+    $readmeContent = @"
 SURVIVAL AID - OFFLINE EMERGENCY ASSISTANT
 ==========================================
 
@@ -38,17 +34,34 @@ AI MODEL SETUP:
 SAFE & OFFLINE:
 Everything stays on your device. No data ever leaves your computer.
 "@
-$readmeContent | Out-File -FilePath "$distFolder\README.txt" -Encoding utf8
+    $readmeContent | Out-File -FilePath "$windowsDist\README.txt" -Encoding utf8
 
-# 4. Create a Launcher (Batch file) in the root
-$launcherContent = @"
+    $launcherContent = @"
 @echo off
 echo Starting Survival AId...
 start "" "%~dp0app\SurvivalAId.exe"
 "@
-$launcherContent | Out-File -FilePath "$distFolder\Survival AId.bat" -Encoding ascii
+    $launcherContent | Out-File -FilePath "$windowsDist\Survival AId.bat" -Encoding ascii
+    Write-Host "Windows release ready in: Releases\Windows"
+} else {
+    Write-Warning "Windows build not found. Run 'flutter build windows' to include it."
+}
 
-Write-Host "`nDone! Your organized app is in: $distFolder"
-Write-Host "To share with friends:"
-Write-Host "1. Zip the '$distFolder' folder."
-Write-Host "2. Send the zip to them!"
+# --- 2. HANDLE ANDROID ---
+if (Test-Path $androidSource) {
+    Write-Host "`n--- Packaging Android Release ---"
+    if (-not (Test-Path $androidDist)) { New-Item -ItemType Directory -Path $androidDist -Force }
+    
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmm"
+    $targetApk = "$androidDist\SurvivalAId_v1.0_$timestamp.apk"
+    
+    Copy-Item -Path $androidSource -Destination $targetApk -Force
+    # Also keep a static name for the "Latest" version
+    Copy-Item -Path $androidSource -Destination "$androidDist\SurvivalAId_Latest.apk" -Force
+    
+    Write-Host "Android APK ready in: Releases\Android"
+} else {
+    Write-Warning "Android build not found. Run 'flutter build apk' to include it."
+}
+
+Write-Host "`nDone! All your packages are now in the project root '\Releases' folder."

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../models/protocol.dart';
 
 /// Represents what we know about the user's emergency situation.
 class SituationContext {
@@ -135,7 +136,7 @@ class ContextCompactionService {
   static const int _compactEveryN = 4;
 
   SituationContext _context = SituationContext.empty();
-  final List<String> _rawBuffer = []; // raw recent messages pending compaction
+  final List<ChatMessage> _rawBuffer = []; // raw recent messages pending compaction
   int _messageCount = 0;
   String? _activeSessionId;
 
@@ -155,15 +156,15 @@ class ContextCompactionService {
 
   /// Call this after every user message and AI response pair.
   Future<void> addExchange({
-    required String userMessage,
-    required String aiResponse,
+    required ChatMessage userMessage,
+    required ChatMessage aiResponse,
   }) async {
-    _rawBuffer.add('User: $userMessage');
-    _rawBuffer.add('AI: $aiResponse');
+    _rawBuffer.add(userMessage);
+    _rawBuffer.add(aiResponse);
     _messageCount++;
 
     // Extract quick facts from user message without LLM
-    _quickExtract(userMessage);
+    _quickExtract(userMessage.text);
 
     // Keep buffer bounded
     if (_rawBuffer.length > 20) {
@@ -179,7 +180,7 @@ class ContextCompactionService {
   String getPromptContext() => _context.toPromptString();
 
   /// Returns recent raw messages for the conversation window.
-  List<String> getRecentMessages({int count = 8}) {
+  List<ChatMessage> getRecentMessages({int count = 8}) {
     return _rawBuffer.takeLast(count);
   }
 
@@ -188,7 +189,9 @@ class ContextCompactionService {
   Future<void> compact(Future<String> Function(String prompt) llmCall) async {
     if (_rawBuffer.isEmpty) return;
 
-    final conversation = _rawBuffer.join('\n');
+    final conversation = _rawBuffer.map((m) => 
+      '${m.author == MessageAuthor.user ? "User" : "AI"}: ${m.text}'
+    ).join('\n');
     final prompt = '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
 Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
 
@@ -290,6 +293,13 @@ JSON:''';
     String updatedHazards = _context.hazards;
     if (msg.contains('safe') || msg.contains('all good') || msg.contains('no danger')) {
       updatedHazards = 'None (Confirmed)';
+    }
+
+    // Detect GPS coordinates
+    if (msg.contains('gps coordinates are:')) {
+      final startIndex = msg.indexOf('gps coordinates are:') + 'gps coordinates are:'.length;
+      final coords = userMessage.substring(startIndex).trim();
+      _context = _context.copyWith(locationDetails: coords);
     }
 
     _context = _context.copyWith(
