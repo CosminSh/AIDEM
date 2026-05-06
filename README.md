@@ -92,7 +92,7 @@ graph TD
 *   [Roadmap](TODO.md) - Current progress and future features.
 
 ## ⚖️ License
-Distributed under the MIT License. See `LICENSE` for more information.
+Proprietary / All Rights Reserved. This source code is provided strictly for evaluation purposes as part of the **Google Gemma Hackathon**. No rights are granted for commercial or non-commercial use outside of this evaluation. See `LICENSE` for details.
 
 ---
 <p align="center">
