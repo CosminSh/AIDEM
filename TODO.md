@@ -1,4 +1,4 @@
-# Project Tracking: Survival AId Offline Emergency Assistant
+# Project Tracking: AIDEM Offline Emergency Assistant
 > Target: Gemma 4 Good Hackathon · May 18, 2026 · Track: Global Resilience
 
 ---
@@ -16,7 +16,7 @@
   - [x] Add `sqflite` + `path_provider` (session logging)
   - [x] Add `google_fonts` (Inter typeface)
   - [x] Declare asset folders: `assets/data/`, `assets/models/`, `assets/images/`
-- [x] Add `G:\Antigravity Projects\Survival AId\Assets\Models\gemma-2b-it-gpu-int4.bin` to assets
+- [x] Add `G:\Antigravity Projects\AIDEM\Assets\Models\gemma-2b-it-gpu-int4.bin` to assets
 - [x] Run `flutter pub get` and verify no dependency conflicts
 - [x] Confirm app launches on Android emulator (`flutter run`)
 - [x] Confirm app launches on Windows Desktop (`flutter run -d windows`)

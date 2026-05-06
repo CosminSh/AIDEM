@@ -1,6 +1,6 @@
-# Survival AId App Module 📱
+# AIDEM App Module 📱
 
-This is the main Flutter implementation of **Survival AId**, an offline emergency assistant powered by on-device LLMs.
+This is the main Flutter implementation of **AIDEM**, an offline emergency assistant powered by on-device LLMs.
 
 ## 🚀 Features in this Module
 - **Offline LLM Integration**: Full implementation of MediaPipe GenAI for Gemma inference.

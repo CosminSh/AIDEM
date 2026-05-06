@@ -1,4 +1,4 @@
-# Survival AId: Your Offline AI Survival Expert
+# AIDEM: Your Offline AI Survival Expert
 **A 5-Minute Pitch for the Next Generation of Emergency Assistance**
 
 ---
@@ -13,15 +13,15 @@ But you don't have a doctor, a search and rescue team, or even a manual. What if
 
 Furthermore, general AI can 'hallucinate' medical advice. In a life-or-death situation, 'mostly accurate' isn't good enough. You need protocols backed by the Red Cross, FEMA, and the US Army. You need structured, reliable guidance that works when nothing else does."
 
-### 3. The Solution: Survival AId (1:30 - 2:30)
-"Introducing **Survival AId**. It’s not just an app; it’s a field-manual-grade expert system that lives in your pocket. 
+### 3. The Solution: AIDEM (1:30 - 2:30)
+"Introducing **AIDEM**. It’s not just an app; it’s a field-manual-grade expert system that lives in your pocket. 
 
-Powered by Google’s **Gemma** model running entirely on-device, Survival AId provides 100% offline, context-aware assistance. It doesn't just answer questions—it leads you through it. 
+Powered by Google’s **Gemma** model running entirely on-device, AIDEM provides 100% offline, context-aware assistance. It doesn't just answer questions—it leads you through it. 
 
-We’ve combined a high-performance LLM with a rigorous, source-backed **Interactive Decision Tree**. Whether it’s performing triage on a casualty, purifying water in the desert, or surviving a tsunami, Survival AId guides you step-by-step using the same protocols used by professionals."
+We’ve combined a high-performance LLM with a rigorous, source-backed **Interactive Decision Tree**. Whether it’s performing triage on a casualty, purifying water in the desert, or surviving a tsunami, AIDEM guides you step-by-step using the same protocols used by professionals."
 
 ### 4. Key Features (2:30 - 3:45)
-"What makes Survival AId a game-changer?
+"What makes AIDEM a game-changer?
 
 *   **Offline-First Intelligence**: Using MediaPipe and Gemma, we perform complex inference on the edge. No data ever leaves your device. Total privacy, total reliability.
 *   **The Triage Engine**: We don't wait for you to ask the right question. Our interactive decision tree guides you from initial assessment to final action, prioritizing life-saving measures like stopping major bleeding first.
@@ -29,13 +29,13 @@ We’ve combined a high-performance LLM with a rigorous, source-backed **Interac
 *   **Hands-Free Mode**: In an emergency, your hands might be busy. We’ve integrated speech-to-text and text-to-speech so you can communicate with your AI expert while staying focused on the task at hand."
 
 ### 5. Technical Excellence & Impact (3:45 - 4:30)
-"Built with **Flutter** for cross-platform performance, Survival AId is designed for the extreme. We’ve optimized context compaction and memory management to ensure the app stays responsive even on older hardware or under low-battery conditions.
+"Built with **Flutter** for cross-platform performance, AIDEM is designed for the extreme. We’ve optimized context compaction and memory management to ensure the app stays responsive even on older hardware or under low-battery conditions.
 
 This is the bridge between the power of LLMs and the reliability of a physical field manual. It’s the ultimate tool for hikers, disaster relief workers, and families living in high-risk areas."
 
 ### 6. The Vision & Closing (4:30 - 5:00)
 "Our goal is simple: to replace panic with protocol. We believe that everyone deserves an expert by their side when things go wrong. 
 
-With Survival AId, you’re never alone, you’re never lost, and you’re never without a plan. 
+With AIDEM, you’re never alone, you’re never lost, and you’re never without a plan. 
 
-**Survival AId: Stay Calm. Follow the Protocol. Save Lives.**"
+**AIDEM: Stay Calm. Follow the Protocol. Aid Them.**"

@@ -12,18 +12,18 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: SurvivalAidApp(),
+      child: AidemApp(),
     ),
   );
 }
 
-class SurvivalAidApp extends StatelessWidget {
-  const SurvivalAidApp({super.key});
+class AidemApp extends StatelessWidget {
+  const AidemApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Survival AId',
+      title: 'AIDEM',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: AppColors.background,

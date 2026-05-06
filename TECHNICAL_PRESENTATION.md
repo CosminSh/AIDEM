@@ -1,17 +1,17 @@
-# Survival AId: Technical Deep Dive
+# AIDEM: Technical Deep Dive
 **Architecture, Edge AI, and Deterministic Triage Logic**
 
 ---
 
 ### Project Overview
-**Survival AId** is a next-generation emergency assistant designed for "data-denied" environments. Whether in remote wilderness, after a catastrophic natural disaster, or in a war zone, Survival AId provides critical, life-saving guidance without requiring an internet connection. 
+**AIDEM** is a next-generation emergency assistant designed for "data-denied" environments. Whether in remote wilderness, after a catastrophic natural disaster, or in a war zone, AIDEM provides critical, life-saving guidance without requiring an internet connection. 
 
 By running Google’s **Gemma** model entirely on-device, the app bridges the gap between the power of Generative AI and the absolute reliability of a physical field manual. Its primary mission is to replace panic with protocol, empowering users to perform high-stakes triage, navigation, and survival techniques using source-backed intelligence.
 
 ---
 
 ### 1. System Architecture: The Hybrid Expert System
-Survival AId utilizes a **Hybrid Architecture** that combines the creative reasoning of Large Language Models (LLMs) with the safety and reliability of a deterministic Decision Tree.
+AIDEM utilizes a **Hybrid Architecture** that combines the creative reasoning of Large Language Models (LLMs) with the safety and reliability of a deterministic Decision Tree.
 
 *   **Deterministic Layer**: A structured JSON-based protocol tree (`protocol.json`) that enforces strict safety procedures (e.g., stopping major bleeding before checking for secondary injuries).
 *   **Cognitive Layer**: Google’s **Gemma-4-E2B-IT** model, running on-device via **MediaPipe LLM Inference**. This layer provides nuanced explanations, adapts to complex queries, and maintains a "survival companion" persona.

@@ -73,7 +73,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Survival AId needs to download the Gemma AI model once. '
+                'AIDEM needs to download the Gemma AI model once. '
                 'After this, the app works fully offline — no internet required.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 16, height: 1.5),
               ),

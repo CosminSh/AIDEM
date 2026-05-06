@@ -1,4 +1,4 @@
-# Master Release Script for Survival AId
+# Master Release Script for AIDEM
 # Consolidates Windows and Android builds into the root 'Releases' folder.
 
 $projectRoot = "$PSScriptRoot\..\.."
@@ -19,11 +19,11 @@ if (Test-Path $windowsSource) {
     Rename-Item -Path "$windowsDist\app\survival_aid_app.exe" -NewName "SurvivalAId.exe"
 
     $readmeContent = @"
-SURVIVAL AID - OFFLINE EMERGENCY ASSISTANT
+AIDEM - OFFLINE EMERGENCY ASSISTANT
 ==========================================
 
 QUICK START:
-1. Run 'Survival AId.bat' to start the app.
+1. Run 'AIDEM.bat' to start the app.
 2. The first time you run it, it will ask for the AI model.
 
 AI MODEL SETUP:
@@ -38,10 +38,10 @@ Everything stays on your device. No data ever leaves your computer.
 
     $launcherContent = @"
 @echo off
-echo Starting Survival AId...
+echo Starting AIDEM...
 start "" "%~dp0app\SurvivalAId.exe"
 "@
-    $launcherContent | Out-File -FilePath "$windowsDist\Survival AId.bat" -Encoding ascii
+    $launcherContent | Out-File -FilePath "$windowsDist\AIDEM.bat" -Encoding ascii
     Write-Host "Windows release ready in: Releases\Windows"
 } else {
     Write-Warning "Windows build not found. Run 'flutter build windows' to include it."

@@ -28,7 +28,7 @@ function renderHomeScreen() {
                 <div class="gps-dot ready"></div>
                 GPS Ready
             </div>
-            <h1 class="logo">Survival AId</h1>
+            <h1 class="logo">AIDEM</h1>
             <p class="subtitle">Offline Emergency Assistant</p>
             
             <button class="btn-emergency" onclick="startEmergency()">

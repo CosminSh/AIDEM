@@ -361,7 +361,7 @@ class SessionNotifier extends Notifier<SessionState> {
     final ctx = compactionService.context;
     
     final buffer = StringBuffer();
-    buffer.writeln('# Survival AId Session Export');
+    buffer.writeln('# AIDEM Session Export');
     buffer.writeln('Generated on: ${DateTime.now().toLocal()}');
     buffer.writeln('Mode: ${state.isPracticeMode ? "PRACTICE" : "EMERGENCY"}');
     buffer.writeln();

@@ -21,7 +21,7 @@ class SettingsScreen extends StatelessWidget {
           _buildSettingTile(Icons.location_on_outlined, "Coordinate Format", "Decimal Degrees"),
           
           const SizedBox(height: 40),
-          _buildSectionHeader("About Survival AId"),
+          _buildSectionHeader("About AIDEM"),
           _buildSettingTile(Icons.info_outline, "Version", "1.0.0 (Offline)"),
           _buildSettingTile(Icons.verified_user_outlined, "Protocol Sources", "Red Cross, WHO, TCCC"),
           

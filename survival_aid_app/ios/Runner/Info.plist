@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Survival Aid App</string>
+	<string>AIDEM App</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -67,10 +67,10 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Survival AId needs camera access to help you document injuries and environmental hazards for the AI to analyze.</string>
+	<string>AIDEM needs camera access to help you document injuries and environmental hazards for the AI to analyze.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Survival AId needs photo library access to allow you to upload previously taken photos of injuries or locations.</string>
+	<string>AIDEM needs photo library access to allow you to upload previously taken photos of injuries or locations.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Survival AId needs microphone access for voice-to-text features in emergency situations.</string>
+	<string>AIDEM needs microphone access for voice-to-text features in emergency situations.</string>
 </dict>
 </plist>

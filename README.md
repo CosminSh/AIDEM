@@ -1,8 +1,9 @@
-# <p align="center">Survival AId 🛡️</p>
-<p align="center"><b>Offline-First Emergency Intelligence. Protocol over Panic.</b></p>
+# <p align="center">AIDEM 🛡️</p>
+<p align="center"><b>Artificial Intelligence Disaster & Emergency Management.</b></p>
+<p align="center"><i>"Aid Them" when the grid goes down.</i></p>
 
 <p align="center">
-  <img src="Assets/Images/logo.jpg" alt="Survival AId Logo" width="200"/>
+  <img src="Assets/Images/logo.jpg" alt="AIDEM Logo" width="200"/>
 </p>
 
 <p align="center">
@@ -18,10 +19,10 @@
 
 Imagine you’re miles deep in the wilderness, or in the aftermath of a major natural disaster. The grid is down, your cell signal is at zero, and someone is injured. Panic starts to set in. In that moment, you don't need a search bar—you need an expert.
 
-**Survival AId** is a field-manual-grade expert system that lives in your pocket. Powered by Google’s **Gemma** model running entirely on-device, it provides 100% offline, context-aware assistance. It doesn't just answer questions—it leads you through them.
+**AIDEM** is a field-manual-grade expert system that lives in your pocket. Powered by Google’s **Gemma** model running entirely on-device, it provides 100% offline, context-aware assistance. It doesn't just answer questions—it leads you through them.
 
 <p align="center">
-  <img src="Assets/Images/mockup.jpg" alt="Survival AId Mockup" width="600"/>
+  <img src="Assets/Images/mockup.jpg" alt="AIDEM Mockup" width="600"/>
 </p>
 
 ## ✨ Key Features
@@ -34,7 +35,7 @@ Imagine you’re miles deep in the wilderness, or in the aftermath of a major na
 
 ## 🏗️ Technical Architecture: The Hybrid Expert System
 
-Survival AId bridges the gap between creative AI reasoning and deterministic medical safety.
+AIDEM bridges the gap between creative AI reasoning and deterministic medical safety.
 
 ```mermaid
 graph TD
@@ -86,7 +87,7 @@ graph TD
     ```
 
 ## 📖 Documentation
-*   [The Pitch](PITCH.md) - Why Survival AId matters.
+*   [The Pitch](PITCH.md) - Why AIDEM matters.
 *   [Technical Deep Dive](TECHNICAL_PRESENTATION.md) - Architecture and Edge AI details.
 *   [Roadmap](TODO.md) - Current progress and future features.
 
@@ -95,5 +96,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 <p align="center">
-  <b>Survival AId: Stay Calm. Follow the Protocol. Save Lives.</b>
+  <b>AIDEM: Stay Calm. Follow the Protocol. Save Lives.</b>
 </p>

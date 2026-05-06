@@ -76,7 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    "Survival AId",
+                    "AIDEM",
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 40,

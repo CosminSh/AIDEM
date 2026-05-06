@@ -19,7 +19,7 @@ def run_simulation():
     prompt = extract_prompt(llm_service_path)
     
     print("="*60)
-    print("SURVIVAL AID SIMULATION RUNNER")
+    print("AIDEM SIMULATION RUNNER")
     print("="*60)
     print("\n[SYSTEM PROMPT EXTRACTED]:\n")
     print(prompt)

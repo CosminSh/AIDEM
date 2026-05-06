@@ -1,8 +1,8 @@
-SURVIVAL AID - OFFLINE EMERGENCY ASSISTANT
+AIDEM - OFFLINE EMERGENCY ASSISTANT
 ==========================================
 
 QUICK START:
-1. Run 'Survival AId.bat' to start the app.
+1. Run 'AIDEM.bat' to start the app.
 2. The first time you run it, it will ask for the AI model.
 
 AI MODEL SETUP:

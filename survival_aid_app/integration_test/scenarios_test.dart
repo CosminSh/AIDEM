@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:survival_aid_app/main.dart' as app;
-import 'package:survival_aid_app/providers/global_providers.dart';
+import 'package:aidem_app/main.dart' as app;
+import 'package:aidem_app/providers/global_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {

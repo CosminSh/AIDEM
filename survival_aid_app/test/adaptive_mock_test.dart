@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:survival_aid_app/services/llm_service.dart';
+import 'package:aidem_app/services/llm_service.dart';
 
 void main() {
   group('AdaptiveMock Response Quality Tests', () {
