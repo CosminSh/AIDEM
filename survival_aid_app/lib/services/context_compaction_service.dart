@@ -253,25 +253,18 @@ class ContextCompactionService {
     if (_rawBuffer.isEmpty) return;
 
     final prompt =
-        '''Analyze the conversation and extract key facts for an emergency report (ETHANE).
-IMPORTANT: Regardless of the language, always provide values in ENGLISH.
+        '''Analyze the conversation and extract key facts for an emergency report.
+IMPORTANT: Always provide values in ENGLISH.
 Return ONLY a raw JSON object. NO markdown.
 
-EXAMPLE OUTPUT:
+JSON Structure:
 {
-  "summary": "fell and hit head, dizzy, no bleeding, alone",
-  "location_details": "Unknown",
-  "incident_type": "fall",
-  "hazards": "None",
-  "access_info": "Unknown",
-  "patient_count": 1,
-  "urgency_level": "stable",
-  "resources": [],
-  "lacks": [],
-  "injury_type": "head injury",
-  "environment": "Unknown",
-  "is_alone": true,
-  "detected_language": "English"
+  "summary": "short summary of injury and status",
+  "incident_type": "fall/burn/etc",
+  "injury_type": "broken bone/cut/etc",
+  "is_alone": true/false,
+  "resources": ["water", "bandana"],
+  "lacks": ["clean water"]
 }
 
 JSON:''';
@@ -284,16 +277,15 @@ JSON:''';
         final jsonStr = result.substring(jsonStart, jsonEnd + 1);
         final parsed = jsonDecode(jsonStr) as Map<String, dynamic>;
         
-        // If language was manually set (not Auto-Detect), preserve it
-        final newLang = parsed['detected_language'] ?? _context.detectedLanguage;
-        final finalLang = _context.detectedLanguage == 'Auto-Detect' 
-            ? newLang 
-            : _context.detectedLanguage;
-
-        _context = SituationContext.fromJson({
-          ...parsed,
-          'detected_language': finalLang,
-        });
+        _context = _context.copyWith(
+          summary: parsed['summary'] ?? _context.summary,
+          incidentType: parsed['incident_type'] ?? _context.incidentType,
+          injuryType: parsed['injury_type'] ?? _context.injuryType,
+          isAlone: parsed['is_alone'] ?? _context.isAlone,
+          confirmedResources: List<String>.from(parsed['resources'] ?? _context.confirmedResources),
+          confirmedLacks: List<String>.from(parsed['lacks'] ?? _context.confirmedLacks),
+          lastUpdated: DateTime.now(),
+        );
         if (_activeSessionId != null) {
           await _saveToDisk(_activeSessionId!);
         }
