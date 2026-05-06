@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../widgets/chat_list_view.dart';
 import '../widgets/options_panel.dart';
 import '../../providers/global_providers.dart';
+import '../../services/context_compaction_service.dart';
 import '../../models/protocol.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
@@ -167,6 +168,36 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
   }
 
+  Future<void> _showLanguageDialog() async {
+    final sessionNotifier = ref.read(sessionProvider.notifier);
+    final languages = ContextCompactionService.supportedLanguages;
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('SELECT LANGUAGE', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: languages.length,
+            itemBuilder: (context, index) {
+              final lang = languages[index];
+              return ListTile(
+                title: Text(lang, style: const TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  sessionNotifier.setLanguage(lang);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _shareLocation() async {
     try {
       final gps = ref.read(gpsServiceProvider);
@@ -302,6 +333,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             },
           ),
           IconButton(
+            icon: const Icon(Icons.language_rounded, size: 20, color: AppColors.accentBlue),
+            tooltip: 'Change Language',
+            onPressed: _showLanguageDialog,
+          ),
+          IconButton(
             icon: const Icon(Icons.download_rounded),
             tooltip: 'Export Chat',
             onPressed: _exportChat,
@@ -348,7 +384,51 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 ],
               ),
             ),
-
+          
+          // Initial Language Selector
+          if (session.chatHistory.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.accentBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'PRE-FLIGHT LANGUAGE SELECTION',
+                      style: TextStyle(
+                        color: AppColors.accentBlue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Gemma supports 35+ languages. Select yours for best medical reasoning.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _showLanguageDialog,
+                      icon: const Icon(Icons.translate, size: 16),
+                      label: const Text('CHOOSE LANGUAGE'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          
           // Chat history
           Expanded(
             child: ChatListView(

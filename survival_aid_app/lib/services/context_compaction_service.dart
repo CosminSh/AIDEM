@@ -145,13 +145,41 @@ class SituationContext {
     return buffer.toString();
   }
 
-  bool get isEmpty => summary.isEmpty;
-}
+  static const List<String> supportedLanguages = [
+    'English',
+    'Spanish',
+    'French',
+    'Romanian',
+    'German',
+    'Italian',
+    'Portuguese',
+    'Dutch',
+    'Russian',
+    'Ukrainian',
+    'Polish',
+    'Czech',
+    'Hungarian',
+    'Turkish',
+    'Arabic',
+    'Hindi',
+    'Bengali',
+    'Chinese',
+    'Japanese',
+    'Korean',
+    'Vietnamese',
+    'Thai',
+    'Indonesian',
+    'Malay',
+    'Greek',
+    'Swedish',
+    'Danish',
+    'Finnish',
+    'Norwegian',
+    'Hebrew',
+    'Farsi',
+    'Urdu',
+  ];
 
-/// Manages the situation context — reads/writes to a JSON file on disk,
-/// and uses the LLM to compact the conversation into a tight summary
-/// every N messages.
-class ContextCompactionService {
   static const int _compactEveryN = 4;
 
   SituationContext _context = SituationContext.empty();
@@ -171,6 +199,13 @@ class ContextCompactionService {
       await _loadFromDisk(sessionId);
     } else {
       _context = SituationContext.empty();
+    }
+  }
+
+  void setLanguage(String lang) {
+    _context = _context.copyWith(detectedLanguage: lang);
+    if (_activeSessionId != null) {
+      _saveToDisk(_activeSessionId!);
     }
   }
 
@@ -256,7 +291,17 @@ JSON:''';
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         final jsonStr = result.substring(jsonStart, jsonEnd + 1);
         final parsed = jsonDecode(jsonStr) as Map<String, dynamic>;
-        _context = SituationContext.fromJson(parsed);
+        
+        // If language was manually set (not Auto-Detect), preserve it
+        final newLang = parsed['detected_language'] ?? _context.detectedLanguage;
+        final finalLang = _context.detectedLanguage == 'Auto-Detect' 
+            ? newLang 
+            : _context.detectedLanguage;
+
+        _context = SituationContext.fromJson({
+          ...parsed,
+          'detected_language': finalLang,
+        });
         if (_activeSessionId != null) {
           await _saveToDisk(_activeSessionId!);
         }

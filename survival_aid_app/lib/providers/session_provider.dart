@@ -93,6 +93,10 @@ class SessionNotifier extends Notifier<SessionState> {
     state = state.copyWith(sessionHistory: history);
   }
 
+  void setLanguage(String lang) {
+    ref.read(contextCompactionServiceProvider).setLanguage(lang);
+  }
+
   void _persist() {
     if (state.currentSessionId == null) return;
     
