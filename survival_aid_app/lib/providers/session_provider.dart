@@ -269,23 +269,43 @@ class SessionNotifier extends Notifier<SessionState> {
     String effectiveNodeId = state.currentNode?.id ?? 'start';
     if (effectiveNodeId == 'start') {
       final incident = compactionService.context.incidentType.toLowerCase();
-      if (incident.contains('bleed') || incident.contains('cut')) {
+      final summary = state.situationSummary.toLowerCase();
+      
+      // Check both extracted incident type AND summary for matches
+      // This is now more robust because the LLM extracts the incident type even from non-English input
+      if (incident.contains('bleed') || summary.contains('bleed') || summary.contains('sangr')) {
         effectiveNodeId = 'bleeding_protocol';
-      } else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow')) effectiveNodeId = 'injury_assessment';
-      else if (incident.contains('heart') || incident.contains('chest')) effectiveNodeId = 'chest_pain_protocol';
-      else if (incident.contains('chok')) effectiveNodeId = 'choking_protocol';
-      else if (incident.contains('seiz')) effectiveNodeId = 'seizure_protocol';
-      else if (incident.contains('frost') || incident.contains('freeze')) effectiveNodeId = 'frostbite_protocol';
-      else if (incident.contains('lost')) effectiveNodeId = 'lost_protocol';
-      else if (incident.contains('earthquake') || incident.contains('shaking')) effectiveNodeId = 'earthquake_protocol';
-      else if (incident.contains('flood') || incident.contains('water level')) effectiveNodeId = 'flood_protocol';
-      else if (incident.contains('wildfire') || incident.contains('fire')) effectiveNodeId = 'wildfire_protocol';
-      else if (incident.contains('storm') || incident.contains('tornado') || incident.contains('hurricane')) effectiveNodeId = 'storm_protocol';
-      else if (incident.contains('water') || incident.contains('drink') || incident.contains('thirst')) effectiveNodeId = 'water_skills';
-      else if (incident.contains('food') || incident.contains('hungry') || incident.contains('eat')) effectiveNodeId = 'food_skills';
-      else if (incident.contains('shelter') || incident.contains('sleep') || incident.contains('cold')) effectiveNodeId = 'shelter_skills';
-      else if (incident.contains('navigat') || incident.contains('where am i') || incident.contains('direction')) effectiveNodeId = 'nav_skills';
-      else if (incident.contains('poison')) effectiveNodeId = 'poisoning_protocol';
+      } else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow') || summary.contains('fall')) {
+        effectiveNodeId = 'injury_assessment';
+      } else if (incident.contains('heart') || incident.contains('chest') || summary.contains('chest')) {
+        effectiveNodeId = 'chest_pain_protocol';
+      } else if (incident.contains('chok') || summary.contains('chok')) {
+        effectiveNodeId = 'choking_protocol';
+      } else if (incident.contains('seiz') || summary.contains('seiz')) {
+        effectiveNodeId = 'seizure_protocol';
+      } else if (incident.contains('frost') || incident.contains('freeze') || summary.contains('cold')) {
+        effectiveNodeId = 'frostbite_protocol';
+      } else if (incident.contains('lost') || summary.contains('lost')) {
+        effectiveNodeId = 'lost_protocol';
+      } else if (incident.contains('earthquake') || incident.contains('shaking')) {
+        effectiveNodeId = 'earthquake_protocol';
+      } else if (incident.contains('flood') || summary.contains('flood')) {
+        effectiveNodeId = 'flood_protocol';
+      } else if (incident.contains('wildfire') || incident.contains('fire')) {
+        effectiveNodeId = 'wildfire_protocol';
+      } else if (incident.contains('storm') || incident.contains('tornado') || incident.contains('hurricane')) {
+        effectiveNodeId = 'storm_protocol';
+      } else if (incident.contains('water') || incident.contains('drink') || summary.contains('water')) {
+        effectiveNodeId = 'water_skills';
+      } else if (incident.contains('food') || incident.contains('hungry') || summary.contains('food')) {
+        effectiveNodeId = 'food_skills';
+      } else if (incident.contains('shelter') || incident.contains('sleep') || summary.contains('shelter')) {
+        effectiveNodeId = 'shelter_skills';
+      } else if (incident.contains('navigat') || summary.contains('direction') || summary.contains('where')) {
+        effectiveNodeId = 'nav_skills';
+      } else if (incident.contains('poison') || summary.contains('poison')) {
+        effectiveNodeId = 'poisoning_protocol';
+      }
     }
 
     final knowledgeBase = protocolService.getDocumentationForNode(effectiveNodeId);

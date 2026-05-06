@@ -193,14 +193,16 @@ class ContextCompactionService {
       '${m.author == MessageAuthor.user ? "User" : "AI"}: ${m.text}'
     ).join('\n');
     final prompt = '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
+IMPORTANT: Regardless of the language of the conversation, always provide the values in the JSON object in ENGLISH.
+
 Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
 
 EXAMPLE INPUT:
-User: i fell and hit my head
-AI: I'm sorry. Are you bleeding?
-User: no bleeding but i feel dizzy
-AI: Stay still. Are you alone?
-User: yes i'm alone
+User: me he caído y me he golpeado la cabeza
+AI: Lo siento. ¿Estás sangrando?
+User: no sangro pero me siento mareado
+AI: Quédate quieto. ¿Estás solo?
+User: sí, estoy solo
 
 EXAMPLE OUTPUT:
 {
