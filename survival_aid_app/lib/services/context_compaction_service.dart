@@ -5,6 +5,18 @@ import '../models/protocol.dart';
 
 /// Represents what we know about the user's emergency situation.
 class SituationContext {
+  final String summary;
+  final String locationDetails; // coordinates, landmarks, trailhead
+  final String incidentType; // fall, bite, lost, medical
+  final String hazards; // weather, terrain, animals
+  final String accessInfo; // best way for rescuers to arrive
+  final int patientCount;
+  final String urgencyLevel; // critical, stable, worsening
+  final List<String> confirmedResources;
+  final List<String> confirmedLacks;
+  final String? injuryType;
+  final String? environment;
+  final bool? isAlone;
   final String detectedLanguage; // English, Spanish, Romanian, etc.
   final DateTime lastUpdated;
 
@@ -26,21 +38,22 @@ class SituationContext {
   });
 
   factory SituationContext.empty() => SituationContext(
-        summary: '',
-        locationDetails: 'Unknown',
-        incidentType: 'Unknown',
-        hazards: 'None reported',
-        accessInfo: 'Unknown',
-        patientCount: 1,
-        urgencyLevel: 'Unknown',
-        confirmedResources: [],
-        confirmedLacks: [],
-        isAlone: null,
-        detectedLanguage: 'English',
-        lastUpdated: DateTime.now(),
-      );
+    summary: '',
+    locationDetails: 'Unknown',
+    incidentType: 'Unknown',
+    hazards: 'None reported',
+    accessInfo: 'Unknown',
+    patientCount: 1,
+    urgencyLevel: 'Unknown',
+    confirmedResources: [],
+    confirmedLacks: [],
+    isAlone: null,
+    detectedLanguage: 'Auto-Detect',
+    lastUpdated: DateTime.now(),
+  );
 
-  factory SituationContext.fromJson(Map<String, dynamic> json) => SituationContext(
+  factory SituationContext.fromJson(Map<String, dynamic> json) =>
+      SituationContext(
         summary: json['summary'] ?? '',
         locationDetails: json['location_details'] ?? 'Unknown',
         incidentType: json['incident_type'] ?? 'Unknown',
@@ -54,25 +67,26 @@ class SituationContext {
         environment: json['environment'],
         isAlone: json['is_alone'],
         detectedLanguage: json['detected_language'] ?? 'English',
-        lastUpdated: DateTime.tryParse(json['last_updated'] ?? '') ?? DateTime.now(),
+        lastUpdated:
+            DateTime.tryParse(json['last_updated'] ?? '') ?? DateTime.now(),
       );
 
   Map<String, dynamic> toJson() => {
-        'summary': summary,
-        'location_details': locationDetails,
-        'incident_type': incidentType,
-        'hazards': hazards,
-        'access_info': accessInfo,
-        'patient_count': patientCount,
-        'urgency_level': urgencyLevel,
-        'resources': confirmedResources,
-        'lacks': confirmedLacks,
-        'injury_type': injuryType,
-        'environment': environment,
-        'is_alone': isAlone,
-        'detected_language': detectedLanguage,
-        'last_updated': lastUpdated.toIso8601String(),
-      };
+    'summary': summary,
+    'location_details': locationDetails,
+    'incident_type': incidentType,
+    'hazards': hazards,
+    'access_info': accessInfo,
+    'patient_count': patientCount,
+    'urgency_level': urgencyLevel,
+    'resources': confirmedResources,
+    'lacks': confirmedLacks,
+    'injury_type': injuryType,
+    'environment': environment,
+    'is_alone': isAlone,
+    'detected_language': detectedLanguage,
+    'last_updated': lastUpdated.toIso8601String(),
+  };
 
   SituationContext copyWith({
     String? summary,
@@ -89,35 +103,44 @@ class SituationContext {
     bool? isAlone,
     String? detectedLanguage,
   }) => SituationContext(
-        summary: summary ?? this.summary,
-        locationDetails: locationDetails ?? this.locationDetails,
-        incidentType: incidentType ?? this.incidentType,
-        hazards: hazards ?? this.hazards,
-        accessInfo: accessInfo ?? this.accessInfo,
-        patientCount: patientCount ?? this.patientCount,
-        urgencyLevel: urgencyLevel ?? this.urgencyLevel,
-        confirmedResources: confirmedResources ?? this.confirmedResources,
-        confirmedLacks: confirmedLacks ?? this.confirmedLacks,
-        injuryType: injuryType ?? this.injuryType,
-        environment: environment ?? this.environment,
-        isAlone: isAlone ?? this.isAlone,
-        detectedLanguage: detectedLanguage ?? this.detectedLanguage,
-        lastUpdated: DateTime.now(),
-      );
+    summary: summary ?? this.summary,
+    locationDetails: locationDetails ?? this.locationDetails,
+    incidentType: incidentType ?? this.incidentType,
+    hazards: hazards ?? this.hazards,
+    accessInfo: accessInfo ?? this.accessInfo,
+    patientCount: patientCount ?? this.patientCount,
+    urgencyLevel: urgencyLevel ?? this.urgencyLevel,
+    confirmedResources: confirmedResources ?? this.confirmedResources,
+    confirmedLacks: confirmedLacks ?? this.confirmedLacks,
+    injuryType: injuryType ?? this.injuryType,
+    environment: environment ?? this.environment,
+    isAlone: isAlone ?? this.isAlone,
+    detectedLanguage: detectedLanguage ?? this.detectedLanguage,
+    lastUpdated: DateTime.now(),
+  );
 
   /// Returns a concise string for injection into a Gemma prompt.
   String toPromptString() {
-    if (summary.isEmpty) return 'CONVERSATION_START';
-
     final buffer = StringBuffer();
     buffer.writeln('--- CONFIRMED FACTS (DO NOT RE-ASK) ---');
-    buffer.writeln('Detected Language: $detectedLanguage (ALWAYS RESPOND IN THIS LANGUAGE)');
-    buffer.writeln('Incident: $incidentType');
-    buffer.writeln('Hazards: $hazards');
-    buffer.writeln('Summary: $summary');
-    if (confirmedResources.isNotEmpty) buffer.writeln('Resources: ${confirmedResources.join(', ')}');
-    if (confirmedLacks.isNotEmpty) buffer.writeln('Lacks: ${confirmedLacks.join(', ')}');
-    buffer.writeln('Status: ${isAlone == true ? 'Person is alone.' : 'Person is NOT alone.'}');
+    buffer.writeln('Detected Language: $detectedLanguage');
+    buffer.writeln('INSTRUCTION: Ensure your response is in the user\'s language.');
+
+    if (summary.isNotEmpty) {
+      buffer.writeln('Incident: $incidentType');
+      buffer.writeln('Hazards: $hazards');
+      buffer.writeln('Summary: $summary');
+      if (confirmedResources.isNotEmpty)
+        buffer.writeln('Resources: ${confirmedResources.join(', ')}');
+      if (confirmedLacks.isNotEmpty)
+        buffer.writeln('Lacks: ${confirmedLacks.join(', ')}');
+      buffer.writeln(
+        'Status: ${isAlone == true ? 'Person is alone.' : 'Person is NOT alone.'}',
+      );
+    } else {
+      buffer.writeln('Status: First contact. Establish safety.');
+    }
+
     buffer.writeln('--- END CONFIRMED FACTS ---');
     return buffer.toString();
   }
@@ -132,7 +155,8 @@ class ContextCompactionService {
   static const int _compactEveryN = 4;
 
   SituationContext _context = SituationContext.empty();
-  final List<ChatMessage> _rawBuffer = []; // raw recent messages pending compaction
+  final List<ChatMessage> _rawBuffer =
+      []; // raw recent messages pending compaction
   int _messageCount = 0;
   String? _activeSessionId;
 
@@ -142,7 +166,7 @@ class ContextCompactionService {
     _activeSessionId = sessionId;
     _rawBuffer.clear();
     _messageCount = 0;
-    
+
     if (sessionId != null) {
       await _loadFromDisk(sessionId);
     } else {
@@ -166,7 +190,7 @@ class ContextCompactionService {
     if (_rawBuffer.length > 20) {
       _rawBuffer.removeRange(0, _rawBuffer.length - 20);
     }
-    
+
     if (_activeSessionId != null) {
       await _saveToDisk(_activeSessionId!);
     }
@@ -185,10 +209,13 @@ class ContextCompactionService {
   Future<void> compact(Future<String> Function(String prompt) llmCall) async {
     if (_rawBuffer.isEmpty) return;
 
-    final conversation = _rawBuffer.map((m) => 
-      '${m.author == MessageAuthor.user ? "User" : "AI"}: ${m.text}'
-    ).join('\n');
-    final prompt = '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
+    final conversation = _rawBuffer
+        .map(
+          (m) => '${m.author == MessageAuthor.user ? "User" : "AI"}: ${m.text}',
+        )
+        .join('\n');
+    final prompt =
+        '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
 IMPORTANT: Regardless of the language of the conversation, always provide the values in the JSON object in ENGLISH.
 
 Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
@@ -245,8 +272,18 @@ JSON:''';
 
     // Detect what they lack
     final lackPatterns = {
-      'water': ['no water', "don't have water", 'without water', 'no clean water'],
-      'bandage': ['no bandage', 'no cloth', 'no dressing', "don't have bandage"],
+      'water': [
+        'no water',
+        "don't have water",
+        'without water',
+        'no clean water',
+      ],
+      'bandage': [
+        'no bandage',
+        'no cloth',
+        'no dressing',
+        "don't have bandage",
+      ],
       'tourniquet': ['no tourniquet', "don't have tourniquet"],
       'signal': ['no signal', 'no service', 'no reception', "can't call"],
       'fire': ['no fire', 'no lighter', 'no matches', "can't make fire"],
@@ -280,23 +317,69 @@ JSON:''';
 
     // Detect alone status from explicit user messages only — never assume
     bool? isAlone = _context.isAlone;
-    if (msg.contains('alone') || msg.contains('by myself') || msg.contains('just me')) {
+    if (msg.contains('alone') ||
+        msg.contains('by myself') ||
+        msg.contains('just me')) {
       isAlone = true;
-    } else if (msg.contains('with me') || msg.contains('my friend') || msg.contains('my wife') ||
-        msg.contains('my husband') || msg.contains('my son') || msg.contains('my daughter') ||
-        msg.contains('my child') || msg.contains('we are') || msg.contains("we're")) {
+    } else if (msg.contains('with me') ||
+        msg.contains('my friend') ||
+        msg.contains('my wife') ||
+        msg.contains('my husband') ||
+        msg.contains('my son') ||
+        msg.contains('my daughter') ||
+        msg.contains('my child') ||
+        msg.contains('we are') ||
+        msg.contains("we're")) {
       isAlone = false;
     }
 
     // Detect safety and basic triage status
     String updatedHazards = _context.hazards;
-    if (msg.contains('safe') || msg.contains('all good') || msg.contains('no danger')) {
+    if (msg.contains('safe') ||
+        msg.contains('all good') ||
+        msg.contains('no danger') ||
+        msg.contains('seguro') ||
+        msg.contains('siguran')) {
       updatedHazards = 'None (Confirmed)';
+    }
+
+    // Quick Language Detection (Heuristics)
+    String updatedLanguage = _context.detectedLanguage;
+    if (updatedLanguage == 'Auto-Detect') {
+      final spanishKeywords = [
+        'me he',
+        'tengo',
+        'ayuda',
+        'herida',
+        'sangre',
+        'duele',
+        'corte',
+        'pierna',
+        'mano'
+      ];
+      final romanianKeywords = [
+        'm-am',
+        'am',
+        'ajutor',
+        'rana',
+        'sange',
+        'doare',
+        'taiat',
+        'mana',
+        'deget'
+      ];
+
+      if (spanishKeywords.any((k) => msg.contains(k))) {
+        updatedLanguage = 'Spanish';
+      } else if (romanianKeywords.any((k) => msg.contains(k))) {
+        updatedLanguage = 'Romanian';
+      }
     }
 
     // Detect GPS coordinates
     if (msg.contains('gps coordinates are:')) {
-      final startIndex = msg.indexOf('gps coordinates are:') + 'gps coordinates are:'.length;
+      final startIndex =
+          msg.indexOf('gps coordinates are:') + 'gps coordinates are:'.length;
       final coords = userMessage.substring(startIndex).trim();
       _context = _context.copyWith(locationDetails: coords);
     }
@@ -306,6 +389,7 @@ JSON:''';
       confirmedResources: updatedResources,
       hazards: updatedHazards,
       isAlone: isAlone,
+      detectedLanguage: updatedLanguage,
     );
   }
 
@@ -322,7 +406,8 @@ JSON:''';
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/context_$sessionId.json');
       if (await file.exists()) {
-        final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        final json =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
         _context = SituationContext.fromJson(json);
       } else {
         _context = SituationContext.empty();
