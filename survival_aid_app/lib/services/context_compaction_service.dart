@@ -140,6 +140,11 @@ class SituationContext {
     } else {
       buffer.writeln('Status: First contact. Establish safety.');
     }
+    
+    // Add specific systemic status to prevent re-asking
+    if (summary.contains('no other injuries') || summary.contains('body is ok')) {
+      buffer.writeln('Systemic Status: No other injuries confirmed.');
+    }
 
     buffer.writeln('--- END CONFIRMED FACTS ---');
     return buffer.toString();
