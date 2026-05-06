@@ -47,7 +47,7 @@ graph TD
     
     F[(Local Knowledge Base)] --> D
     D --> G[MediaPipe LLM Runtime]
-    G --> H[Gemma-2b-IT Inference]
+    G --> H[Gemma-4-E2B-IT Inference]
     H --> I[Actionable Directive]
     I --> J[User]
 ```
@@ -55,7 +55,7 @@ graph TD
 ### Core Technology Stack
 *   **Framework**: [Flutter](https://flutter.dev/)
 *   **LLM Runtime**: [MediaPipe LLM Inference API](https://developers.google.com/mediapipe/solutions/genai/llm_inference)
-*   **Model**: **Gemma-2b-IT** (Quantized LiteRT)
+*   **Model**: **Gemma-4-E2B-IT** (Quantized LiteRT)
 *   **State Management**: [Riverpod](https://riverpod.dev/)
 *   **Persistence**: Shared Preferences & Local File System
 

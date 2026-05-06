@@ -14,12 +14,12 @@ By running Google’s **Gemma** model entirely on-device, the app bridges the ga
 Survival AId utilizes a **Hybrid Architecture** that combines the creative reasoning of Large Language Models (LLMs) with the safety and reliability of a deterministic Decision Tree.
 
 *   **Deterministic Layer**: A structured JSON-based protocol tree (`protocol.json`) that enforces strict safety procedures (e.g., stopping major bleeding before checking for secondary injuries).
-*   **Cognitive Layer**: Google’s **Gemma-2b-IT** model, running on-device via **MediaPipe LLM Inference**. This layer provides nuanced explanations, adapts to complex queries, and maintains a "survival companion" persona.
+*   **Cognitive Layer**: Google’s **Gemma-4-E2B-IT** model, running on-device via **MediaPipe LLM Inference**. This layer provides nuanced explanations, adapts to complex queries, and maintains a "survival companion" persona.
 
 ### 2. Core Technology Stack
 *   **Framework**: **Flutter** for cross-platform (Windows & Android) performance and high-fidelity UI.
 *   **LLM Runtime**: **MediaPipe LLM Inference API**. Optimized for edge performance on mobile and desktop hardware.
-*   **Inference Model**: **Gemma-2b-IT (LiteRT)**. Quantized for low-latency, high-accuracy survival guidance.
+*   **Inference Model**: **Gemma-4-E2B-IT (LiteRT)**. Quantized for low-latency, high-accuracy survival guidance.
 *   **State Management**: **Riverpod** for robust, reactive session and context management.
 
 ### 3. Data & Knowledge Engineering
