@@ -374,7 +374,7 @@ class SessionNotifier extends Notifier<SessionState> {
     // 7. Trigger async compaction after every 2 exchanges
     final msgCount = state.chatHistory.where((m) => m.author == MessageAuthor.user).length;
     if (msgCount > 0 && msgCount % 2 == 0) {
-      compactionService.compact((prompt) => llm.generateOnce(prompt));
+      compactionService.compact((prompt, history) => llm.generateExtraction(prompt, history));
     }
     
     _persist();

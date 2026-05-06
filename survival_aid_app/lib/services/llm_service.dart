@@ -57,21 +57,21 @@ EMERGENCY TIER SYSTEM:
 - TIER 2 (MODERATE): Stable but serious (Fractures, Deep cuts). Action: Provide detailed, multi-step first aid (splinting, pressure).
 - TIER 3 (MINOR): Self-manageable (Scrapes, Sprains). Action: Provide thorough care instructions (cleaning, RICE method) and evacuation guidance.
 
-STRICT STYLE RULES (MANDATORY):
-1. FACT LOCK: If a fact is in CONFIRMED FACTS or SYSTEMIC STATUS, NEVER ask about it again. 
-2. DO NOT REITERATE: If you previously gave an instruction (e.g., "apply water", "apply pressure"), DO NOT tell them to do it again in your next response. Assume they are doing it. Only provide NEW steps.
-3. PACE YOURSELF: Give ONLY 1 or 2 instructions at a time. Do NOT dump a wall of text.
-4. NO INTROS: Start directly with the next survival step.
-5. NO SYMPATHY AFTER TURN 1.
-6. MANDATORY CHECK-IN: Always end with ONE question. If the user answered your last question, MOVE TO THE NEXT medical step immediately.
+STRICT PROTOCOL (MANDATORY):
+1. MULTIMODAL: Analyze photos FIRST. If a picture shows the injury, use it as your primary source of truth.
+2. LANGUAGE: Respond ONLY in $detectedLanguage. (Think in English internally).
+3. FACT LOCK: If a fact is in CONFIRMED FACTS, never re-ask. Move to the next step.
+4. PACE YOURSELF: Give 1 or 2 instructions, then WAIT for confirmation. No text walls.
+5. NO REPETITION: Do not repeat previous advice. Assume they are doing it.
+6. NO INTROS: Start directly with the next survival step.
 
 EXAMPLE CONVERSATION:
-User: I have a cut in the forest. I have water and a bandana. I am walking home.
-AI: Since you have water, gently rinse the wound once. Tell me when you have finished rinsing it.
-User: I rinsed it.
-AI: Good. Now use the bandana as a firm wrap to control any bleeding. Are you ready to start walking?
-User: Yes, I'm ready.
-AI: Keep your hand elevated above your heart level as you walk. Watch for slippery rocks or roots. Do you feel dizzy at all?''';
+User: [IMAGE of cut] I'm in the forest.
+AI: I see a minor cut on your palm. Since you're in the forest, rinse it with clean water if you have it. Do you have a bottle of water?
+User: Yes, I rinsed it.
+AI: Good. Now wrap it tightly with a clean cloth or bandana. Tell me when it is wrapped.
+User: It is wrapped.
+AI: Keep your hand elevated. Are you able to walk toward the trailhead?''';
   }
 
   Future<bool> init() async {
@@ -228,6 +228,51 @@ AI: Keep your hand elevated above your heart level as you walk. Watch for slippe
       await chat.close();
     } catch (e) {
       yield '\n\n[Error: ${e.toString()}]';
+    }
+  }
+
+  Future<String> generateExtraction(String prompt, List<ChatMessage> history) async {
+    if (state.status != LlmStatus.ready || _model == null) return '';
+
+    try {
+      final chat = await _model!.createChat(supportImage: true);
+      
+      // Add history with images
+      for (final msg in history) {
+        if (msg.imagePath != null) {
+          try {
+            final bytes = await File(msg.imagePath!).readAsBytes();
+            await chat.addQueryChunk(Message.withImage(
+              text: msg.text,
+              isUser: msg.author == MessageAuthor.user,
+              imageBytes: bytes,
+            ));
+          } catch (_) {
+            await chat.addQueryChunk(Message.text(
+              text: msg.text,
+              isUser: msg.author == MessageAuthor.user,
+            ));
+          }
+        } else {
+          await chat.addQueryChunk(Message.text(
+            text: msg.text,
+            isUser: msg.author == MessageAuthor.user,
+          ));
+        }
+      }
+
+      // Add the extraction prompt
+      await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
+
+      final buffer = StringBuffer();
+      await for (final response in chat.generateChatResponseAsync()) {
+        if (response is TextResponse) buffer.write(response.token);
+      }
+      await chat.close();
+      return buffer.toString();
+    } catch (e) {
+      print('LLM: Extraction error: $e');
+      return '';
     }
   }
 

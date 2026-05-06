@@ -249,26 +249,13 @@ class ContextCompactionService {
 
   /// Uses Gemma to compact the raw buffer into a structured situation summary.
   /// Called after every [_compactEveryN] messages.
-  Future<void> compact(Future<String> Function(String prompt) llmCall) async {
+  Future<void> compact(Future<String> Function(String prompt, List<ChatMessage> history) extractionCall) async {
     if (_rawBuffer.isEmpty) return;
 
-    final conversation = _rawBuffer
-        .map(
-          (m) => '${m.author == MessageAuthor.user ? "User" : "AI"}: ${m.text}',
-        )
-        .join('\n');
     final prompt =
-        '''Analyze this emergency conversation and extract key facts for an emergency dispatch report (ETHANE).
-IMPORTANT: Regardless of the language of the conversation, always provide the values in the JSON object in ENGLISH.
-
-Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
-
-EXAMPLE INPUT:
-User: i fell and hit my head
-AI: I am sorry to hear that. Are you bleeding?
-User: no bleeding but i feel dizzy
-AI: Stay still. Are you alone?
-User: yes, i am alone
+        '''Analyze the conversation and extract key facts for an emergency report (ETHANE).
+IMPORTANT: Regardless of the language, always provide values in ENGLISH.
+Return ONLY a raw JSON object. NO markdown.
 
 EXAMPLE OUTPUT:
 {
@@ -287,13 +274,10 @@ EXAMPLE OUTPUT:
   "detected_language": "English"
 }
 
-Conversation:
-$conversation
-
 JSON:''';
 
     try {
-      final result = await llmCall(prompt);
+      final result = await extractionCall(prompt, _rawBuffer);
       final jsonStart = result.indexOf('{');
       final jsonEnd = result.lastIndexOf('}');
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
