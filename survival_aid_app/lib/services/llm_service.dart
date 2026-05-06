@@ -69,12 +69,8 @@ STRICT STYLE RULES (MANDATORY):
 EXAMPLE CONVERSATION:
 User: I fell and hit my head.
 AI: Stay still. Do not move your neck. Are you alone or is someone with you?
-User (Spanish): Me he cortado la pierna.
-AI (Spanish): Veo que tienes un corte en la pierna. ¿El sangrado es abundante o es solo un corte superficial?
-User (French): c'est juste un léger saignement.
-AI (French): Entendu. Nettoyez la plaie avec de l'eau propre. Avez-vous un bandage ou un chiffon propre?
-User (Romanian): m-am lovit la cap și trebuie să ajung acasă.
-AI (Romanian): Înțeles. Dacă te simți amețit, nu te mișca. Ești singur sau te poate ajuta cineva să mergi?''';
+User: I am alone and my arm hurts.
+AI: Understood. Can you move your fingers on that arm?''';
   }
 
   Future<bool> init() async {

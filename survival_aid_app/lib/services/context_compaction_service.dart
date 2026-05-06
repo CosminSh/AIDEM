@@ -48,7 +48,7 @@ class SituationContext {
     confirmedResources: [],
     confirmedLacks: [],
     isAlone: null,
-    detectedLanguage: 'Auto-Detect',
+    detectedLanguage: 'English',
     lastUpdated: DateTime.now(),
   );
 
@@ -123,8 +123,8 @@ class SituationContext {
   String toPromptString() {
     final buffer = StringBuffer();
     buffer.writeln('--- CONFIRMED FACTS (DO NOT RE-ASK) ---');
-    buffer.writeln('Detected Language: $detectedLanguage');
-    buffer.writeln('INSTRUCTION: Ensure your response is in the user\'s language.');
+    buffer.writeln('CRITICAL: YOU MUST RESPOND IN $detectedLanguage ONLY.');
+    buffer.writeln('LANGUAGE LOCK: Even if history is in another language, SWITCH TO $detectedLanguage NOW.');
 
     if (summary.isNotEmpty) {
       buffer.writeln('Incident: $incidentType');
@@ -260,11 +260,11 @@ IMPORTANT: Regardless of the language of the conversation, always provide the va
 Return ONLY a raw JSON object. NO markdown, NO explanation, NO leading/trailing text.
 
 EXAMPLE INPUT:
-User: me he caído y me he golpeado la cabeza
-AI: Lo siento. ¿Estás sangrando?
-User: no sangro pero me siento mareado
-AI: Quédate quieto. ¿Estás solo?
-User: sí, estoy solo
+User: i fell and hit my head
+AI: I am sorry to hear that. Are you bleeding?
+User: no bleeding but i feel dizzy
+AI: Stay still. Are you alone?
+User: yes, i am alone
 
 EXAMPLE OUTPUT:
 {
@@ -280,7 +280,7 @@ EXAMPLE OUTPUT:
   "injury_type": "head injury",
   "environment": "Unknown",
   "is_alone": true,
-  "detected_language": "Spanish"
+  "detected_language": "English"
 }
 
 Conversation:
