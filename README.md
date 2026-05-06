@@ -27,7 +27,9 @@ Imagine you’re miles deep in the wilderness, or in the aftermath of a major na
 
 ## ✨ Key Features
 
-- **🧠 Offline-First Intelligence**: Using MediaPipe and Gemma, complex inference is performed on the edge. No data ever leaves your device. Total privacy, total reliability.
+- **🌍 Multi-Language Survival Engine**: Features a unique "Think in English, Respond in Native" workflow, allowing the AI to process medical protocols in English (for accuracy) while assisting users in Spanish, Romanian, French, and more.
+- **🖼️ Multimodal First Aid**: Analyze injuries through your camera—Gemma analyzes the image and provides visual-contextual advice.
+- **🛡️ 100% Offline & Private**: No data leaves your device. Perfect for remote wilderness or disaster zones where cellular networks are down.
 - **🏥 The Triage Engine**: A structured, deterministic layer that guides you from initial assessment to final action, prioritizing life-saving measures (like stopping major bleeding) first.
 - **📚 Expert Knowledge Base**: Protocols are sourced from the **US Army FM 21-76**, **FEMA**, **NOAA**, and **Wilderness First Aid** standards.
 - **🗣️ Hands-Free Assistance**: Integrated speech-to-text and text-to-speech support for hands-on emergency scenarios.

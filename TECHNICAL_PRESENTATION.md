@@ -29,6 +29,14 @@ The system’s intelligence is grounded in two primary datasets:
 
 ### 4. Advanced Inference Logic
 *   **Situational Awareness (`ProtocolService`)**: A mapping service that monitors the user’s position in the decision tree and injects relevant technical context into the LLM’s prompt window.
+* ### 🌍 Multi-Language Translation Protocol
+One of the core challenges with 2B models is maintaining reasoning consistency across languages. AIDEM solves this via a **Cognitive Bridge**:
+- **Internalization**: The model is instructed to process non-English input as English concepts internally.
+- **English-Centric Reasoning**: By using English as the "intermediate language" for logic, the AI leverages the highest-quality training data for medical protocols.
+- **Native Reconstruction**: The final expert advice is reconstructed in the user's native language (Spanish, Romanian, French, etc.) only at the output stage.
+
+### 🧠 Situation Context Compaction
+To avoid the "forgetfulness" of small context windows, AIDEM uses a background **Compactor Service**:
 *   **Context Compaction**: To survive the limited context windows of small on-device models, we implement a custom compaction service that prioritizes the **current assessment node**, **active injury data**, and **last 3 turns of history**.
 *   **Prompt Hardening**: A strict system prompt architecture that prevents "reassurance loops," eliminates robotic repetition, and enforces an action-oriented communication style.
 
