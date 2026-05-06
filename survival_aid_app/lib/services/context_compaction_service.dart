@@ -346,6 +346,15 @@ JSON:''';
     // Quick Language Detection (Heuristics)
     String updatedLanguage = _context.detectedLanguage;
     if (updatedLanguage == 'Auto-Detect') {
+      final englishKeywords = [
+        'i fell',
+        'i hit',
+        'help',
+        'bleeding',
+        'hurt',
+        'where am i',
+        'i am'
+      ];
       final spanishKeywords = [
         'me he',
         'tengo',
@@ -369,7 +378,9 @@ JSON:''';
         'deget'
       ];
 
-      if (spanishKeywords.any((k) => msg.contains(k))) {
+      if (englishKeywords.any((k) => msg.contains(k))) {
+        updatedLanguage = 'English';
+      } else if (spanishKeywords.any((k) => msg.contains(k))) {
         updatedLanguage = 'Spanish';
       } else if (romanianKeywords.any((k) => msg.contains(k))) {
         updatedLanguage = 'Romanian';
