@@ -1,17 +1,42 @@
-# survival_aid_app
+# Survival AId App Module 📱
 
-A new Flutter project.
+This is the main Flutter implementation of **Survival AId**, an offline emergency assistant powered by on-device LLMs.
 
-## Getting Started
+## 🚀 Features in this Module
+- **Offline LLM Integration**: Full implementation of MediaPipe GenAI for Gemma inference.
+- **Triage Logic**: Deterministic protocol state machine for emergency assessments.
+- **Dynamic Context**: Situational awareness that adapts LLM prompts based on triage progress.
+- **Resource Management**: Optimized for low-memory environments and airplane-mode reliability.
 
-This project is a starting point for a Flutter application.
+## 🛠️ Development Setup
 
-A few resources to get you started if this is your first Flutter project:
+### Platform Specifics
+- **Windows**: Requires Visual Studio 2022 with C++ desktop development workload.
+- **Android**: Requires NDK and CMake. Ensure the device supports GLES3 or Vulkan for optimal inference speeds.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Model Integration
+The app looks for models in the following priority:
+1.  **Saved Path**: Previously used model location.
+2.  **Portable Path**: `models/` directory relative to the executable.
+3.  **Assets Path**: `Assets/Models/gemma-4-E2B-it.litertlm`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Build Commands
+```bash
+# Debug run
+flutter run
+
+# Build Windows Release (bundled)
+./scripts/bundle_app.ps1 # Custom script for portable distribution
+
+# Build Android App Bundle
+flutter build appbundle
+```
+
+## 📂 Structure
+- `lib/services/llm_service.dart`: Interface for model communication.
+- `lib/services/protocol_service.dart`: The deterministic triage engine.
+- `lib/providers/`: Riverpod state management.
+- `assets/protocols/`: JSON definitions for medical and survival protocols.
+
+---
+For the full project overview, architecture, and vision, see the [Main Project README](../README.md).

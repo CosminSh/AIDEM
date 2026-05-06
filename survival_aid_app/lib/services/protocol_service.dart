@@ -63,7 +63,7 @@ class ProtocolService {
   }
 
   /// Maps each node to related nodes whose documentation is also relevant.
-  static const Map<String, List<String>> _relatedNodes = {
+  static final Map<String, List<String>> _relatedNodes = {
     'start': ['triage_selection', 'lost_protocol', 'disaster_selection'],
     'bleeding_protocol': ['injury_assessment'],
     'apply_tourniquet': ['bleeding_protocol'],
@@ -190,7 +190,6 @@ class ProtocolService {
     'snow_shelter': ['shelter_skills'],
     'desert_shelter': ['shelter_skills'],
     'shadow_tip_info': ['nav_skills'],
-    'polaris_info': ['nav_skills'],
     'southern_cross_info': ['nav_skills'],
   };
 }

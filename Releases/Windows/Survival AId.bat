@@ -1,0 +1,3 @@
+@echo off
+echo Starting Survival AId...
+start "" "%~dp0app\SurvivalAId.exe"

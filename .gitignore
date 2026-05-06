@@ -15,8 +15,12 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.exe
+*.apk
+*.dll
 scratch/
 flutter/
 android_sdk/
 java/
-/Assets/
+Assets/Models/
+Assets/cmdline-tools/
+Assets/*.exe
