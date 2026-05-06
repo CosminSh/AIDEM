@@ -96,5 +96,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 <p align="center">
-  <b>AIDEM: Stay Calm. Follow the Protocol. Save Lives.</b>
+  <b>AIDEM: Stay Calm. Follow the Protocol. Aid Them.</b>
 </p>
