@@ -189,7 +189,7 @@ class ContextCompactionService {
     'Urdu',
   ];
 
-  static const int _compactEveryN = 4;
+  static const int _compactEveryN = 2;
 
   SituationContext _context = SituationContext.empty();
   final List<ChatMessage> _rawBuffer =
@@ -243,8 +243,7 @@ class ContextCompactionService {
   /// Builds the full prompt context string to inject before every Gemma response.
   String getPromptContext() => _context.toPromptString();
 
-  /// Returns recent raw messages for the conversation window.
-  List<ChatMessage> getRecentMessages({int count = 8}) {
+  List<ChatMessage> getRecentMessages({int count = 14}) {
     return _rawBuffer.takeLast(count);
   }
 

@@ -267,7 +267,7 @@ class SessionNotifier extends Notifier<SessionState> {
     final llm = ref.read(llmServiceProvider.notifier);
 
     final situationContext = compactionService.getPromptContext();
-    final recentHistory = compactionService.getRecentMessages(count: 10);
+    final recentHistory = compactionService.getRecentMessages(count: 14);
     
     // Map incident types to relevant documentation nodes if current node is 'start'
     String effectiveNodeId = state.currentNode?.id ?? 'start';
