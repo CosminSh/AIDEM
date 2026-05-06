@@ -145,6 +145,10 @@ class SituationContext {
     return buffer.toString();
   }
 
+  bool get isEmpty => summary.isEmpty;
+}
+
+class ContextCompactionService {
   static const List<String> supportedLanguages = [
     'English',
     'Spanish',
