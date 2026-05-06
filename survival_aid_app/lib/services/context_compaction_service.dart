@@ -5,18 +5,7 @@ import '../models/protocol.dart';
 
 /// Represents what we know about the user's emergency situation.
 class SituationContext {
-  final String summary;
-  final String locationDetails; // coordinates, landmarks, trailhead
-  final String incidentType;    // fall, bite, lost, medical
-  final String hazards;         // weather, terrain, animals
-  final String accessInfo;      // best way for rescuers to arrive
-  final int patientCount;
-  final String urgencyLevel;    // critical, stable, worsening
-  final List<String> confirmedResources;
-  final List<String> confirmedLacks;
-  final String? injuryType;
-  final String? environment;
-  final bool? isAlone;
+  final String detectedLanguage; // English, Spanish, Romanian, etc.
   final DateTime lastUpdated;
 
   SituationContext({
@@ -32,6 +21,7 @@ class SituationContext {
     this.injuryType,
     this.environment,
     this.isAlone,
+    this.detectedLanguage = 'English',
     required this.lastUpdated,
   });
 
@@ -46,6 +36,7 @@ class SituationContext {
         confirmedResources: [],
         confirmedLacks: [],
         isAlone: null,
+        detectedLanguage: 'English',
         lastUpdated: DateTime.now(),
       );
 
@@ -62,6 +53,7 @@ class SituationContext {
         injuryType: json['injury_type'],
         environment: json['environment'],
         isAlone: json['is_alone'],
+        detectedLanguage: json['detected_language'] ?? 'English',
         lastUpdated: DateTime.tryParse(json['last_updated'] ?? '') ?? DateTime.now(),
       );
 
@@ -78,6 +70,7 @@ class SituationContext {
         'injury_type': injuryType,
         'environment': environment,
         'is_alone': isAlone,
+        'detected_language': detectedLanguage,
         'last_updated': lastUpdated.toIso8601String(),
       };
 
@@ -94,6 +87,7 @@ class SituationContext {
     String? injuryType,
     String? environment,
     bool? isAlone,
+    String? detectedLanguage,
   }) => SituationContext(
         summary: summary ?? this.summary,
         locationDetails: locationDetails ?? this.locationDetails,
@@ -107,6 +101,7 @@ class SituationContext {
         injuryType: injuryType ?? this.injuryType,
         environment: environment ?? this.environment,
         isAlone: isAlone ?? this.isAlone,
+        detectedLanguage: detectedLanguage ?? this.detectedLanguage,
         lastUpdated: DateTime.now(),
       );
 
@@ -116,6 +111,7 @@ class SituationContext {
 
     final buffer = StringBuffer();
     buffer.writeln('--- CONFIRMED FACTS (DO NOT RE-ASK) ---');
+    buffer.writeln('Detected Language: $detectedLanguage (ALWAYS RESPOND IN THIS LANGUAGE)');
     buffer.writeln('Incident: $incidentType');
     buffer.writeln('Hazards: $hazards');
     buffer.writeln('Summary: $summary');
@@ -217,7 +213,8 @@ EXAMPLE OUTPUT:
   "lacks": [],
   "injury_type": "head injury",
   "environment": "Unknown",
-  "is_alone": true
+  "is_alone": true,
+  "detected_language": "Spanish"
 }
 
 Conversation:
