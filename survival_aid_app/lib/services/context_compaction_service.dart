@@ -243,7 +243,7 @@ class ContextCompactionService {
   /// Builds the full prompt context string to inject before every Gemma response.
   String getPromptContext() => _context.toPromptString();
 
-  List<ChatMessage> getRecentMessages({int count = 14}) {
+  List<ChatMessage> getRecentMessages({int count = 8}) {
     return _rawBuffer.takeLast(count);
   }
 
