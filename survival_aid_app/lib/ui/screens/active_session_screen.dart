@@ -6,16 +6,63 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/chat_list_view.dart';
-import '../widgets/options_panel.dart';
 import '../../providers/global_providers.dart';
 import '../../services/context_compaction_service.dart';
 import '../../models/protocol.dart';
+
+bool isBinaryYesNoQuestion(String text) {
+  final trimmed = text.trim();
+  if (!trimmed.endsWith('?')) return false;
+
+  final parts = trimmed.split(RegExp(r'[.!?]'));
+  final lastPart = parts.reversed
+      .firstWhere((s) => s.trim().isNotEmpty, orElse: () => '')
+      .trim()
+      .toLowerCase();
+  if (lastPart.isEmpty) return false;
+
+  if (RegExp(r'\b(what|where|when|why|how|which|who)\b').hasMatch(lastPart)) {
+    return false;
+  }
+
+  final hasExplicitYesNo =
+      lastPart.contains(' or not') || lastPart.contains(' yes or no');
+  final hasAlternativeChoice =
+      RegExp(r'\bor\b').hasMatch(lastPart) && !hasExplicitYesNo;
+  if (hasAlternativeChoice) return false;
+
+  final yesNoStarts = [
+    'is ',
+    'are ',
+    'do ',
+    'does ',
+    'did ',
+    'can ',
+    'could ',
+    'should ',
+    'would ',
+    'will ',
+    'has ',
+    'have ',
+    'was ',
+    'were ',
+    'am ',
+    'shall ',
+    'may ',
+    'might ',
+    'must ',
+  ];
+
+  return yesNoStarts.any((start) => lastPart.startsWith(start)) ||
+      hasExplicitYesNo;
+}
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   const ActiveSessionScreen({super.key});
 
   @override
-  ConsumerState<ActiveSessionScreen> createState() => _ActiveSessionScreenState();
+  ConsumerState<ActiveSessionScreen> createState() =>
+      _ActiveSessionScreenState();
 }
 
 class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
@@ -67,16 +114,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if ((text.isEmpty && _pendingImagePath == null) || _isSending) return;
 
     final imagePath = _pendingImagePath;
-    
+
     setState(() {
       _isSending = true;
       _pendingImagePath = null;
     });
-    
+
     _textController.clear();
     _focusNode.requestFocus();
 
-    await ref.read(sessionProvider.notifier).handleFreeformInput(text, imagePath: imagePath);
+    await ref
+        .read(sessionProvider.notifier)
+        .handleFreeformInput(text, imagePath: imagePath);
 
     setState(() => _isSending = false);
     _scrollToBottom();
@@ -91,7 +140,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         maxHeight: 1024,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         setState(() {
           _pendingImagePath = image.path;
@@ -109,8 +158,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   Future<void> _exportChat() async {
-    final markdown = ref.read(sessionProvider.notifier).generateMarkdownExport();
-    
+    final markdown = ref
+        .read(sessionProvider.notifier)
+        .generateMarkdownExport();
+
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file:',
       fileName: 'survival_aid_export.md',
@@ -120,11 +171,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (outputFile != null) {
       final file = File(outputFile);
       await file.writeAsString(markdown);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Chat exported to $outputFile')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Chat exported to $outputFile')));
       }
     }
   }
@@ -140,7 +191,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       if (!available) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Speech recognition not available. Please check your microphone and Windows settings.')),
+            const SnackBar(
+              content: Text(
+                'Speech recognition not available. Please check your microphone and Windows settings.',
+              ),
+            ),
           );
         }
         return;
@@ -157,7 +212,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           });
         },
       );
-      
+
       // Check for immediate errors after starting
       final newState = ref.read(speechServiceProvider);
       if (newState.error != null && mounted) {
@@ -171,12 +226,19 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   Future<void> _showLanguageDialog() async {
     final sessionNotifier = ref.read(sessionProvider.notifier);
     final languages = ContextCompactionService.supportedLanguages;
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('SELECT LANGUAGE', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'SELECT LANGUAGE',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -185,7 +247,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             itemBuilder: (context, index) {
               final lang = languages[index];
               return ListTile(
-                title: Text(lang, style: const TextStyle(color: AppColors.textPrimary)),
+                title: Text(
+                  lang,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                ),
                 onTap: () {
                   sessionNotifier.setLanguage(lang);
                   Navigator.pop(context);
@@ -203,22 +268,22 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final gps = ref.read(gpsServiceProvider);
       final location = await gps.getCurrentLocation();
       final dms = location.toDms();
-      
+
       // Add a special message to chat about location
-      await ref.read(sessionProvider.notifier).handleFreeformInput(
-        "My current GPS coordinates are: $dms",
-      );
-      
+      await ref
+          .read(sessionProvider.notifier)
+          .handleFreeformInput("My current GPS coordinates are: $dms");
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Location shared: $dms')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Location shared: $dms')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error getting location: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
       }
     }
   }
@@ -227,26 +292,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final String phaseTitle =
-        session.currentNode?.id.toUpperCase().replaceAll('_', ' ') ?? 'ASSESSMENT';
-
-    bool isYesNoQuestion(String text) {
-      final trimmed = text.trim();
-      if (!trimmed.endsWith('?')) return false;
-      
-      // Get the last sentence/segment
-      final parts = trimmed.split(RegExp(r'[.!?]'));
-      final lastPart = parts.reversed.firstWhere((s) => s.trim().isNotEmpty, orElse: () => '').trim().toLowerCase();
-      if (lastPart.isEmpty) return false;
-      
-      final yesNoStarts = [
-        'is ', 'are ', 'do ', 'does ', 'did ', 'can ', 'could ', 'should ', 'would ', 'will ', 
-        'has ', 'have ', 'was ', 'were ', 'am ', 'shall ', 'may ', 'might ', 'must '
-      ];
-      
-      return yesNoStarts.any((start) => lastPart.startsWith(start)) || 
-             lastPart.contains(' or not') || 
-             lastPart.contains(' yes or no');
-    }
+        session.currentNode == null || session.currentNode?.id == 'start'
+        ? 'CONVERSATION'
+        : session.currentNode!.id.toUpperCase().replaceAll('_', ' ');
 
     _scrollToBottom();
 
@@ -284,7 +332,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               final llmState = ref.watch(llmServiceProvider);
               Color statusColor;
               String statusText;
-              
+
               switch (llmState.status) {
                 case LlmStatus.ready:
                   statusColor = AppColors.success;
@@ -307,24 +355,30 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   statusText = 'UNKNOWN';
                   break;
               }
-              
+
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Center(
                   child: GestureDetector(
                     onTap: () {
                       if (llmState.errorMessage != null &&
-                          (llmState.status == LlmStatus.mock || llmState.status == LlmStatus.error)) {
+                          (llmState.status == LlmStatus.mock ||
+                              llmState.status == LlmStatus.error)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('AI Error Details: ${llmState.errorMessage}'),
+                            content: Text(
+                              'AI Error Details: ${llmState.errorMessage}',
+                            ),
                             backgroundColor: AppColors.accentRed,
                           ),
                         );
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -352,7 +406,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             },
           ),
           IconButton(
-            icon: const Icon(Icons.language_rounded, size: 20, color: AppColors.accentBlue),
+            icon: const Icon(
+              Icons.language_rounded,
+              size: 20,
+              color: AppColors.accentBlue,
+            ),
             tooltip: 'Change Language',
             onPressed: _showLanguageDialog,
           ),
@@ -365,7 +423,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             padding: const EdgeInsets.only(right: 8.0),
             child: IconButton(
               onPressed: _shareLocation,
-              icon: const Icon(Icons.my_location, size: 20, color: AppColors.accentBlue),
+              icon: const Icon(
+                Icons.my_location,
+                size: 20,
+                color: AppColors.accentBlue,
+              ),
               tooltip: 'Share My Location',
             ),
           ),
@@ -383,7 +445,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               color: AppColors.surface,
               child: Row(
                 children: [
-                  const Icon(Icons.psychology, color: AppColors.accentBlue, size: 14),
+                  const Icon(
+                    Icons.psychology,
+                    color: AppColors.accentBlue,
+                    size: 14,
+                  ),
                   const SizedBox(width: 6),
                   const Text(
                     'Context: ',
@@ -396,14 +462,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   Expanded(
                     child: Text(
                       session.situationSummary,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
-          
+
           // Initial Language Selector
           if (session.chatHistory.isEmpty)
             Padding(
@@ -413,7 +482,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 decoration: BoxDecoration(
                   color: AppColors.accentBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.accentBlue.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -430,7 +501,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                     const Text(
                       'Gemma supports 35+ languages. Select yours for best medical reasoning.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
@@ -440,14 +514,16 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentBlue,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          
+
           // Chat history
           Expanded(
             child: ChatListView(
@@ -467,11 +543,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.accentBlue.withOpacity(0.3),
+                    ),
                   ),
                   child: Text(
                     session.streamingBuffer,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -484,7 +566,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(24),
@@ -495,7 +580,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(3, (i) {
-                          final opacity = ((_typingDotController.value * 3 - i) % 1.0).clamp(0.2, 1.0);
+                          final opacity =
+                              ((_typingDotController.value * 3 - i) % 1.0)
+                                  .clamp(0.2, 1.0);
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 2),
                             child: Opacity(
@@ -516,22 +603,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
           const Divider(color: AppColors.border, height: 1),
 
-          // Protocol option buttons
-          // Hide buttons on 'start' node to encourage free-form description
-          if (session.currentNode != null && 
-              session.currentNode!.id != 'start' &&
-              session.currentNode!.branches.isNotEmpty && 
-              !session.isLlmTyping)
-            OptionsPanel(
-              branches: session.currentNode!.branches
-                  .where((b) => b.target != 'start') // hide self-loop button
-                  .toList(),
-              onSelected: (branch) {
-                ref.read(sessionProvider.notifier).handleUserSelection(branch);
-                _scrollToBottom();
-              },
-            ),
-
           // Image Preview Area
           if (_pendingImagePath != null)
             Container(
@@ -540,7 +611,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.accentBlue.withOpacity(0.3),
+                ),
               ),
               child: Stack(
                 children: [
@@ -557,7 +630,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                     top: -8,
                     right: -8,
                     child: IconButton(
-                      icon: const Icon(Icons.cancel, color: AppColors.accentRed, size: 20),
+                      icon: const Icon(
+                        Icons.cancel,
+                        color: AppColors.accentRed,
+                        size: 20,
+                      ),
                       onPressed: _clearPendingImage,
                     ),
                   ),
@@ -568,31 +645,48 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           // Quick Replies (Yes/No)
           if (session.chatHistory.isNotEmpty &&
               session.chatHistory.last.author == MessageAuthor.ai &&
-              isYesNoQuestion(session.chatHistory.last.text) &&
+              isBinaryYesNoQuestion(session.chatHistory.last.text) &&
               !session.isLlmTyping)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ActionChip(
-                    label: const Text('Yes', style: TextStyle(color: AppColors.textPrimary)),
+                    label: const Text(
+                      'Yes',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
                     backgroundColor: AppColors.surface,
-                    side: BorderSide(color: AppColors.accentBlue.withValues(alpha: 0.5)),
-                    onPressed: _isSending ? null : () {
-                      _textController.text = 'Yes';
-                      _sendMessage();
-                    },
+                    side: BorderSide(
+                      color: AppColors.accentBlue.withValues(alpha: 0.5),
+                    ),
+                    onPressed: _isSending
+                        ? null
+                        : () {
+                            _textController.text = 'Yes';
+                            _sendMessage();
+                          },
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
-                    label: const Text('No', style: TextStyle(color: AppColors.textPrimary)),
+                    label: const Text(
+                      'No',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
                     backgroundColor: AppColors.surface,
-                    side: BorderSide(color: AppColors.accentBlue.withValues(alpha: 0.5)),
-                    onPressed: _isSending ? null : () {
-                      _textController.text = 'No';
-                      _sendMessage();
-                    },
+                    side: BorderSide(
+                      color: AppColors.accentBlue.withValues(alpha: 0.5),
+                    ),
+                    onPressed: _isSending
+                        ? null
+                        : () {
+                            _textController.text = 'No';
+                            _sendMessage();
+                          },
                   ),
                 ],
               ),
@@ -624,7 +718,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         hintText: session.isLlmTyping
                             ? 'Gemma is responding...'
                             : 'Describe your situation in detail...',
-                        hintStyle: const TextStyle(color: AppColors.textSecondary),
+                        hintStyle: const TextStyle(
+                          color: AppColors.textSecondary,
+                        ),
                         border: InputBorder.none,
                       ),
                       onSubmitted: (_) => _sendMessage(),
@@ -634,15 +730,27 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.camera_alt_rounded, color: AppColors.textSecondary, size: 20),
-                    onPressed: session.isLlmTyping ? null : () => _pickImage(ImageSource.camera),
+                    icon: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: session.isLlmTyping
+                        ? null
+                        : () => _pickImage(ImageSource.camera),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.image_rounded, color: AppColors.textSecondary, size: 20),
-                    onPressed: session.isLlmTyping ? null : () => _pickImage(ImageSource.gallery),
+                    icon: const Icon(
+                      Icons.image_rounded,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: session.isLlmTyping
+                        ? null
+                        : () => _pickImage(ImageSource.gallery),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -651,13 +759,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                     builder: (context, ref, _) {
                       final speechState = ref.watch(speechServiceProvider);
                       final isListening = speechState.isListening;
-                      
+
                       return IconButton(
                         icon: Icon(
                           isListening ? Icons.graphic_eq_rounded : Icons.mic,
-                          color: isListening ? AppColors.accentRed : AppColors.textSecondary,
+                          color: isListening
+                              ? AppColors.accentRed
+                              : AppColors.textSecondary,
                         ),
-                        onPressed: session.isLlmTyping ? null : _toggleDictation,
+                        onPressed: session.isLlmTyping
+                            ? null
+                            : _toggleDictation,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       );
@@ -674,7 +786,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       child: InkWell(
                         key: const ValueKey('send_button'),
                         borderRadius: BorderRadius.circular(20),
-                        onTap: (_isSending || session.isLlmTyping) ? null : _sendMessage,
+                        onTap: (_isSending || session.isLlmTyping)
+                            ? null
+                            : _sendMessage,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: _isSending
@@ -686,7 +800,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                              : const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                         ),
                       ),
                     ),

@@ -41,14 +41,21 @@ class LlmService extends Notifier<LlmState> {
     // - Short, imperative sentences — small models follow commands, not prose.
     // - Concrete WRONG/RIGHT examples targeting the exact loop failure mode.
     // - KB is placed last to act as reference, not as instructions.
-    return '''You are AIDEM, a wilderness paramedic AI. Be direct. Save lives.
+    return '''You are AIDEM, an offline emergency first-aid helper. Be calm, plain, and practical.
 
 RULES (FOLLOW EXACTLY):
 1. LANGUAGE: Respond ONLY in the language shown in SESSION STATE.
-2. PROGRESS: NEVER repeat or re-ask anything in the "ALREADY ADDRESSED" list. Move forward immediately.
-3. BREVITY: Give 1-2 actions per response. No intro. No sympathy phrases.
-4. VISION: If an image is provided, describe what you see and base advice on it.
-5. STUCK: If you are repeating yourself, STOP. Ask a completely different triage question.
+2. FLOW: Treat CURRENT USER MESSAGE, KNOWN FACTS, and CARE ALREADY DONE as settled. Do not ask for them again.
+3. PLAIN WORDS: No jargon or protocol labels. Do not say "blanching", "distal", "proximal", or ask the user to classify first/second/third degree. Ask what they can see or feel.
+4. NEXT STEP: Give the next safe action and at most one simple question.
+5. BREVITY: Write 1-3 short sentences. No headings, bullets, numbered lists, or intake labels.
+6. VISION: If an image is provided, describe what you see and base advice on it. If there is a visible injury and immediate danger is controlled, ask for a clear photo when it would help: wounds, burns, swelling, bites, stings, rashes, deformity.
+7. STUCK: If your next answer repeats the last answer, STOP and move to a different useful next step.
+8. CHOICE QUESTIONS: If you asked an either/or question and the user picked one option, accept that answer and continue. Do not ask the same either/or question again.
+9. CUTS: For a finger cut, do not decide it is minor until you know bleeding control plus at least one wound-detail check: deep/gaping, numbness/movement, dirt, or whether it can be cleaned and covered.
+10. GENERAL TRIAGE: For any situation, first handle immediate danger, then learn the one most important missing fact before concluding. Use what the user already told you. Good missing facts are: breathing/consciousness, bleeding control, pain severity, movement/feeling, swelling/deformity, exposure/substance, location/signal, and available supplies.
+11. PHOTO TIMING: Do not ask for a photo before urgent actions like calling emergency services, stopping heavy bleeding, cooling a burn, choking first aid, or using epinephrine. After the urgent step is underway, a photo can help visual assessment.
+12. BLEEDING WORDING: Do not say bright red blood means an artery is involved. Treat spurting, pulsing, soaking through cloth, or bleeding that will not slow as the danger signs.
 
 $situationContext
 
@@ -57,7 +64,7 @@ $knowledgeBase
 
 EXAMPLES OF CORRECT BEHAVIOR:
 
-WRONG (loop — never do this):
+WRONG (loop - never do this):
 User: it stopped bleeding
 AI: Apply pressure to stop the bleeding. Has the bleeding stopped?
 
@@ -71,7 +78,63 @@ AI: Cool the burn under running water for 10 minutes.
 
 RIGHT:
 User: yes i cooled it under water, it feels better
-AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is the skin blistering?''';
+AI: Cover loosely with a clean cloth or bandage. Do not use ice or butter. Are there any blisters?
+
+WRONG (too technical):
+User: it's red, no blisters
+AI: Check for blanching. Is it first, second, or third degree?
+
+RIGHT:
+User: it's red, no blisters
+AI: That sounds like a mild surface burn. If it has already been cooled for 10-20 minutes, cover it loosely with a clean dry bandage. Watch for blisters, spreading redness, numbness, or worsening pain.
+
+WRONG (stuck on either/or question):
+User: dull pain
+AI: Does the pain feel sharp or dull?
+
+RIGHT:
+User: dull pain
+AI: Dull pain with red skin and no blisters usually fits a mild burn. Cool it under running water for 10-20 minutes if you have not already, then cover it loosely with a clean dry cloth.
+
+WRONG (bleeding answer ignored):
+User: the bleeding almost stopped
+AI: Is the bleeding still heavy?
+
+RIGHT:
+User: the bleeding almost stopped
+AI: Good, it is slowing down. Keep gentle pressure for a few more minutes, then rinse the cut with clean running water and cover it with a clean bandage once bleeding stops.
+
+WRONG (jumps to conclusion too fast):
+User: it's not bleeding that bad
+AI: If bleeding does not slow, the cut is deep, or you feel numbness, get medical help.
+
+RIGHT:
+User: it's not bleeding that bad
+AI: Good, it does not sound like heavy bleeding. Keep gentle pressure a bit longer. Is the cut deep or gaping, dirty, or does your fingertip feel numb?
+
+WRONG (overstates blood color):
+User: bright red
+AI: The bright red blood indicates an artery is likely involved.
+
+RIGHT:
+User: bright red
+AI: Keep firm pressure on it. Bright red matters most if it is spurting, pulsing, soaking through cloth, or not slowing; is it spurting or a steady flow?
+
+WRONG (concludes before learning enough):
+User: i fell and my ankle is swollen
+AI: It is probably a sprain. Rest and ice it.
+
+RIGHT:
+User: i fell and my ankle is swollen
+AI: Keep weight off it and use a cold pack wrapped in cloth. Can you move your toes and put any weight on that foot?
+
+WRONG (misses image input opportunity):
+User: i have a rash after a bee sting
+AI: Watch it and rest.
+
+RIGHT:
+User: i have a rash after a bee sting
+AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat. If breathing is normal, send a clear photo of the rash if you can.''';
   }
 
   Future<bool> init() async {
@@ -79,7 +142,7 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
 
     state = state.copyWith(status: LlmStatus.loading);
     print('LLM: Initializing Gemma model...');
-    
+
     try {
       try {
         print('LLM: Attempting GPU initialization (2048 tokens)...');
@@ -99,7 +162,9 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
           );
           print('LLM: CPU initialization successful.');
         } catch (cpuError) {
-          print('LLM: CPU (1024) failed ($cpuError). Attempting Conservative CPU (512 tokens)...');
+          print(
+            'LLM: CPU (1024) failed ($cpuError). Attempting Conservative CPU (512 tokens)...',
+          );
           _model = await FlutterGemma.getActiveModel(
             maxTokens: 512,
             preferredBackend: PreferredBackend.cpu,
@@ -113,7 +178,10 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
       return true;
     } catch (e) {
       print('LLM: Final initialization error: $e');
-      state = state.copyWith(status: LlmStatus.mock, errorMessage: e.toString());
+      state = state.copyWith(
+        status: LlmStatus.mock,
+        errorMessage: e.toString(),
+      );
       return false;
     }
   }
@@ -132,7 +200,9 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
 
     if (state.status != LlmStatus.ready || _model == null) {
       final response = AdaptiveMock.respond(
-        userMessage: imagePath != null ? "[IMAGE ATTACHED] $userMessage" : userMessage,
+        userMessage: imagePath != null
+            ? "[IMAGE ATTACHED] $userMessage"
+            : userMessage,
         situationContext: situationContext,
         historyCount: recentHistory.length,
       );
@@ -169,10 +239,10 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
       for (int i = 0; i < recentHistory.length; i++) {
         final msg = recentHistory[i];
         final isUser = msg.author == MessageAuthor.user;
-        
+
         if (isUser) {
           if (lastWasUser) continue;
-          
+
           Uint8List? histImageBytes;
           if (msg.imagePath != null) {
             try {
@@ -183,41 +253,38 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
           }
 
           if (histImageBytes != null) {
-            await chat.addQueryChunk(Message.withImage(
-              text: msg.text,
-              isUser: true,
-              imageBytes: histImageBytes,
-            ));
+            await chat.addQueryChunk(
+              Message.withImage(
+                text: msg.text,
+                isUser: true,
+                imageBytes: histImageBytes,
+              ),
+            );
           } else {
-            await chat.addQueryChunk(Message.text(
-              text: msg.text,
-              isUser: true,
-            ));
+            await chat.addQueryChunk(
+              Message.text(text: msg.text, isUser: true),
+            );
           }
           lastWasUser = true;
         } else {
           // AI Response
           if (!lastWasUser && i > 0) continue;
-          await chat.addQueryChunk(Message.text(
-            text: msg.text,
-            isUser: false,
-          ));
+          await chat.addQueryChunk(Message.text(text: msg.text, isUser: false));
           lastWasUser = false;
         }
       }
 
       // Add current user message
       if (imageBytes != null) {
-        await chat.addQueryChunk(Message.withImage(
-          text: userMessage,
-          isUser: true,
-          imageBytes: imageBytes,
-        ));
+        await chat.addQueryChunk(
+          Message.withImage(
+            text: userMessage,
+            isUser: true,
+            imageBytes: imageBytes,
+          ),
+        );
       } else {
-        await chat.addQueryChunk(Message.text(
-          text: userMessage,
-          isUser: true,
-        ));
+        await chat.addQueryChunk(Message.text(text: userMessage, isUser: true));
       }
 
       await for (final response in chat.generateChatResponseAsync()) {
@@ -232,33 +299,42 @@ AI: Cover loosely with a clean cloth or bandage. Do NOT use ice or butter. Is th
     }
   }
 
-  Future<String> generateExtraction(String prompt, List<ChatMessage> history) async {
+  Future<String> generateExtraction(
+    String prompt,
+    List<ChatMessage> history,
+  ) async {
     if (state.status != LlmStatus.ready || _model == null) return '';
 
     try {
       final chat = await _model!.createChat(supportImage: true);
-      
+
       // Add history with images
       for (final msg in history) {
         if (msg.imagePath != null) {
           try {
             final bytes = await File(msg.imagePath!).readAsBytes();
-            await chat.addQueryChunk(Message.withImage(
-              text: msg.text,
-              isUser: msg.author == MessageAuthor.user,
-              imageBytes: bytes,
-            ));
+            await chat.addQueryChunk(
+              Message.withImage(
+                text: msg.text,
+                isUser: msg.author == MessageAuthor.user,
+                imageBytes: bytes,
+              ),
+            );
           } catch (_) {
-            await chat.addQueryChunk(Message.text(
-              text: msg.text,
-              isUser: msg.author == MessageAuthor.user,
-            ));
+            await chat.addQueryChunk(
+              Message.text(
+                text: msg.text,
+                isUser: msg.author == MessageAuthor.user,
+              ),
+            );
           }
         } else {
-          await chat.addQueryChunk(Message.text(
-            text: msg.text,
-            isUser: msg.author == MessageAuthor.user,
-          ));
+          await chat.addQueryChunk(
+            Message.text(
+              text: msg.text,
+              isUser: msg.author == MessageAuthor.user,
+            ),
+          );
         }
       }
 
@@ -317,38 +393,125 @@ class AdaptiveMock {
       return "CRITICAL: Do not move him. Call 911 now. Keep him completely still — his spine may be injured. Do not let him sit up, stand, or walk. Support his head in the position you found him. Is he breathing normally?";
     }
 
-    if (msg.contains('bleeding') && (msg.contains('heavy') || msg.contains('a lot') || msg.contains("won't stop") || msg.contains(' spurting'))) {
+    if (msg.contains('bleeding') &&
+        (msg.contains('heavy') ||
+            msg.contains('a lot') ||
+            msg.contains("won't stop") ||
+            msg.contains(' spurting'))) {
       return "CRITICAL: Apply firm pressure directly to the wound with whatever is available — shirt, towel, anything. If blood soaks through, add more layers without removing the first. Call 911 while doing this. If the bleeding is from an arm or leg and won't stop, a tourniquet may be needed 2-3 inches above the wound. Are you near any help?";
     }
 
-    if (msg.contains('unconscious') || msg.contains('not waking') || msg.contains('not breathing')) {
+    if (msg.contains('unconscious') ||
+        msg.contains('not waking') ||
+        msg.contains('not breathing')) {
       return "Call 911 immediately. Check if he is breathing by looking at his chest for 10 seconds. If not breathing, start CPR — push hard and fast on the center of his chest, 30 compressions then 2 breaths. If breathing, put him on his side in recovery position. Keep his airway clear. Do not leave him alone.";
+    }
+
+    if (_isBurn(msg) || ctx.contains('burn')) {
+      final noBlisters =
+          msg.contains('no blister') ||
+          msg.contains('no blisters') ||
+          ctx.contains('no blisters');
+      final alreadyCooled =
+          ctx.contains('cooled the burn') ||
+          msg.contains('cooled') ||
+          msg.contains('running water') ||
+          msg.contains('under water');
+      final alreadyCovered =
+          ctx.contains('covered the burn') || msg.contains('covered');
+
+      if ((msg.contains('red') || ctx.contains('red skin')) && noBlisters) {
+        if (alreadyCooled && !alreadyCovered) {
+          return "That sounds like a mild surface burn. Cover it loosely with a clean dry cloth or bandage. Do not use ice, butter, or toothpaste. Watch for blisters, numbness, spreading redness, or worsening pain.";
+        }
+        return "That sounds like a mild surface burn. Cool it under cool running water for 10-20 minutes, then cover it loosely with a clean dry cloth or bandage. Do not use ice, butter, or toothpaste.";
+      }
+
+      if (alreadyCooled && !alreadyCovered) {
+        return "Now cover the burn loosely with a clean dry cloth or bandage. Do not pop blisters. Is the skin white, black, numb, or getting worse?";
+      }
+
+      return "Cool the burn under cool running water for 10-20 minutes. Remove rings or tight items near it. Is the skin only red, or are there blisters, numbness, white skin, or black skin?";
+    }
+
+    if (_isAllergy(msg) || ctx.contains('allergic reaction')) {
+      final warningSigns =
+          msg.contains('trouble breathing') ||
+          msg.contains("can't breathe") ||
+          msg.contains('wheezing') ||
+          msg.contains('swollen lips') ||
+          msg.contains('tongue') ||
+          msg.contains('throat');
+      if (warningSigns) {
+        return "This could be a serious allergic reaction. Use an epinephrine auto-injector if available and call emergency services now. Do they have an EpiPen or trouble breathing?";
+      }
+      return "Watch for trouble breathing or swelling of the lips, tongue, face, or throat. If breathing is normal, send a clear photo of the rash or sting if you can.";
+    }
+
+    if (_isPoisoning(msg) || ctx.contains('poisoning')) {
+      return "Do not make them vomit. Move away from fumes or chemicals if needed, and tell me what substance it was, how much, and when it happened.";
+    }
+
+    if (_isChokingOrBreathing(msg) || ctx.contains('breathing problem')) {
+      return "This is urgent if they cannot breathe, cough, or speak. Call emergency services now if needed, and tell me whether they are conscious and able to cough.";
+    }
+
+    if (_isBiteOrSting(msg) || ctx.contains('bite') || ctx.contains('sting')) {
+      if (msg.contains('snake')) {
+        return "Keep the person still and keep the bite below heart level if possible. Do not cut, suck, or ice it. Tell me where the bite is and whether swelling or trouble breathing has started.";
+      }
+      return "Wash the bite or sting area with clean water if you can. Send a clear photo if it is safe, and tell me if swelling is spreading, breathing feels hard, or the area is very painful.";
+    }
+
+    if ((_isFallOrInjury(msg) || ctx.contains('injury reported')) &&
+        !_isBleeding(msg) &&
+        !msg.contains('broken') &&
+        !msg.contains('fracture')) {
+      if (msg.contains('back') || msg.contains('neck')) {
+        return "Do not move if your neck or back may be hurt. Call emergency services if there is severe pain, numbness, weakness, or trouble moving. Are you breathing normally?";
+      }
+      if (msg.contains('swollen') || msg.contains('twisted')) {
+        return "Keep weight off it and use a cold pack wrapped in cloth. A clear photo can help if there is swelling or a strange shape. Can you move it or put weight on it without sharp pain?";
+      }
+      return "Keep the injured area still for now. Tell me where it hurts and whether it is swollen, crooked, numb, or hard to move.";
     }
 
     final lacksWater = _lacks(msg, ['water', 'clean water', 'running water']);
     final lacksBandage = _lacks(msg, ['bandage', 'cloth', 'dressing', 'gauze']);
     final lacksTourniquet = _lacks(msg, ['tourniquet']);
-    final lacksSignal = _lacks(msg, ['signal', 'phone', 'cell', 'reception', 'call']);
+    final lacksSignal = _lacks(msg, [
+      'signal',
+      'phone',
+      'cell',
+      'reception',
+      'call',
+    ]);
     final isAlone = msg.contains('alone') || msg.contains('by myself');
-    final isUnconscious = msg.contains('unconscious') || msg.contains('not waking');
-
-    if (lacksWater && (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
+    if (lacksWater &&
+        (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
       return "Without water, use any clear liquid available to clean the wound — diluted sports drink works, even fresh urine is sterile. Flush by squeezing liquid from a cloth above the wound, don't rub. Cover with the cleanest available material, the inside of a shirt works. What can you use to cover it?";
     }
 
-    if (lacksBandage && (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
+    if (lacksBandage &&
+        (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
       return "Improvise a bandage. Tear a strip from the INSIDE of a shirt or sock — inside is cleaner. Fold into a thick pad and press firmly onto the wound. Tie snugly with another strip, tight enough to feel resistance but you should still feel a pulse below it. Elevate the limb above heart level. Is the bleeding still active or slowing?";
     }
 
-    if (lacksTourniquet && (msg.contains('bleeding') || msg.contains('blood'))) {
+    if (lacksTourniquet &&
+        (msg.contains('bleeding') || msg.contains('blood'))) {
       return "Make a field tourniquet. Cut or tear a strip of clothing AT LEAST 2 inches wide — narrow strips cause more damage. Wrap it twice around the limb 2-3 inches above the wound. Tie a half-knot, place a stick on top, tie another knot over it. Twist until bleeding stops completely then secure it. Note the time. Leave on for up to 2 hours. Has the bleeding slowed?";
     }
 
-    if (_isBleeding(msg) && !lacksBandage && !msg.contains('deep') && !msg.contains('bad')) {
+    if (_isBleeding(msg) &&
+        !lacksBandage &&
+        !msg.contains('deep') &&
+        !msg.contains('bad')) {
       return "For a minor cut, clean it gently with water if available. Apply pressure with a clean cloth until bleeding stops. Keep it elevated if possible. Cover with a bandage or clean cloth. Keep it dry for 24 hours. If you notice redness, swelling, or pus, seek medical help when possible. Do you have everything you need right now?";
     }
 
-    if (msg.contains('broken') || msg.contains('fracture') || (msg.contains('fell') && msg.contains('wrist'))) {
+    if (msg.contains('broken') ||
+        msg.contains('fracture') ||
+        (msg.contains('fell') && msg.contains('wrist'))) {
       return "For a suspected fracture, immobilize the area — don't try to straighten it. Apply ice wrapped in cloth to reduce swelling, but never directly on skin. Keep it elevated. Do not give food or water in case you need surgery. Can you splint it with something firm like a stick or magazine rolled around it? Call your brother and get to urgent care if the pain is severe.";
     }
 
@@ -360,7 +523,10 @@ class AdaptiveMock {
       return "Since you're alone, your priorities are: control any active bleeding first, then make yourself visible from above if possible, then conserve body temperature by insulating from the ground. Do not try to walk out if you're injured — staying put is safer. Can you control the bleeding first?";
     }
 
-    if (historyCount > 2 && (msg.contains('lost') || msg.contains('forest') || msg.contains('mountain'))) {
+    if (historyCount > 2 &&
+        (msg.contains('lost') ||
+            msg.contains('forest') ||
+            msg.contains('mountain'))) {
       return "STAY WHERE YOU ARE. Moving makes rescue 10 times harder. Can you get to high ground? Do you have anything reflective to signal from the air? Keep your phone on for any signal updates.";
     }
 
@@ -368,20 +534,84 @@ class AdaptiveMock {
   }
 
   static bool _lacks(String msg, List<String> keywords) {
-    return keywords.any((kw) =>
-        msg.contains('no $kw') ||
-        msg.contains("don't have $kw") ||
-        msg.contains('dont have $kw') ||
-        msg.contains('without $kw') ||
-        msg.contains('lost my $kw') ||
-        msg.contains("can't use $kw"));
+    return keywords.any(
+      (kw) =>
+          msg.contains('no $kw') ||
+          msg.contains("don't have $kw") ||
+          msg.contains('dont have $kw') ||
+          msg.contains('without $kw') ||
+          msg.contains('lost my $kw') ||
+          msg.contains("can't use $kw"),
+    );
   }
 
   static bool _isBackInjury(String msg) {
-    return msg.contains('back') || msg.contains('spinal') || msg.contains('neck');
+    return msg.contains('back') ||
+        msg.contains('spinal') ||
+        msg.contains('neck');
+  }
+
+  static bool _isBurn(String msg) {
+    return msg.contains('burn') ||
+        msg.contains('burned') ||
+        msg.contains('burnt') ||
+        msg.contains('scald');
   }
 
   static bool _isBleeding(String msg) {
-    return msg.contains('bleed') || msg.contains('blood') || msg.contains('cut') || msg.contains('wound');
+    return msg.contains('bleed') ||
+        msg.contains('blood') ||
+        msg.contains('cut') ||
+        msg.contains('wound');
+  }
+
+  static bool _isFallOrInjury(String msg) {
+    return msg.contains('fell') ||
+        msg.contains('fall') ||
+        msg.contains('twisted') ||
+        msg.contains('sprained') ||
+        msg.contains('hurt my') ||
+        msg.contains('injured') ||
+        msg.contains('broken') ||
+        msg.contains('fracture');
+  }
+
+  static bool _isAllergy(String msg) {
+    return msg.contains('allergic') ||
+        msg.contains('allergy') ||
+        msg.contains('hives') ||
+        msg.contains('rash') ||
+        msg.contains('bee sting') ||
+        msg.contains('wasp sting') ||
+        msg.contains('stung');
+  }
+
+  static bool _isPoisoning(String msg) {
+    return msg.contains('poison') ||
+        msg.contains('swallowed') ||
+        msg.contains('overdose') ||
+        msg.contains('too many pills') ||
+        msg.contains('chemical') ||
+        msg.contains('bleach') ||
+        msg.contains('cleaner');
+  }
+
+  static bool _isChokingOrBreathing(String msg) {
+    return msg.contains('choking') ||
+        msg.contains('choke') ||
+        msg.contains("can't breathe") ||
+        msg.contains('cannot breathe') ||
+        msg.contains('not breathing') ||
+        msg.contains('trouble breathing') ||
+        msg.contains('wheezing');
+  }
+
+  static bool _isBiteOrSting(String msg) {
+    return msg.contains('bite') ||
+        msg.contains('bit me') ||
+        msg.contains('sting') ||
+        msg.contains('stung') ||
+        msg.contains('snake') ||
+        msg.contains('tick');
   }
 }

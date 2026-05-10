@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/protocol.dart';
 import 'global_providers.dart';
+import '../services/conversation_guard_service.dart';
+import '../services/context_compaction_service.dart';
 import '../services/session_persistence_service.dart';
 
 class SessionState {
@@ -51,7 +53,9 @@ class SessionState {
       isProtocolLoaded: isProtocolLoaded ?? this.isProtocolLoaded,
       isLlmTyping: isLlmTyping ?? this.isLlmTyping,
       streamingBuffer: streamingBuffer ?? this.streamingBuffer,
-      currentSessionId: clearSessionId ? null : (currentSessionId ?? this.currentSessionId),
+      currentSessionId: clearSessionId
+          ? null
+          : (currentSessionId ?? this.currentSessionId),
       situationSummary: situationSummary ?? this.situationSummary,
       sessionHistory: sessionHistory ?? this.sessionHistory,
     );
@@ -99,17 +103,19 @@ class SessionNotifier extends Notifier<SessionState> {
 
   void _persist() {
     if (state.currentSessionId == null) return;
-    
+
     final persistence = ref.read(sessionPersistenceServiceProvider);
-    persistence.saveSession(PersistedSession(
-      id: state.currentSessionId!,
-      chatHistory: state.chatHistory,
-      currentNodeId: state.currentNode?.id,
-      isEmergencyActive: state.isEmergencyActive,
-      isPracticeMode: state.isPracticeMode,
-      situationSummary: state.situationSummary,
-      lastUpdated: DateTime.now(),
-    ));
+    persistence.saveSession(
+      PersistedSession(
+        id: state.currentSessionId!,
+        chatHistory: state.chatHistory,
+        currentNodeId: state.currentNode?.id,
+        isEmergencyActive: state.isEmergencyActive,
+        isPracticeMode: state.isPracticeMode,
+        situationSummary: state.situationSummary,
+        lastUpdated: DateTime.now(),
+      ),
+    );
     refreshHistory();
   }
 
@@ -117,7 +123,7 @@ class SessionNotifier extends Notifier<SessionState> {
     await ref.read(llmServiceProvider.notifier).init();
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     await ref.read(contextCompactionServiceProvider).init(newId);
-    
+
     _initSession(practice: false, sessionId: newId);
     _persist();
   }
@@ -125,7 +131,7 @@ class SessionNotifier extends Notifier<SessionState> {
   Future<void> startPractice() async {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     await ref.read(contextCompactionServiceProvider).init(newId);
-    
+
     _initSession(practice: true, sessionId: newId);
     _persist();
   }
@@ -133,17 +139,17 @@ class SessionNotifier extends Notifier<SessionState> {
   Future<void> resumeSession(String id) async {
     final persistence = ref.read(sessionPersistenceServiceProvider);
     final restored = await persistence.loadSession(id);
-    
+
     if (restored != null) {
       final protocolService = ref.read(protocolServiceProvider);
       await ref.read(contextCompactionServiceProvider).init(id);
-      
+
       state = state.copyWith(
         currentSessionId: id,
         isEmergencyActive: true,
         isPracticeMode: restored.isPracticeMode,
-        currentNode: restored.currentNodeId != null 
-            ? protocolService.getNode(restored.currentNodeId!) 
+        currentNode: restored.currentNodeId != null
+            ? protocolService.getNode(restored.currentNodeId!)
             : null,
         chatHistory: restored.chatHistory,
         situationSummary: restored.situationSummary,
@@ -192,12 +198,14 @@ class SessionNotifier extends Notifier<SessionState> {
   }
 
   void handleUserSelection(Branch branch) {
-    final List<ChatMessage> updatedHistory = List<ChatMessage>.from(state.chatHistory)
-      ..add(ChatMessage(
-        text: branch.label,
-        author: MessageAuthor.user,
-        timestamp: DateTime.now(),
-      ));
+    final List<ChatMessage> updatedHistory =
+        List<ChatMessage>.from(state.chatHistory)..add(
+          ChatMessage(
+            text: branch.label,
+            author: MessageAuthor.user,
+            timestamp: DateTime.now(),
+          ),
+        );
 
     final protocolService = ref.read(protocolServiceProvider);
     final nextNode = protocolService.getNode(branch.target);
@@ -205,11 +213,13 @@ class SessionNotifier extends Notifier<SessionState> {
     if (nextNode != null && branch.target != 'start') {
       // A protocol button was tapped — add the node question to chat
       // but also trigger Gemma to give context-aware commentary on the step
-      updatedHistory.add(ChatMessage(
-        text: nextNode.question,
-        author: MessageAuthor.ai,
-        timestamp: DateTime.now(),
-      ));
+      updatedHistory.add(
+        ChatMessage(
+          text: nextNode.question,
+          author: MessageAuthor.ai,
+          timestamp: DateTime.now(),
+        ),
+      );
 
       state = state.copyWith(
         currentNode: nextNode,
@@ -217,22 +227,26 @@ class SessionNotifier extends Notifier<SessionState> {
       );
 
       // Optionally: silently update context compaction with the selection
-      ref.read(contextCompactionServiceProvider).addExchange(
-        userMessage: ChatMessage(
-          text: branch.label,
-          author: MessageAuthor.user,
-          timestamp: DateTime.now(),
-        ),
-        aiResponse: ChatMessage(
-          text: nextNode.question,
-          author: MessageAuthor.ai,
-          timestamp: DateTime.now(),
-        ),
-      );
+      ref
+          .read(contextCompactionServiceProvider)
+          .addExchange(
+            userMessage: ChatMessage(
+              text: branch.label,
+              author: MessageAuthor.user,
+              timestamp: DateTime.now(),
+            ),
+            aiResponse: ChatMessage(
+              text: nextNode.question,
+              author: MessageAuthor.ai,
+              timestamp: DateTime.now(),
+            ),
+          );
     } else if (branch.target == 'end') {
       state = state.copyWith(isEmergencyActive: false);
       if (state.currentSessionId != null) {
-        ref.read(sessionPersistenceServiceProvider).deleteSession(state.currentSessionId!);
+        ref
+            .read(sessionPersistenceServiceProvider)
+            .deleteSession(state.currentSessionId!);
         ref.read(contextCompactionServiceProvider).clearSession();
       }
     } else {
@@ -248,12 +262,14 @@ class SessionNotifier extends Notifier<SessionState> {
 
     // 1. Immediately show user message
     final List<ChatMessage> withUser = List<ChatMessage>.from(state.chatHistory)
-      ..add(ChatMessage(
-        text: userText,
-        imagePath: imagePath,
-        author: MessageAuthor.user,
-        timestamp: DateTime.now(),
-      ));
+      ..add(
+        ChatMessage(
+          text: userText,
+          imagePath: imagePath,
+          author: MessageAuthor.user,
+          timestamp: DateTime.now(),
+        ),
+      );
     state = state.copyWith(
       chatHistory: withUser,
       isLlmTyping: true,
@@ -278,11 +294,17 @@ class SessionNotifier extends Notifier<SessionState> {
         )
         .text;
 
+    compactionService.noteUserMessage(
+      userText,
+      previousAiMessage: lastAiMessage.isNotEmpty ? lastAiMessage : null,
+    );
+
     final situationContext = compactionService.getPromptContext(
       lastAiMessage: lastAiMessage.isNotEmpty ? lastAiMessage : null,
+      currentUserMessage: userText,
     );
     final recentHistory = compactionService.getRecentMessages(count: 14);
-    
+
     // Map incident types to relevant documentation nodes if current node is 'start'
     String effectiveNodeId = state.currentNode?.id ?? 'start';
     if (effectiveNodeId == 'start') {
@@ -291,23 +313,36 @@ class SessionNotifier extends Notifier<SessionState> {
       final userMsgLower = userText.toLowerCase();
 
       // NOTE: burn must be checked BEFORE bleed — cooking burns involve no bleeding
-      if (incident.contains('burn') || userMsgLower.contains('burn') ||
-          userMsgLower.contains('burned') || summary.contains('burn')) {
+      if (incident.contains('burn') ||
+          userMsgLower.contains('burn') ||
+          userMsgLower.contains('burned') ||
+          summary.contains('burn')) {
         effectiveNodeId = 'burn_protocol';
-      } else if (incident.contains('bleed') || summary.contains('bleed') ||
+      } else if (incident.contains('bleed') ||
+          incident.contains('cut') ||
+          incident.contains('wound') ||
+          userMsgLower.contains('cut') ||
+          userMsgLower.contains('bleeding') ||
+          summary.contains('bleed') ||
+          summary.contains('cut') ||
+          summary.contains('wound') ||
           summary.contains('sangr')) {
         effectiveNodeId = 'bleeding_protocol';
-      } else if (incident.contains('fall') || incident.contains('knee') ||
-          incident.contains('elbow') || summary.contains('fall')) {
+      } else if (incident.contains('fall') ||
+          incident.contains('knee') ||
+          incident.contains('elbow') ||
+          summary.contains('fall')) {
         effectiveNodeId = 'injury_assessment';
-      } else if (incident.contains('heart') || incident.contains('chest') ||
+      } else if (incident.contains('heart') ||
+          incident.contains('chest') ||
           summary.contains('chest')) {
         effectiveNodeId = 'chest_pain_protocol';
       } else if (incident.contains('chok') || summary.contains('chok')) {
         effectiveNodeId = 'choking_protocol';
       } else if (incident.contains('seiz') || summary.contains('seiz')) {
         effectiveNodeId = 'seizure_protocol';
-      } else if (incident.contains('frost') || incident.contains('freeze') ||
+      } else if (incident.contains('frost') ||
+          incident.contains('freeze') ||
           summary.contains('cold')) {
         effectiveNodeId = 'frostbite_protocol';
       } else if (incident.contains('lost') || summary.contains('lost')) {
@@ -319,19 +354,24 @@ class SessionNotifier extends Notifier<SessionState> {
         effectiveNodeId = 'flood_protocol';
       } else if (incident.contains('wildfire') || incident.contains('fire')) {
         effectiveNodeId = 'wildfire_protocol';
-      } else if (incident.contains('storm') || incident.contains('tornado') ||
+      } else if (incident.contains('storm') ||
+          incident.contains('tornado') ||
           incident.contains('hurricane')) {
         effectiveNodeId = 'storm_protocol';
-      } else if (incident.contains('water') || incident.contains('drink') ||
+      } else if (incident.contains('water') ||
+          incident.contains('drink') ||
           summary.contains('water')) {
         effectiveNodeId = 'water_skills';
-      } else if (incident.contains('food') || incident.contains('hungry') ||
+      } else if (incident.contains('food') ||
+          incident.contains('hungry') ||
           summary.contains('food')) {
         effectiveNodeId = 'food_skills';
-      } else if (incident.contains('shelter') || incident.contains('sleep') ||
+      } else if (incident.contains('shelter') ||
+          incident.contains('sleep') ||
           summary.contains('shelter')) {
         effectiveNodeId = 'shelter_skills';
-      } else if (incident.contains('navigat') || summary.contains('direction') ||
+      } else if (incident.contains('navigat') ||
+          summary.contains('direction') ||
           summary.contains('where')) {
         effectiveNodeId = 'nav_skills';
       } else if (incident.contains('poison') || summary.contains('poison')) {
@@ -339,13 +379,17 @@ class SessionNotifier extends Notifier<SessionState> {
       }
     }
 
-    final knowledgeBase = protocolService.getDocumentationForNode(effectiveNodeId);
+    final knowledgeBase = protocolService.getDocumentationForNode(
+      effectiveNodeId,
+    );
 
     // 3. Stream Gemma's response token by token
     final responseBuffer = StringBuffer();
 
     await for (final token in llm.generateResponseStream(
-      userMessage: (userText.isEmpty && imagePath != null) ? "Analyze this image." : userText,
+      userMessage: (userText.isEmpty && imagePath != null)
+          ? "Analyze this image."
+          : userText,
       situationContext: situationContext,
       knowledgeBase: knowledgeBase.isNotEmpty
           ? knowledgeBase
@@ -359,15 +403,26 @@ class SessionNotifier extends Notifier<SessionState> {
       state = state.copyWith(streamingBuffer: responseBuffer.toString());
     }
 
-    final fullResponse = responseBuffer.toString().trim();
+    var fullResponse = responseBuffer.toString().trim();
+    if (ConversationGuard.looksLikeExtractionJson(fullResponse) ||
+        ConversationGuard.repeatsLastQuestion(
+          previousAiMessage: lastAiMessage,
+          response: fullResponse,
+        )) {
+      fullResponse = ConversationGuard.fallbackResponseForContext(
+        compactionService.context,
+      );
+    }
 
     // 4. Finalize: move streaming buffer to chat history
     final withResponse = List<ChatMessage>.from(state.chatHistory)
-      ..add(ChatMessage(
-        text: fullResponse,
-        author: MessageAuthor.ai,
-        timestamp: DateTime.now(),
-      ));
+      ..add(
+        ChatMessage(
+          text: fullResponse,
+          author: MessageAuthor.ai,
+          timestamp: DateTime.now(),
+        ),
+      );
     state = state.copyWith(
       chatHistory: withResponse,
       isLlmTyping: false,
@@ -390,38 +445,39 @@ class SessionNotifier extends Notifier<SessionState> {
     final ctx = compactionService.context;
     if (ctx.summary.isNotEmpty) {
       state = state.copyWith(situationSummary: ctx.summary);
-    } else if (ctx.confirmedLacks.isNotEmpty || ctx.confirmedResources.isNotEmpty) {
+    } else if (ctx.confirmedLacks.isNotEmpty ||
+        ctx.confirmedResources.isNotEmpty) {
       // Build a mini-summary from extracted facts
       final parts = <String>[];
       if (ctx.isAlone == true) parts.add('alone');
       if (ctx.injuryType != null) parts.add(ctx.injuryType!);
-      if (ctx.confirmedLacks.isNotEmpty) parts.add('no ${ctx.confirmedLacks.join('/')}');
+      if (ctx.confirmedLacks.isNotEmpty) {
+        parts.add('no ${ctx.confirmedLacks.join('/')}');
+      }
       state = state.copyWith(situationSummary: parts.join(' · '));
     }
 
-    // 7. Trigger async compaction after every 2 exchanges
-    final msgCount = state.chatHistory.where((m) => m.author == MessageAuthor.user).length;
-    if (msgCount > 0 && msgCount % 2 == 0) {
-      compactionService.compact((prompt, history) => llm.generateExtraction(prompt, history));
-    }
-    
     _persist();
   }
 
   String generateMarkdownExport() {
     final compactionService = ref.read(contextCompactionServiceProvider);
     final ctx = compactionService.context;
-    
+
     final buffer = StringBuffer();
     buffer.writeln('# AIDEM Session Export');
     buffer.writeln('Generated on: ${DateTime.now().toLocal()}');
     buffer.writeln('Mode: ${state.isPracticeMode ? "PRACTICE" : "EMERGENCY"}');
     buffer.writeln();
-    
+
     buffer.writeln('## Situation Summary');
-    buffer.writeln(state.situationSummary.isNotEmpty ? state.situationSummary : 'No summary available.');
+    buffer.writeln(
+      state.situationSummary.isNotEmpty
+          ? state.situationSummary
+          : 'No summary available.',
+    );
     buffer.writeln();
-    
+
     buffer.writeln('## Emergency Dispatch Intake (ETHANE)');
     buffer.writeln('- **Exact Location:** ${ctx.locationDetails}');
     buffer.writeln('- **Type of Incident:** ${ctx.incidentType}');
@@ -430,17 +486,28 @@ class SessionNotifier extends Notifier<SessionState> {
     buffer.writeln('- **Number of Patients:** ${ctx.patientCount}');
     buffer.writeln('- **Urgency Level:** ${ctx.urgencyLevel}');
     buffer.writeln();
-    
+
     buffer.writeln('## Internal Context & Decisions');
     buffer.writeln('- **Injury Type:** ${ctx.injuryType ?? "Unknown"}');
     buffer.writeln('- **Environment:** ${ctx.environment ?? "Unknown"}');
     buffer.writeln('- **Is Alone:** ${ctx.isAlone ?? "Unknown"}');
-    buffer.writeln('- **Resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}');
-    buffer.writeln('- **Lacks:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}');
-    buffer.writeln('- **Completed Steps:** ${ctx.completedSteps.isEmpty ? "None" : ctx.completedSteps.join(", ")}');
-    buffer.writeln('- **Current Protocol Node:** ${state.currentNode?.id ?? "None"}');
+    buffer.writeln(
+      '- **Resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Lacks:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Answered Facts:** ${ctx.answeredFacts.isEmpty ? "None" : ctx.answeredFacts.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Completed Steps:** ${ctx.completedSteps.isEmpty ? "None" : ctx.completedSteps.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Current Protocol Node:** ${state.currentNode?.id ?? "None"}',
+    );
     buffer.writeln();
-    
+
     buffer.writeln('## Chat History');
     buffer.writeln();
     for (final msg in state.chatHistory) {
@@ -450,7 +517,7 @@ class SessionNotifier extends Notifier<SessionState> {
       buffer.writeln(msg.text);
       buffer.writeln();
     }
-    
+
     return buffer.toString();
   }
 }

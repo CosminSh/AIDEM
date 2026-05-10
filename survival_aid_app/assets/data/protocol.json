@@ -195,7 +195,7 @@
     },
     "thermal_burn": {
       "id": "thermal_burn",
-      "question": "Cool under running water for 10-20 mins. Remove jewelry. Cover loosely with clean wrap. Done?",
+      "question": "Cool the burn under running water for 10-20 minutes. Remove rings or tight items. Cover loosely with a clean dry cloth or wrap. Done?",
       "source": "Red Cross",
       "gps_context": false,
       "branches": [

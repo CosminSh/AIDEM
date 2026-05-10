@@ -1,3 +1,3 @@
 @echo off
-echo Starting AIDEM...
-start "" "%~dp0app\SurvivalAId.exe"
+cd /d "%~dp0app"
+start "" "SurvivalAId.exe"
