@@ -130,10 +130,12 @@ class SituationContext {
       buffer.writeln('Incident: $incidentType');
       buffer.writeln('Hazards: $hazards');
       buffer.writeln('Summary: $summary');
-      if (confirmedResources.isNotEmpty)
+      if (confirmedResources.isNotEmpty) {
         buffer.writeln('Resources: ${confirmedResources.join(', ')}');
-      if (confirmedLacks.isNotEmpty)
+      }
+      if (confirmedLacks.isNotEmpty) {
         buffer.writeln('Lacks: ${confirmedLacks.join(', ')}');
+      }
       buffer.writeln(
         'Status: ${isAlone == true ? 'Person is alone.' : 'Person is NOT alone.'}',
       );

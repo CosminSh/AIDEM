@@ -9,7 +9,6 @@ import '../widgets/chat_list_view.dart';
 import '../widgets/options_panel.dart';
 import '../../providers/global_providers.dart';
 import '../../services/context_compaction_service.dart';
-import '../../models/protocol.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   const ActiveSessionScreen({super.key});
