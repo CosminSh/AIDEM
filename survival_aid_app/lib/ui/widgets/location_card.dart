@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/gps_service.dart';
+import 'tactical_container.dart';
 
 class LocationCard extends StatelessWidget {
   final GpsCoordinates coords;
@@ -9,13 +10,9 @@ class LocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return TacticalContainer(
       padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.radius),
-        border: Border.all(color: AppColors.border),
-      ),
+      showGlow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -27,17 +24,23 @@ class LocationCard extends StatelessWidget {
                 "Current Location (Offline)",
                 style: TextStyle(
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildCoordRow("Decimal", "${coords.latitude.toStringAsFixed(6)}, ${coords.longitude.toStringAsFixed(6)}"),
+          _buildCoordRow(
+            "Decimal",
+            "${coords.latitude.toStringAsFixed(6)}, ${coords.longitude.toStringAsFixed(6)}",
+          ),
           const Divider(color: AppColors.border, height: 24),
           _buildCoordRow("DMS", coords.toDms()),
           const Divider(color: AppColors.border, height: 24),
-          _buildCoordRow("Altitude", "${coords.altitude?.toStringAsFixed(1) ?? '---'} m"),
+          _buildCoordRow(
+            "Altitude",
+            "${coords.altitude?.toStringAsFixed(1) ?? '---'} m",
+          ),
         ],
       ),
     );
@@ -52,7 +55,7 @@ class LocationCard extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 10,
-            letterSpacing: 1.2,
+            letterSpacing: 0,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -61,9 +64,9 @@ class LocationCard extends StatelessWidget {
           value,
           style: const TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 18,
+            fontSize: 17,
             fontFamily: 'Monospace', // Ensure coordinates are easy to read
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],

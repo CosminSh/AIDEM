@@ -13,35 +13,41 @@ class ImageCaptureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        decoration: BoxDecoration(
-          color: hasImage ? AppColors.success.withOpacity(0.1) : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppColors.radius),
-          border: Border.all(
-            color: hasImage ? AppColors.success : AppColors.border,
-            width: 2,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          decoration: BoxDecoration(
+            color: hasImage
+                ? AppColors.success.withOpacity(0.1)
+                : AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppColors.radius),
+            border: Border.all(
+              color: hasImage ? AppColors.success : AppColors.border,
+              width: 1,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              hasImage ? Icons.check_circle : Icons.camera_alt_rounded,
-              color: hasImage ? AppColors.success : AppColors.accentBlue,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              hasImage ? "IMAGE CAPTURED" : "CAPTURE WOUND IMAGE",
-              style: TextStyle(
-                color: hasImage ? AppColors.success : AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasImage ? Icons.check_circle : Icons.camera_alt_rounded,
+                color: hasImage ? AppColors.success : AppColors.accentBlue,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Text(
+                hasImage ? "Image captured" : "Capture wound image",
+                style: TextStyle(
+                  color: hasImage ? AppColors.success : AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -27,7 +27,7 @@ class StepProgressIndicator extends StatelessWidget {
                 color: AppColors.textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
+                letterSpacing: 0,
               ),
             ),
             Text(
@@ -45,7 +45,7 @@ class StepProgressIndicator extends StatelessWidget {
           children: List.generate(totalSteps, (index) {
             final isActive = index < currentStep;
             final isCurrent = index == currentStep - 1;
-            
+
             return Expanded(
               child: Container(
                 height: 4,
@@ -53,9 +53,11 @@ class StepProgressIndicator extends StatelessWidget {
                   right: index == totalSteps - 1 ? 0 : 4.0,
                 ),
                 decoration: BoxDecoration(
-                  color: isCurrent 
-                      ? AppColors.accentBlue 
-                      : (isActive ? AppColors.success : AppColors.surface),
+                  color: isCurrent
+                      ? AppColors.accentBlue
+                      : (isActive
+                            ? AppColors.success
+                            : AppColors.surfaceElevated),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

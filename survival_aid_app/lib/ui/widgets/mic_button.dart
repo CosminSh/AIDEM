@@ -5,17 +5,14 @@ class MicButton extends StatefulWidget {
   final bool isListening;
   final VoidCallback onTap;
 
-  const MicButton({
-    super.key,
-    required this.isListening,
-    required this.onTap,
-  });
+  const MicButton({super.key, required this.isListening, required this.onTap});
 
   @override
   State<MicButton> createState() => _MicButtonState();
 }
 
-class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMixin {
+class _MicButtonState extends State<MicButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -54,15 +51,24 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: widget.isListening ? AppColors.accentRed : AppColors.surface,
+              color: widget.isListening
+                  ? AppColors.accentRed
+                  : AppColors.surfaceElevated,
               shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.isListening
+                    ? AppColors.accentRed
+                    : AppColors.border,
+              ),
               boxShadow: widget.isListening
                   ? [
                       BoxShadow(
-                        color: AppColors.accentRed.withOpacity(0.3 * _controller.value),
+                        color: AppColors.accentRed.withOpacity(
+                          0.3 * _controller.value,
+                        ),
                         blurRadius: 15 * _controller.value,
                         spreadRadius: 8 * _controller.value,
-                      )
+                      ),
                     ]
                   : [],
             ),

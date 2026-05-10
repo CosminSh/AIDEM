@@ -6,42 +6,39 @@ class PracticeModeOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer( // Allow interactions to pass through to the chat
+    return IgnorePointer(
       child: Stack(
         children: [
-          // Watermark in the background
           Center(
             child: Opacity(
-              opacity: 0.05,
+              opacity: 0.035,
               child: Transform.rotate(
                 angle: -0.5,
                 child: const Text(
                   "PRACTICE MODE",
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 60,
+                    fontSize: 52,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
             ),
           ),
-          
-          // Top Banner
           Align(
             alignment: Alignment.topCenter,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              color: AppColors.accentBlue.withOpacity(0.8),
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              color: AppColors.accentBlue.withOpacity(0.72),
               child: const Text(
-                "TRAINING MODE - NO REAL EMERGENCY ACTIVE",
+                "Practice mode - no real emergency active",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
+                  letterSpacing: 0,
                 ),
               ),
             ),

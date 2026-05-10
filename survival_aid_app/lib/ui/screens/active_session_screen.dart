@@ -9,6 +9,8 @@ import '../widgets/chat_list_view.dart';
 import '../../providers/global_providers.dart';
 import '../../services/context_compaction_service.dart';
 import '../../models/protocol.dart';
+import '../widgets/tactical_container.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 bool isBinaryYesNoQuestion(String text) {
   final trimmed = text.trim();
@@ -74,6 +76,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   String? _pendingImagePath;
   final ImagePicker _picker = ImagePicker();
   late AnimationController _typingDotController;
+  late AnimationController _breathController;
+  late Animation<double> _breathAnimation;
 
   @override
   void initState() {
@@ -82,6 +86,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat();
+
+    _breathController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+
+    _breathAnimation = Tween<double>(begin: 0.98, end: 1.0).animate(
+      CurvedAnimation(parent: _breathController, curve: Curves.easeInOut),
+    );
 
     Future.microtask(() async {
       await ref.read(speechServiceProvider.notifier).init();
@@ -94,6 +107,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _scrollController.dispose();
     _focusNode.dispose();
     _typingDotController.dispose();
+    _breathController.dispose();
     super.dispose();
   }
 
@@ -288,40 +302,81 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
   }
 
+  String _formatPhaseTitle(String id) {
+    return id
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final String phaseTitle =
         session.currentNode == null || session.currentNode?.id == 'start'
-        ? 'CONVERSATION'
-        : session.currentNode!.id.toUpperCase().replaceAll('_', ' ');
+        ? 'Conversation'
+        : _formatPhaseTitle(session.currentNode!.id);
 
     _scrollToBottom();
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
+        toolbarHeight: 72,
         centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            const Text(
-              'CURRENT PHASE',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 10,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.bold,
+            ScaleTransition(
+              scale: _breathAnimation,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.brandAi.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.brandAi.withOpacity(0.35),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brandAi.withOpacity(0.12),
+                      blurRadius: 12,
+                      spreadRadius: -5,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.psychology_outlined,
+                  color: AppColors.brandAi,
+                  size: 18,
+                ),
               ),
             ),
-            Text(
-              phaseTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AIDEM | ${session.isPracticeMode ? 'Practice' : 'Emergency'}',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AppColors.brandAi,
+                    fontSize: 12,
+                    letterSpacing: 0,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  phaseTitle,
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -336,23 +391,19 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               switch (llmState.status) {
                 case LlmStatus.ready:
                   statusColor = AppColors.success;
-                  statusText = 'AI READY';
+                  statusText = 'AI ready';
                   break;
                 case LlmStatus.loading:
                   statusColor = AppColors.warning;
-                  statusText = 'LOADING AI...';
+                  statusText = 'Loading';
                   break;
                 case LlmStatus.mock:
                   statusColor = AppColors.warning;
-                  statusText = 'MOCK MODE';
+                  statusText = 'Mock';
                   break;
                 case LlmStatus.error:
                   statusColor = AppColors.accentRed;
-                  statusText = 'AI ERROR';
-                  break;
-                default:
-                  statusColor = AppColors.warning;
-                  statusText = 'UNKNOWN';
+                  statusText = 'AI error';
                   break;
               }
 
@@ -374,31 +425,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         );
                       }
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: statusColor.withOpacity(0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(radius: 3, backgroundColor: statusColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: StatusPill(
+                      icon: Icons.memory_rounded,
+                      label: statusText,
+                      color: statusColor,
                     ),
                   ),
                 ),
@@ -433,89 +463,420 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const Divider(color: AppColors.border, height: 1),
+      body: AidemBackground(
+        child: Column(
+          children: [
+            const Divider(color: AppColors.border, height: 1),
 
-          // Situation context chip (shows what Gemma knows)
-          if (session.situationSummary.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.surface,
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.psychology,
-                    color: AppColors.accentBlue,
-                    size: 14,
+            // Situation context chip (shows what Gemma knows)
+            if (session.situationSummary.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: TacticalContainer(
+                  showGlow: false,
+                  borderRadius: AppColors.radius,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Context: ',
-                    style: TextStyle(
-                      color: AppColors.accentBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      session.situationSummary,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.sensors_rounded,
+                        color: AppColors.brandAi,
+                        size: 15,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Context',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.brandAi,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          session.situationSummary,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+
+            // Initial Language Selector
+            if (session.chatHistory.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: TacticalContainer(
+                  animatePulse: true,
+                  showGlow: false,
+                  accentColor: AppColors.accentBlue,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Choose Language',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Select your language before the first response.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _showLanguageDialog,
+                          icon: const Icon(Icons.translate, size: 18),
+                          label: const Text('Choose language'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Chat history
+            Expanded(
+              child: ChatListView(
+                messages: session.chatHistory,
+                scrollController: _scrollController,
               ),
             ),
 
-          // Initial Language Selector
-          if (session.chatHistory.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
+            // Streaming tokens (live typewriter as Gemma generates)
+            if (session.isLlmTyping && session.streamingBuffer.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.accentBlue.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      session.streamingBuffer,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Gemma typing indicator (3 dots)
+            if (session.isLlmTyping && session.streamingBuffer.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: AnimatedBuilder(
+                      animation: _typingDotController,
+                      builder: (_, _) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(3, (i) {
+                            final opacity =
+                                ((_typingDotController.value * 3 - i) % 1.0)
+                                    .clamp(0.2, 1.0);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
+                              child: Opacity(
+                                opacity: opacity,
+                                child: const CircleAvatar(
+                                  radius: 4,
+                                  backgroundColor: AppColors.accentBlue,
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+            const Divider(color: AppColors.border, height: 1),
+
+            // Image Preview Area
+            if (_pendingImagePath != null)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.accentBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: AppColors.accentBlue.withOpacity(0.3),
                   ),
                 ),
-                child: Column(
+                child: Stack(
                   children: [
-                    const Text(
-                      'PRE-FLIGHT LANGUAGE SELECTION',
-                      style: TextStyle(
-                        color: AppColors.accentBlue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        letterSpacing: 1.2,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(_pendingImagePath!),
+                        height: 100,
+                        width: 100,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Gemma supports 35+ languages. Select yours for best medical reasoning.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
+                    Positioned(
+                      top: -8,
+                      right: -8,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.cancel,
+                          color: AppColors.accentRed,
+                          size: 20,
+                        ),
+                        onPressed: _clearPendingImage,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _showLanguageDialog,
-                      icon: const Icon(Icons.translate, size: 16),
-                      label: const Text('CHOOSE LANGUAGE'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                  ],
+                ),
+              ),
+
+            // Quick Replies (Yes/No)
+            if (session.chatHistory.isNotEmpty &&
+                session.chatHistory.last.author == MessageAuthor.ai &&
+                isBinaryYesNoQuestion(session.chatHistory.last.text) &&
+                !session.isLlmTyping)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ActionChip(
+                      label: Text(
+                        'Yes',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.brandAi,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      backgroundColor: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      side: BorderSide(
+                        color: AppColors.brandAi.withOpacity(0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onPressed: _isSending
+                          ? null
+                          : () {
+                              _textController.text = 'Yes';
+                              _sendMessage();
+                            },
+                    ),
+                    const SizedBox(width: 12),
+                    ActionChip(
+                      label: Text(
+                        'No',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      backgroundColor: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      side: BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onPressed: _isSending
+                          ? null
+                          : () {
+                              _textController.text = 'No';
+                              _sendMessage();
+                            },
+                    ),
+                  ],
+                ),
+              ),
+
+            // Free-form Gemma input
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: session.isLlmTyping
+                        ? AppColors.brandAi.withOpacity(0.45)
+                        : AppColors.border,
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brandAi.withOpacity(
+                        session.isLlmTyping ? 0.12 : 0.04,
+                      ),
+                      blurRadius: 18,
+                      spreadRadius: -10,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey('chat_input'),
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: InputDecoration(
+                          hintText: session.isLlmTyping
+                              ? 'Gemma is responding...'
+                              : 'Describe your situation in detail...',
+                          hintStyle: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                        textInputAction: TextInputAction.send,
+                        maxLines: null,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.camera_alt_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      tooltip: 'Take photo',
+                      onPressed: session.isLlmTyping
+                          ? null
+                          : () => _pickImage(ImageSource.camera),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.image_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      tooltip: 'Attach image',
+                      onPressed: session.isLlmTyping
+                          ? null
+                          : () => _pickImage(ImageSource.gallery),
+                    ),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final speechState = ref.watch(speechServiceProvider);
+                        final isListening = speechState.isListening;
+
+                        return IconButton(
+                          icon: Icon(
+                            isListening ? Icons.graphic_eq_rounded : Icons.mic,
+                            color: isListening
+                                ? AppColors.accentRed
+                                : AppColors.textSecondary,
+                          ),
+                          tooltip: isListening ? 'Stop dictation' : 'Dictate',
+                          onPressed: session.isLlmTyping
+                              ? null
+                              : _toggleDictation,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: Material(
+                        color: _isSending || session.isLlmTyping
+                            ? AppColors.border
+                            : AppColors.brandAi,
+                        borderRadius: BorderRadius.circular(AppColors.radius),
+                        child: InkWell(
+                          key: const ValueKey('send_button'),
+                          borderRadius: BorderRadius.circular(AppColors.radius),
+                          onTap: (_isSending || session.isLlmTyping)
+                              ? null
+                              : _sendMessage,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: _isSending
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                          ),
                         ),
                       ),
                     ),
@@ -523,297 +884,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 ),
               ),
             ),
-
-          // Chat history
-          Expanded(
-            child: ChatListView(
-              messages: session.chatHistory,
-              scrollController: _scrollController,
-            ),
-          ),
-
-          // Streaming tokens (live typewriter as Gemma generates)
-          if (session.isLlmTyping && session.streamingBuffer.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.accentBlue.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    session.streamingBuffer,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // Gemma typing indicator (3 dots)
-          if (session.isLlmTyping && session.streamingBuffer.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: AnimatedBuilder(
-                    animation: _typingDotController,
-                    builder: (_, _) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(3, (i) {
-                          final opacity =
-                              ((_typingDotController.value * 3 - i) % 1.0)
-                                  .clamp(0.2, 1.0);
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Opacity(
-                              opacity: opacity,
-                              child: const CircleAvatar(
-                                radius: 4,
-                                backgroundColor: AppColors.accentBlue,
-                              ),
-                            ),
-                          );
-                        }),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-          const Divider(color: AppColors.border, height: 1),
-
-          // Image Preview Area
-          if (_pendingImagePath != null)
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.accentBlue.withOpacity(0.3),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      File(_pendingImagePath!),
-                      height: 100,
-                      width: 100,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    top: -8,
-                    right: -8,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.cancel,
-                        color: AppColors.accentRed,
-                        size: 20,
-                      ),
-                      onPressed: _clearPendingImage,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Quick Replies (Yes/No)
-          if (session.chatHistory.isNotEmpty &&
-              session.chatHistory.last.author == MessageAuthor.ai &&
-              isBinaryYesNoQuestion(session.chatHistory.last.text) &&
-              !session.isLlmTyping)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 4.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ActionChip(
-                    label: const Text(
-                      'Yes',
-                      style: TextStyle(color: AppColors.textPrimary),
-                    ),
-                    backgroundColor: AppColors.surface,
-                    side: BorderSide(
-                      color: AppColors.accentBlue.withValues(alpha: 0.5),
-                    ),
-                    onPressed: _isSending
-                        ? null
-                        : () {
-                            _textController.text = 'Yes';
-                            _sendMessage();
-                          },
-                  ),
-                  const SizedBox(width: 8),
-                  ActionChip(
-                    label: const Text(
-                      'No',
-                      style: TextStyle(color: AppColors.textPrimary),
-                    ),
-                    backgroundColor: AppColors.surface,
-                    side: BorderSide(
-                      color: AppColors.accentBlue.withValues(alpha: 0.5),
-                    ),
-                    onPressed: _isSending
-                        ? null
-                        : () {
-                            _textController.text = 'No';
-                            _sendMessage();
-                          },
-                  ),
-                ],
-              ),
-            ),
-
-          // Free-form Gemma input
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: session.isLlmTyping
-                      ? AppColors.accentBlue.withOpacity(0.5)
-                      : AppColors.border,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const ValueKey('chat_input'),
-                      controller: _textController,
-                      focusNode: _focusNode,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: session.isLlmTyping
-                            ? 'Gemma is responding...'
-                            : 'Describe your situation in detail...',
-                        hintStyle: const TextStyle(
-                          color: AppColors.textSecondary,
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                      textInputAction: TextInputAction.send,
-                      maxLines: null,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    onPressed: session.isLlmTyping
-                        ? null
-                        : () => _pickImage(ImageSource.camera),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.image_rounded,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    onPressed: session.isLlmTyping
-                        ? null
-                        : () => _pickImage(ImageSource.gallery),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 8),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final speechState = ref.watch(speechServiceProvider);
-                      final isListening = speechState.isListening;
-
-                      return IconButton(
-                        icon: Icon(
-                          isListening ? Icons.graphic_eq_rounded : Icons.mic,
-                          color: isListening
-                              ? AppColors.accentRed
-                              : AppColors.textSecondary,
-                        ),
-                        onPressed: session.isLlmTyping
-                            ? null
-                            : _toggleDictation,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    child: Material(
-                      color: _isSending || session.isLlmTyping
-                          ? AppColors.border
-                          : AppColors.accentBlue,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        key: const ValueKey('send_button'),
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: (_isSending || session.isLlmTyping)
-                            ? null
-                            : _sendMessage,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: _isSending
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.send_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

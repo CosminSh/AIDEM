@@ -53,7 +53,7 @@ class GpsIndicator extends StatelessWidget {
             color: AppColors.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 0,
           ),
         ),
       ],

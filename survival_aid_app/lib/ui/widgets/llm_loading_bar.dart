@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'tactical_container.dart';
 
 class LlmLoadingBar extends StatelessWidget {
   final double progress; // 0.0 to 1.0
@@ -13,13 +14,10 @@ class LlmLoadingBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return TacticalContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.radius),
-        border: Border.all(color: AppColors.border),
-      ),
+      showGlow: false,
+      borderRadius: AppColors.radius,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,17 +29,19 @@ class LlmLoadingBar extends StatelessWidget {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentBlue),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.accentBlue,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
-                statusText.toUpperCase(),
+                statusText,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+                  letterSpacing: 0,
                 ),
               ),
               const Spacer(),
@@ -60,7 +60,9 @@ class LlmLoadingBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: AppColors.background,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentBlue),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.accentBlue,
+              ),
               minHeight: 8,
             ),
           ),

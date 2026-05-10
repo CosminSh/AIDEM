@@ -25,19 +25,7 @@ class AidemApp extends StatelessWidget {
     return MaterialApp(
       title: 'AIDEM',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.accentBlue,
-          surface: AppColors.surface,
-          error: AppColors.accentRed,
-        ),
-        fontFamily: 'Inter',
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: AppColors.textPrimary),
-          bodyMedium: TextStyle(color: AppColors.textPrimary),
-        ),
-      ),
+      theme: AppTheme.darkTheme,
       home: const OnboardingDisclaimerScreen(),
     );
   }

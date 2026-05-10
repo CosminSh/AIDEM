@@ -5,6 +5,7 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+.vs/
 
 # Local server logs
 *.log

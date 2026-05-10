@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/protocol.dart';
 import 'global_providers.dart';
 import '../services/conversation_guard_service.dart';
-import '../services/context_compaction_service.dart';
 import '../services/session_persistence_service.dart';
 
 class SessionState {

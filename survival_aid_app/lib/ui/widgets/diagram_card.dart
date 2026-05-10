@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'tactical_container.dart';
 
 class DiagramCard extends StatelessWidget {
   final String imagePath;
@@ -13,13 +14,11 @@ class DiagramCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return TacticalContainer(
       margin: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.radius),
-        border: Border.all(color: AppColors.border),
-      ),
+      padding: EdgeInsets.zero,
+      showGlow: false,
+      borderRadius: AppColors.radius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -35,7 +34,10 @@ class DiagramCard extends StatelessWidget {
                   height: 200,
                   color: AppColors.background,
                   child: const Center(
-                    child: Icon(Icons.broken_image, color: AppColors.textSecondary),
+                    child: Icon(
+                      Icons.broken_image,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 );
               },
@@ -46,7 +48,7 @@ class DiagramCard extends StatelessWidget {
             child: Text(
               caption,
               style: const TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColors.textSecondary,
                 fontSize: 14,
                 fontStyle: FontStyle.italic,
               ),

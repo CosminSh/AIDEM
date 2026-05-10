@@ -20,13 +20,12 @@ class ConfirmationStep extends StatelessWidget {
         onPressed: onConfirmed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.success,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 64),
+          foregroundColor: Colors.black,
+          minimumSize: const Size(double.infinity, 58),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppColors.radius),
           ),
-          elevation: 4,
-          shadowColor: AppColors.success.withOpacity(0.4),
+          elevation: 0,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -36,9 +35,9 @@ class ConfirmationStep extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
+                letterSpacing: 0,
               ),
             ),
           ],
