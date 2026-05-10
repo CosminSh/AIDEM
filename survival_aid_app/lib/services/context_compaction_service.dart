@@ -149,13 +149,10 @@ class SituationContext {
     if (confirmedResources.isNotEmpty) {
       buffer.writeln('HAS: ${confirmedResources.join(', ')}');
     }
-    if (confirmedLacks.isNotEmpty) {
-      buffer.writeln('LACKS: ${confirmedLacks.join(', ')}');
-    }
 
     // Completed steps — the most critical block for preventing loops
     if (completedSteps.isNotEmpty) {
-      buffer.writeln('DONE (DO NOT REPEAT OR RE-ASK):');
+      buffer.writeln('ALREADY ADDRESSED (NEVER REPEAT OR RE-ASK):');
       for (final step in completedSteps) {
         buffer.writeln('  ✓ $step');
       }

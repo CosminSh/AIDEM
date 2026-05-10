@@ -229,6 +229,25 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final String phaseTitle =
         session.currentNode?.id.toUpperCase().replaceAll('_', ' ') ?? 'ASSESSMENT';
 
+    bool isYesNoQuestion(String text) {
+      final trimmed = text.trim();
+      if (!trimmed.endsWith('?')) return false;
+      
+      // Get the last sentence/segment
+      final parts = trimmed.split(RegExp(r'[.!?]'));
+      final lastPart = parts.reversed.firstWhere((s) => s.trim().isNotEmpty, orElse: () => '').trim().toLowerCase();
+      if (lastPart.isEmpty) return false;
+      
+      final yesNoStarts = [
+        'is ', 'are ', 'do ', 'does ', 'did ', 'can ', 'could ', 'should ', 'would ', 'will ', 
+        'has ', 'have ', 'was ', 'were ', 'am ', 'shall ', 'may ', 'might ', 'must '
+      ];
+      
+      return yesNoStarts.any((start) => lastPart.startsWith(start)) || 
+             lastPart.contains(' or not') || 
+             lastPart.contains(' yes or no');
+    }
+
     _scrollToBottom();
 
     return Scaffold(
@@ -549,7 +568,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           // Quick Replies (Yes/No)
           if (session.chatHistory.isNotEmpty &&
               session.chatHistory.last.author == MessageAuthor.ai &&
-              session.chatHistory.last.text.trim().endsWith('?') &&
+              isYesNoQuestion(session.chatHistory.last.text) &&
               !session.isLlmTyping)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),

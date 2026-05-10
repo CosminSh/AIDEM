@@ -45,11 +45,10 @@ class LlmService extends Notifier<LlmState> {
 
 RULES (FOLLOW EXACTLY):
 1. LANGUAGE: Respond ONLY in the language shown in SESSION STATE.
-2. PROGRESS: The SESSION STATE shows DONE steps. Never repeat them. Move forward.
+2. PROGRESS: NEVER repeat or re-ask anything in the "ALREADY ADDRESSED" list. Move forward immediately.
 3. BREVITY: Give 1-2 actions per response. No intro. No sympathy phrases.
 4. VISION: If an image is provided, describe what you see and base advice on it.
-5. MISSING INFO: Ask only ONE missing critical question per turn.
-6. STUCK: If unsure of next step, ask the most urgent triage question.
+5. STUCK: If you are repeating yourself, STOP. Ask a completely different triage question.
 
 $situationContext
 
