@@ -9,6 +9,7 @@ import '../widgets/chat_list_view.dart';
 import '../widgets/options_panel.dart';
 import '../../providers/global_providers.dart';
 import '../../services/context_compaction_service.dart';
+import '../../models/protocol.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   const ActiveSessionScreen({super.key});
@@ -540,6 +541,39 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       icon: const Icon(Icons.cancel, color: AppColors.accentRed, size: 20),
                       onPressed: _clearPendingImage,
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Quick Replies (Yes/No)
+          if (session.chatHistory.isNotEmpty &&
+              session.chatHistory.last.author == MessageAuthor.ai &&
+              session.chatHistory.last.text.trim().endsWith('?') &&
+              !session.isLlmTyping)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ActionChip(
+                    label: const Text('Yes', style: TextStyle(color: AppColors.textPrimary)),
+                    backgroundColor: AppColors.surface,
+                    side: BorderSide(color: AppColors.accentBlue.withValues(alpha: 0.5)),
+                    onPressed: _isSending ? null : () {
+                      _textController.text = 'Yes';
+                      _sendMessage();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ActionChip(
+                    label: const Text('No', style: TextStyle(color: AppColors.textPrimary)),
+                    backgroundColor: AppColors.surface,
+                    side: BorderSide(color: AppColors.accentBlue.withValues(alpha: 0.5)),
+                    onPressed: _isSending ? null : () {
+                      _textController.text = 'No';
+                      _sendMessage();
+                    },
                   ),
                 ],
               ),

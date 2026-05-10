@@ -437,6 +437,7 @@ class SessionNotifier extends Notifier<SessionState> {
     buffer.writeln('- **Is Alone:** ${ctx.isAlone ?? "Unknown"}');
     buffer.writeln('- **Resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}');
     buffer.writeln('- **Lacks:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}');
+    buffer.writeln('- **Completed Steps:** ${ctx.completedSteps.isEmpty ? "None" : ctx.completedSteps.join(", ")}');
     buffer.writeln('- **Current Protocol Node:** ${state.currentNode?.id ?? "None"}');
     buffer.writeln();
     

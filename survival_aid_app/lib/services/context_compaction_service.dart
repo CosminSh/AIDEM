@@ -246,12 +246,20 @@ class ContextCompactionService {
     required ChatMessage userMessage,
     required ChatMessage aiResponse,
   }) async {
+    String? prevAiMessage;
+    if (_rawBuffer.isNotEmpty) {
+      final last = _rawBuffer.last;
+      if (last.author == MessageAuthor.ai) {
+        prevAiMessage = last.text;
+      }
+    }
+
     _rawBuffer.add(userMessage);
     _rawBuffer.add(aiResponse);
     _messageCount++;
 
     // Extract quick facts from user message without LLM
-    _quickExtract(userMessage.text, previousAiMessage: aiResponse.text);
+    _quickExtract(userMessage.text, previousAiMessage: prevAiMessage);
 
     // Keep buffer bounded — last 20 messages
     if (_rawBuffer.length > 20) {
@@ -405,6 +413,7 @@ JSON:''';
       'done', 'did that', 'ok done', 'i did', 'already did',
       "it's better", 'it is better', 'feels better', 'helped',
       'yes', 'yep', 'yeah', 'sure', 'ok', 'okay',
+      'no', 'nope', 'not', 'none', // Negative answers also complete questions
       'i am rinsing', "i'm rinsing", 'rinsing it', 'cooling it',
       'applied it', 'i applied', 'covered it', 'i covered',
       'elevated it', 'i elevated', 'pressed', 'pressing it',
@@ -413,7 +422,18 @@ JSON:''';
 
     final isConfirmation = confirmationPhrases.any((p) => msg.contains(p));
 
-    if (isConfirmation && previousAiMessage != null && previousAiMessage.isNotEmpty) {
+    // Heuristic: If AI asked to assess/check something, and user typed >= 3 words, they probably assessed it.
+    bool isAssessmentAnswer = false;
+    if (previousAiMessage != null) {
+      final prevLower = previousAiMessage.toLowerCase();
+      if (prevLower.contains('assess') || prevLower.contains('check') || prevLower.contains('look')) {
+        if (msg.split(' ').length > 2) {
+          isAssessmentAnswer = true;
+        }
+      }
+    }
+
+    if ((isConfirmation || isAssessmentAnswer) && previousAiMessage != null && previousAiMessage.isNotEmpty) {
       // Extract a compact label from the AI's last instruction (first sentence)
       final firstSentence = previousAiMessage
           .split(RegExp(r'[.!?]'))
