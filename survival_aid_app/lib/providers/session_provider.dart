@@ -266,7 +266,21 @@ class SessionNotifier extends Notifier<SessionState> {
     final protocolService = ref.read(protocolServiceProvider);
     final llm = ref.read(llmServiceProvider.notifier);
 
-    final situationContext = compactionService.getPromptContext();
+    // Extract last AI message to structurally prevent repetition in the prompt
+    final lastAiMessage = state.chatHistory
+        .lastWhere(
+          (m) => m.author == MessageAuthor.ai,
+          orElse: () => ChatMessage(
+            text: '',
+            author: MessageAuthor.ai,
+            timestamp: DateTime.now(),
+          ),
+        )
+        .text;
+
+    final situationContext = compactionService.getPromptContext(
+      lastAiMessage: lastAiMessage.isNotEmpty ? lastAiMessage : null,
+    );
     final recentHistory = compactionService.getRecentMessages(count: 14);
     
     // Map incident types to relevant documentation nodes if current node is 'start'
@@ -274,38 +288,51 @@ class SessionNotifier extends Notifier<SessionState> {
     if (effectiveNodeId == 'start') {
       final incident = compactionService.context.incidentType.toLowerCase();
       final summary = state.situationSummary.toLowerCase();
-      
-      // Check both extracted incident type AND summary for matches
-      // This is now more robust because the LLM extracts the incident type even from non-English input
-      if (incident.contains('bleed') || summary.contains('bleed') || summary.contains('sangr')) {
+      final userMsgLower = userText.toLowerCase();
+
+      // NOTE: burn must be checked BEFORE bleed — cooking burns involve no bleeding
+      if (incident.contains('burn') || userMsgLower.contains('burn') ||
+          userMsgLower.contains('burned') || summary.contains('burn')) {
+        effectiveNodeId = 'burn_protocol';
+      } else if (incident.contains('bleed') || summary.contains('bleed') ||
+          summary.contains('sangr')) {
         effectiveNodeId = 'bleeding_protocol';
-      } else if (incident.contains('fall') || incident.contains('knee') || incident.contains('elbow') || summary.contains('fall')) {
+      } else if (incident.contains('fall') || incident.contains('knee') ||
+          incident.contains('elbow') || summary.contains('fall')) {
         effectiveNodeId = 'injury_assessment';
-      } else if (incident.contains('heart') || incident.contains('chest') || summary.contains('chest')) {
+      } else if (incident.contains('heart') || incident.contains('chest') ||
+          summary.contains('chest')) {
         effectiveNodeId = 'chest_pain_protocol';
       } else if (incident.contains('chok') || summary.contains('chok')) {
         effectiveNodeId = 'choking_protocol';
       } else if (incident.contains('seiz') || summary.contains('seiz')) {
         effectiveNodeId = 'seizure_protocol';
-      } else if (incident.contains('frost') || incident.contains('freeze') || summary.contains('cold')) {
+      } else if (incident.contains('frost') || incident.contains('freeze') ||
+          summary.contains('cold')) {
         effectiveNodeId = 'frostbite_protocol';
       } else if (incident.contains('lost') || summary.contains('lost')) {
         effectiveNodeId = 'lost_protocol';
-      } else if (incident.contains('earthquake') || incident.contains('shaking')) {
+      } else if (incident.contains('earthquake') ||
+          incident.contains('shaking')) {
         effectiveNodeId = 'earthquake_protocol';
       } else if (incident.contains('flood') || summary.contains('flood')) {
         effectiveNodeId = 'flood_protocol';
       } else if (incident.contains('wildfire') || incident.contains('fire')) {
         effectiveNodeId = 'wildfire_protocol';
-      } else if (incident.contains('storm') || incident.contains('tornado') || incident.contains('hurricane')) {
+      } else if (incident.contains('storm') || incident.contains('tornado') ||
+          incident.contains('hurricane')) {
         effectiveNodeId = 'storm_protocol';
-      } else if (incident.contains('water') || incident.contains('drink') || summary.contains('water')) {
+      } else if (incident.contains('water') || incident.contains('drink') ||
+          summary.contains('water')) {
         effectiveNodeId = 'water_skills';
-      } else if (incident.contains('food') || incident.contains('hungry') || summary.contains('food')) {
+      } else if (incident.contains('food') || incident.contains('hungry') ||
+          summary.contains('food')) {
         effectiveNodeId = 'food_skills';
-      } else if (incident.contains('shelter') || incident.contains('sleep') || summary.contains('shelter')) {
+      } else if (incident.contains('shelter') || incident.contains('sleep') ||
+          summary.contains('shelter')) {
         effectiveNodeId = 'shelter_skills';
-      } else if (incident.contains('navigat') || summary.contains('direction') || summary.contains('where')) {
+      } else if (incident.contains('navigat') || summary.contains('direction') ||
+          summary.contains('where')) {
         effectiveNodeId = 'nav_skills';
       } else if (incident.contains('poison') || summary.contains('poison')) {
         effectiveNodeId = 'poisoning_protocol';
@@ -325,6 +352,7 @@ class SessionNotifier extends Notifier<SessionState> {
           : 'General wilderness emergency. Apply Red Cross first aid principles.',
       recentHistory: recentHistory,
       imagePath: imagePath,
+      lastAiMessage: lastAiMessage.isNotEmpty ? lastAiMessage : null,
     )) {
       responseBuffer.write(token);
       // Update streaming buffer in state so UI can show live typing
