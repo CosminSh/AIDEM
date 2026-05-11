@@ -356,6 +356,8 @@ class SessionNotifier extends Notifier<SessionState> {
       final incident = compactionService.context.incidentType.toLowerCase();
       final summary = state.situationSummary.toLowerCase();
       final userMsgLower = userText.toLowerCase();
+      final combined = '$incident $summary $userMsgLower';
+      bool hasAny(List<String> terms) => terms.any(combined.contains);
 
       // NOTE: burn must be checked BEFORE bleed — cooking burns involve no bleeding
       if (incident.contains('burn') ||
@@ -382,6 +384,24 @@ class SessionNotifier extends Notifier<SessionState> {
           incident.contains('chest') ||
           summary.contains('chest')) {
         effectiveNodeId = 'chest_pain_protocol';
+      } else if (hasAny([
+        'stroke',
+        'face droop',
+        'slurred',
+        'one side',
+        'one-sided',
+        'arm weakness',
+        'weak on one',
+        'trouble speaking',
+      ])) {
+        effectiveNodeId = 'stroke_protocol';
+      } else if (hasAny([
+        'asthma',
+        'inhaler',
+        'wheezing',
+        'shortness of breath',
+      ])) {
+        effectiveNodeId = 'asthma_breathing_protocol';
       } else if (incident.contains('chok') || summary.contains('chok')) {
         effectiveNodeId = 'choking_protocol';
       } else if (incident.contains('seiz') || summary.contains('seiz')) {
@@ -403,6 +423,46 @@ class SessionNotifier extends Notifier<SessionState> {
           incident.contains('tornado') ||
           incident.contains('hurricane')) {
         effectiveNodeId = 'storm_protocol';
+      } else if (hasAny([
+        'power outage',
+        'blackout',
+        'no electricity',
+        'generator',
+        'medical device power',
+      ])) {
+        effectiveNodeId = 'power_outage_protocol';
+      } else if (hasAny([
+        'carbon monoxide',
+        'co alarm',
+        'co detector',
+        'generator indoors',
+        'headache dizziness',
+      ])) {
+        effectiveNodeId = 'carbon_monoxide_protocol';
+      } else if (hasAny([
+        'gas leak',
+        'smell gas',
+        'hissing gas',
+        'propane leak',
+      ])) {
+        effectiveNodeId = 'gas_leak_protocol';
+      } else if (hasAny([
+        'chemical spill',
+        'chemical release',
+        'toxic cloud',
+        'hazmat',
+        'fumes',
+      ])) {
+        effectiveNodeId = 'chemical_spill_protocol';
+      } else if (hasAny([
+        'outbreak',
+        'infectious',
+        'infection spreading',
+        'pandemic',
+        'quarantine',
+        'isolate',
+      ])) {
+        effectiveNodeId = 'infectious_disease_protocol';
       } else if (incident.contains('water') ||
           incident.contains('drink') ||
           summary.contains('water')) {
@@ -419,8 +479,45 @@ class SessionNotifier extends Notifier<SessionState> {
           summary.contains('direction') ||
           summary.contains('where')) {
         effectiveNodeId = 'nav_skills';
+      } else if (hasAny([
+        'overdose',
+        'naloxone',
+        'narcan',
+        'opioid',
+        'fentanyl',
+        'heroin',
+        'too many pills',
+      ])) {
+        effectiveNodeId = 'opioid_overdose_protocol';
       } else if (incident.contains('poison') || summary.contains('poison')) {
         effectiveNodeId = 'poisoning_protocol';
+      } else if (hasAny([
+        'pregnant',
+        'pregnancy',
+        'labor',
+        'contractions',
+        'water broke',
+        'giving birth',
+      ])) {
+        effectiveNodeId = 'pregnancy_labor_protocol';
+      } else if (hasAny([
+        'suicide',
+        'self harm',
+        'kill myself',
+        'kill himself',
+        'kill herself',
+        'mental health crisis',
+        'panic attack',
+      ])) {
+        effectiveNodeId = 'mental_health_crisis_protocol';
+      } else if (hasAny([
+        'many injured',
+        'multiple injured',
+        'mass casualty',
+        'explosion',
+        'crowd crush',
+      ])) {
+        effectiveNodeId = 'mass_casualty_triage';
       }
     }
 

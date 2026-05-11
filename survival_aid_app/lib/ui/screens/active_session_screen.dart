@@ -594,10 +594,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   size: 20,
                   color: color,
                 ),
-                tooltip: voice.enabled
+                tooltip: !voice.available
+                    ? 'Voice reading unavailable here'
+                    : voice.enabled
                     ? 'Disable voice reading'
                     : 'Enable voice reading',
-                onPressed: voice.isInitializing ? null : _toggleVoiceReading,
+                onPressed: voice.isInitializing || !voice.available
+                    ? null
+                    : _toggleVoiceReading,
               );
             },
           ),

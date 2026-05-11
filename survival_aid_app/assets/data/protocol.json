@@ -54,8 +54,13 @@
         {"label": "Nosebleed", "target": "nosebleed_protocol"},
         {"label": "Ear Bleeding", "target": "ear_bleed_protocol"},
         {"label": "Chest Pain / Heart Attack", "target": "heart_attack_protocol"},
+        {"label": "Stroke Signs", "target": "stroke_protocol"},
+        {"label": "Severe Breathing / Asthma", "target": "asthma_breathing_protocol"},
+        {"label": "Overdose / Unresponsive After Drugs", "target": "opioid_overdose_protocol"},
         {"label": "Diabetic Emergency", "target": "diabetic_triage"},
         {"label": "Seizure", "target": "seizure_protocol"},
+        {"label": "Pregnancy / Labor Emergency", "target": "pregnancy_labor_protocol"},
+        {"label": "Mental Health Crisis", "target": "mental_health_crisis_protocol"},
         {"label": "Poisoning", "target": "poisoning_protocol"},
         {"label": "Water / Food Safety", "target": "water_purification_info"},
         {"label": "Fire Starting", "target": "fire_starting_protocol"},
@@ -64,6 +69,7 @@
         {"label": "Animal Hazard", "target": "animal_hazard_triage"},
         {"label": "River Crossing", "target": "river_crossing_protocol"},
         {"label": "Avalanche", "target": "avalanche_triage"},
+        {"label": "Mass Casualty / Multiple Injured", "target": "mass_casualty_triage"},
         {"label": "Navigation Help", "target": "navigation_selection"},
         {"label": "Minor Wound / Blister", "target": "clean_wound"},
         {"label": "Wound Infection / Pus", "target": "infection_triage"},
@@ -441,6 +447,10 @@
         {"label": "Flood", "target": "flood_protocol"},
         {"label": "Wildfire", "target": "wildfire_protocol"},
         {"label": "Nuclear / Radiation", "target": "nuclear_radiation_protocol"},
+        {"label": "Power Outage / Blackout", "target": "power_outage_protocol"},
+        {"label": "Gas Leak / Carbon Monoxide", "target": "gas_co_triage"},
+        {"label": "Chemical Spill / Release", "target": "chemical_spill_protocol"},
+        {"label": "Infectious Disease / Outbreak", "target": "infectious_disease_protocol"},
         {"label": "Civil Unrest / Urban", "target": "civil_unrest_protocol"},
         {"label": "Lightning", "target": "lightning_survival_protocol"},
         {"label": "Landslide / Mudslide", "target": "landslide_mudslide_protocol"},
@@ -511,6 +521,125 @@
       "gps_context": false,
       "branches": [
         {"label": "Call Poison Control", "target": "rescue_call"}
+      ]
+    },
+    "stroke_protocol": {
+      "id": "stroke_protocol",
+      "question": "Use FAST: face drooping, arm weakness, speech trouble, time to call emergency services. Note when symptoms started. Do not give food, drink, or aspirin.",
+      "source": "CDC / American Stroke Association",
+      "gps_context": true,
+      "branches": [
+        {"label": "Check FAST signs", "target": "stroke_fast_check"},
+        {"label": "Call emergency services", "target": "rescue_call"}
+      ]
+    },
+    "stroke_fast_check": {
+      "id": "stroke_fast_check",
+      "question": "Ask them to smile, raise both arms, and repeat a simple sentence. Any new face droop, one-sided weakness, or speech trouble is an emergency.",
+      "source": "CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Symptoms present", "target": "rescue_call"},
+        {"label": "Monitor vitals", "target": "vitals_triage"}
+      ]
+    },
+    "asthma_breathing_protocol": {
+      "id": "asthma_breathing_protocol",
+      "question": "Sit them upright, keep them calm, and help with their prescribed quick-relief inhaler if available. Call emergency services if they cannot speak normally, lips turn blue/gray, or medication is not helping.",
+      "source": "Red Cross / CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Has inhaler", "target": "asthma_inhaler_steps"},
+        {"label": "No inhaler / getting worse", "target": "rescue_call"}
+      ]
+    },
+    "asthma_inhaler_steps": {
+      "id": "asthma_inhaler_steps",
+      "question": "Help them use the inhaler exactly as prescribed. Shake it, use a spacer if available, have them breathe slowly, and note the time and response.",
+      "source": "Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Improving", "target": "vitals_triage"},
+        {"label": "Not improving", "target": "rescue_call"}
+      ]
+    },
+    "opioid_overdose_protocol": {
+      "id": "opioid_overdose_protocol",
+      "question": "Call emergency services now. If they are very sleepy, cannot wake, breathing slowly, blue/gray, or making gurgling sounds, give naloxone if available and begin CPR if breathing stops.",
+      "source": "SAMHSA / Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Naloxone available", "target": "naloxone_steps"},
+        {"label": "No naloxone", "target": "rescue_call"}
+      ]
+    },
+    "naloxone_steps": {
+      "id": "naloxone_steps",
+      "question": "Give naloxone exactly as labeled. Stay with them, monitor breathing, place in recovery position if breathing, and be ready for CPR. Naloxone can wear off.",
+      "source": "SAMHSA / FDA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Breathing improved", "target": "vitals_triage"},
+        {"label": "Still not breathing normally", "target": "drowning_cpr_protocol"}
+      ]
+    },
+    "pregnancy_labor_protocol": {
+      "id": "pregnancy_labor_protocol",
+      "question": "Call emergency services for heavy bleeding, severe belly pain, seizure, fainting, trouble breathing, or if birth seems imminent and no clinician is reachable.",
+      "source": "CDC / Red Cross",
+      "gps_context": true,
+      "branches": [
+        {"label": "Birth seems imminent", "target": "imminent_birth_steps"},
+        {"label": "Warning signs / complications", "target": "rescue_call"}
+      ]
+    },
+    "imminent_birth_steps": {
+      "id": "imminent_birth_steps",
+      "question": "Keep the parent warm and clean, do not pull on the baby, support the head and body as they deliver, dry and warm the baby, and do not cut the cord unless trained.",
+      "source": "Red Cross / CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Baby delivered", "target": "newborn_immediate_care"},
+        {"label": "Complication", "target": "rescue_call"}
+      ]
+    },
+    "newborn_immediate_care": {
+      "id": "newborn_immediate_care",
+      "question": "Dry the baby, keep skin-to-skin on the parent's chest if possible, cover both, check breathing, and seek medical care urgently.",
+      "source": "Red Cross / WHO",
+      "gps_context": true,
+      "branches": [
+        {"label": "Monitor parent and baby", "target": "vitals_triage"}
+      ]
+    },
+    "mental_health_crisis_protocol": {
+      "id": "mental_health_crisis_protocol",
+      "question": "If there is immediate danger, call emergency services. If in the U.S., call or text 988 for crisis support. Stay with the person, speak calmly, and move weapons, pills, or hazards away if safe.",
+      "source": "NIMH / 988 Lifeline",
+      "gps_context": true,
+      "branches": [
+        {"label": "Immediate danger", "target": "rescue_call"},
+        {"label": "Stabilize and stay with them", "target": "mental_health_stabilize"}
+      ]
+    },
+    "mental_health_stabilize": {
+      "id": "mental_health_stabilize",
+      "question": "Use simple, nonjudgmental words. Ask directly if they might harm themselves, do not leave them alone, and connect them to a crisis line or trusted person.",
+      "source": "NIMH / 988 Lifeline",
+      "gps_context": false,
+      "branches": [
+        {"label": "Back to triage", "target": "triage_selection"}
+      ]
+    },
+    "mass_casualty_triage": {
+      "id": "mass_casualty_triage",
+      "question": "If several people are hurt, first make the scene safe, call for help, then prioritize people who cannot walk, are not breathing normally, have severe bleeding, or are confused.",
+      "source": "FEMA / START Triage",
+      "gps_context": true,
+      "branches": [
+        {"label": "Severe bleeding", "target": "bleeding_protocol"},
+        {"label": "Not breathing / CPR", "target": "drowning_cpr_protocol"},
+        {"label": "Organize rescue handoff", "target": "rescue_call"}
       ]
     },
     "skills_selection": {
@@ -1182,6 +1311,87 @@
       "source": "CDC",
       "gps_context": false,
       "branches": [{"label": "Shelter status", "target": "nuclear_radiation_protocol"}]
+    },
+    "power_outage_protocol": {
+      "id": "power_outage_protocol",
+      "question": "Use flashlights instead of candles if possible, keep refrigerator/freezer doors closed, unplug sensitive electronics, and keep generators or grills outside and away from windows.",
+      "source": "Ready.gov / CDC",
+      "gps_context": false,
+      "branches": [
+        {"label": "Generator / CO risk", "target": "carbon_monoxide_protocol"},
+        {"label": "Medical device depends on power", "target": "power_medical_device_plan"},
+        {"label": "Back to disasters", "target": "disaster_selection"}
+      ]
+    },
+    "power_medical_device_plan": {
+      "id": "power_medical_device_plan",
+      "question": "Conserve battery, use backup power if available, contact utility/emergency services for power-dependent medical equipment, and move to a powered shelter if needed.",
+      "source": "Ready.gov / CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Need transport or rescue", "target": "rescue_call"},
+        {"label": "Back to disasters", "target": "disaster_selection"}
+      ]
+    },
+    "gas_co_triage": {
+      "id": "gas_co_triage",
+      "question": "Is there a fuel-burning appliance/generator/car indoors, a gas smell, or people with headache, dizziness, nausea, weakness, chest pain, or confusion?",
+      "source": "CDC / Ready.gov",
+      "gps_context": true,
+      "branches": [
+        {"label": "Carbon monoxide symptoms", "target": "carbon_monoxide_protocol"},
+        {"label": "Gas smell / leak", "target": "gas_leak_protocol"}
+      ]
+    },
+    "carbon_monoxide_protocol": {
+      "id": "carbon_monoxide_protocol",
+      "question": "Move everyone to fresh air immediately. Call emergency services or poison control. Do not re-enter until professionals say it is safe.",
+      "source": "CDC",
+      "gps_context": true,
+      "branches": [
+        {"label": "Someone is unconscious", "target": "drowning_cpr_protocol"},
+        {"label": "Everyone is outside", "target": "rescue_call"}
+      ]
+    },
+    "gas_leak_protocol": {
+      "id": "gas_leak_protocol",
+      "question": "Leave the area immediately. Do not use flames, switches, phones, vehicles, or appliances near the leak. Call emergency services or the gas utility from outside.",
+      "source": "Ready.gov / Fire Safety",
+      "gps_context": true,
+      "branches": [
+        {"label": "Outside and safe", "target": "rescue_call"}
+      ]
+    },
+    "chemical_spill_protocol": {
+      "id": "chemical_spill_protocol",
+      "question": "Move uphill/upwind if outdoors, leave the area if safe, avoid vapors or liquid contact, remove contaminated clothing, and rinse exposed skin or eyes with clean water.",
+      "source": "CDC / FEMA",
+      "gps_context": true,
+      "branches": [
+        {"label": "Skin / eye exposure", "target": "chemical_burn"},
+        {"label": "Breathing fumes", "target": "rescue_call"},
+        {"label": "Back to disasters", "target": "disaster_selection"}
+      ]
+    },
+    "infectious_disease_protocol": {
+      "id": "infectious_disease_protocol",
+      "question": "Separate the sick person if possible, improve ventilation, use masks if available, wash hands, avoid sharing cups or utensils, and seek medical help for trouble breathing, blue lips, confusion, dehydration, or worsening illness.",
+      "source": "CDC / WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Severe symptoms", "target": "rescue_call"},
+        {"label": "Home isolation steps", "target": "infection_control_steps"}
+      ]
+    },
+    "infection_control_steps": {
+      "id": "infection_control_steps",
+      "question": "Have one caregiver if possible, clean high-touch surfaces, use safe water and hygiene, monitor temperature and breathing, and protect high-risk people.",
+      "source": "CDC / WHO",
+      "gps_context": false,
+      "branches": [
+        {"label": "Monitor vitals", "target": "vitals_triage"},
+        {"label": "Back to disasters", "target": "disaster_selection"}
+      ]
     },
     "lightning_survival_protocol": {
       "id": "lightning_survival_protocol",

@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,12 +41,23 @@ class VoiceState {
 
 class VoiceService extends Notifier<VoiceState> {
   static const String _enabledKey = 'aidem_voice_read_aloud_enabled';
-  final FlutterTts _tts = FlutterTts();
+  FlutterTts? _tts;
+  Process? _windowsSpeechProcess;
   bool _didConfigure = false;
+  int _speechRun = 0;
 
   @override
   VoiceState build() {
-    _configureHandlers();
+    if (_isWindows) {
+      _disablePersistedVoice();
+      return const VoiceState(
+        enabled: false,
+        available: true,
+        isSpeaking: false,
+        isInitializing: false,
+      );
+    }
+
     _restorePreference();
 
     return const VoiceState(
@@ -54,6 +69,21 @@ class VoiceService extends Notifier<VoiceState> {
   }
 
   Future<void> setEnabled(bool enabled) async {
+    if (_isWindows) {
+      if (!enabled) {
+        await stop();
+      }
+      await _saveEnabled(false);
+      state = state.copyWith(
+        enabled: enabled,
+        available: true,
+        isSpeaking: false,
+        isInitializing: false,
+        clearError: true,
+      );
+      return;
+    }
+
     if (enabled) {
       await _ensureReady();
       if (!state.available) {
@@ -65,8 +95,7 @@ class VoiceService extends Notifier<VoiceState> {
     }
 
     state = state.copyWith(enabled: enabled, clearError: true);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_enabledKey, enabled);
+    await _saveEnabled(enabled);
   }
 
   Future<void> toggle() => setEnabled(!state.enabled);
@@ -76,18 +105,30 @@ class VoiceService extends Notifier<VoiceState> {
       return;
     }
 
+    if (_isWindows) {
+      if (!state.available) {
+        return;
+      }
+      await _speakWithWindowsFallback(text);
+      return;
+    }
+
     await _ensureReady();
     if (!state.available) {
       return;
     }
 
     try {
-      await _tts.stop();
-      await _tts.setLanguage(_localeForLanguage(language));
-      await _tts.setSpeechRate(0.46);
-      await _tts.setVolume(1.0);
-      await _tts.setPitch(1.0);
-      await _tts.speak(_cleanForSpeech(text));
+      final tts = _tts;
+      if (tts == null) {
+        return;
+      }
+      await tts.stop();
+      await tts.setLanguage(_localeForLanguage(language));
+      await tts.setSpeechRate(0.46);
+      await tts.setVolume(1.0);
+      await tts.setPitch(1.0);
+      await tts.speak(_cleanForSpeech(text));
     } catch (e) {
       state = state.copyWith(
         enabled: false,
@@ -99,8 +140,15 @@ class VoiceService extends Notifier<VoiceState> {
   }
 
   Future<void> stop() async {
+    _speechRun++;
+    final windowsProcess = _windowsSpeechProcess;
+    _windowsSpeechProcess = null;
+    if (windowsProcess != null) {
+      windowsProcess.kill();
+    }
+
     try {
-      await _tts.stop();
+      await _tts?.stop();
     } catch (_) {
       // Stop is best-effort; keep the UI responsive even if a platform fails.
     } finally {
@@ -112,6 +160,16 @@ class VoiceService extends Notifier<VoiceState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final enabled = prefs.getBool(_enabledKey) ?? false;
+      if (_isWindows) {
+        await prefs.setBool(_enabledKey, false);
+        state = state.copyWith(
+          enabled: false,
+          available: true,
+          isInitializing: false,
+          clearError: true,
+        );
+        return;
+      }
       state = state.copyWith(enabled: enabled, isInitializing: false);
       if (enabled) {
         await _ensureReady();
@@ -132,8 +190,9 @@ class VoiceService extends Notifier<VoiceState> {
     }
 
     try {
-      await _tts.awaitSpeakCompletion(true);
-      final languages = await _tts.getLanguages;
+      final tts = _ensureEngine();
+      await tts.awaitSpeakCompletion(true);
+      final languages = await tts.getLanguages;
       final hasLanguages = languages is List && languages.isNotEmpty;
       state = state.copyWith(
         available: hasLanguages,
@@ -154,22 +213,105 @@ class VoiceService extends Notifier<VoiceState> {
     }
   }
 
-  void _configureHandlers() {
+  Future<void> _speakWithWindowsFallback(String text) async {
+    final spokenText = _cleanForSpeech(text);
+    if (spokenText.isEmpty) {
+      return;
+    }
+
+    await stop();
+    final runId = ++_speechRun;
+    state = state.copyWith(isSpeaking: true, clearError: true);
+
+    const script = '''
+Add-Type -AssemblyName System.Speech
+\$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+\$synth.Rate = -1
+\$synth.Volume = 100
+\$synth.Speak(\$args[0])
+\$synth.Dispose()
+''';
+
+    try {
+      final process = await Process.start('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-WindowStyle',
+        'Hidden',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+        _limitWindowsSpeechText(spokenText),
+      ]);
+      _windowsSpeechProcess = process;
+      unawaited(process.stdout.drain<void>());
+      unawaited(process.stderr.drain<void>());
+
+      unawaited(
+        process.exitCode
+            .timeout(
+              const Duration(seconds: 60),
+              onTimeout: () {
+                process.kill();
+                return -1;
+              },
+            )
+            .then((code) {
+              if (runId != _speechRun) {
+                return;
+              }
+              _windowsSpeechProcess = null;
+              state = state.copyWith(
+                isSpeaking: false,
+                available: true,
+                enabled: code == 0 && state.enabled,
+                errorMessage: code == 0
+                    ? null
+                    : 'Windows voice output failed and was disabled.',
+                clearError: code == 0,
+              );
+            })
+            .catchError((_) {
+              if (runId != _speechRun) {
+                return;
+              }
+              _windowsSpeechProcess = null;
+              state = state.copyWith(
+                enabled: false,
+                available: true,
+                isSpeaking: false,
+                errorMessage: 'Windows voice output is not available.',
+              );
+            }),
+      );
+    } catch (_) {
+      _windowsSpeechProcess = null;
+      state = state.copyWith(
+        enabled: false,
+        available: true,
+        isSpeaking: false,
+        errorMessage: 'Windows voice output is not available.',
+      );
+    }
+  }
+
+  void _configureHandlers(FlutterTts tts) {
     if (_didConfigure) {
       return;
     }
     _didConfigure = true;
 
-    _tts.setStartHandler(() {
+    tts.setStartHandler(() {
       state = state.copyWith(isSpeaking: true, clearError: true);
     });
-    _tts.setCompletionHandler(() {
+    tts.setCompletionHandler(() {
       state = state.copyWith(isSpeaking: false);
     });
-    _tts.setCancelHandler(() {
+    tts.setCancelHandler(() {
       state = state.copyWith(isSpeaking: false);
     });
-    _tts.setErrorHandler((message) {
+    tts.setErrorHandler((message) {
       state = state.copyWith(
         enabled: false,
         available: false,
@@ -179,12 +321,48 @@ class VoiceService extends Notifier<VoiceState> {
     });
   }
 
+  FlutterTts _ensureEngine() {
+    final existing = _tts;
+    if (existing != null) {
+      return existing;
+    }
+
+    final created = FlutterTts();
+    _tts = created;
+    _configureHandlers(created);
+    return created;
+  }
+
+  Future<void> _saveEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enabledKey, enabled);
+  }
+
+  Future<void> _disablePersistedVoice() async {
+    try {
+      await _saveEnabled(false);
+    } catch (_) {
+      // If preferences are unavailable, still keep this session disabled.
+    }
+  }
+
+  bool get _isWindows =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+
   String _cleanForSpeech(String text) {
     return text
         .replaceAll(RegExp(r'\[[A-Z ]+\]'), '')
         .replaceAll(RegExp(r'[`*_#>]+'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+  }
+
+  String _limitWindowsSpeechText(String text) {
+    const maxChars = 2000;
+    if (text.length <= maxChars) {
+      return text;
+    }
+    return '${text.substring(0, maxChars)}...';
   }
 
   String _localeForLanguage(String? language) {

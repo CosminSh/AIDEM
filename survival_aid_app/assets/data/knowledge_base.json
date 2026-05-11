@@ -101,7 +101,7 @@
 
   "flood_protocol": "Red Cross — Flood Safety (Turn Around, Don't Drown):\nNever walk, swim, or drive through floodwaters. 6 inches of fast-moving water can knock you over; 12 inches can carry away most cars. If you are caught on a flooded road and your car stalls, leave it and move to higher ground immediately. Do not climb into an attic unless you have a way to get onto the roof (e.g., an axe). Watch for 'flash floods' in dry canyons even if it isn't raining locally.",
 
-  "tsunami_protocol": "FEMA — Tsunami Survival (Natural Warnings):\n1) Ground Shaking: A strong earthquake is your warning. 2) Ocean Behavior: If the water recedes rapidly, exposing the sea floor, a tsunami is imminent. 3) The Sound: A loud roar like a train or jet engine. ACTION: Move inland at least 2 miles or gain 100 feet of elevation immediately. Do not wait for sirens. Stay away from the coast until officials say it is safe — tsunamis are a series of waves, and the second or third may be larger than the first.",
+  "tsunami_protocol": "NOAA / Red Cross — Tsunami Survival:\n1) EVACUATE: Move immediately to higher ground (at least 100 feet above sea level) or inland (1 mile). 2) ON FOOT: Evacuate on foot to avoid traffic jams and blocked roads. 3) STAY: Tsunami waves come in a series that can last for hours. The first wave is rarely the largest. 4) ALL CLEAR: Do not return to the coast until local officials declare it safe. 5) NEVER go to the beach to watch the wave; if you see it, you are too close.",
 
   "lightning_protocol": "NWS — Lightning Safety (30/30 Rule):\n1) 30/30 Rule: If you see lightning, count the seconds until you hear thunder. If it's 30 seconds or less, seek shelter. Wait 30 minutes after the last thunder before leaving. 2) Outdoors: Avoid high ground, solitary trees, and metal objects. 3) Lightning Crouch: If caught in the open, squat low on the balls of your feet with heels touching. Keep your head down and ears covered. Do not lie flat (ground current). 4) Water: Get out of lakes/rivers immediately. 5) Separation: If in a group, spread out at least 20 feet apart to prevent multiple strikes.",
 
@@ -154,15 +154,15 @@
   "fracture_sprain_protocol": "Red Cross / WFA — Bone & Joint Injuries:\nIn the wilderness, treat all severe sprains and suspected fractures identically: stabilize and immobilize. Check CSM (Circulation, Sensation, Movement) distal to the injury before and after splinting. Re-check CSM every hour. If bone is protruding (open fracture), do not push it back in; cover with a sterile dressing and seek immediate rescue.",
 
   "improvised_splinting": "Red Cross / WFA — Improvised Splinting Steps:\n1) Gather Materials: Rigid supports (trekking poles, branches, backpack frames) and padding (jackets, socks, sleeping bags). 2) Position: Splint the limb exactly as it was found. Do not attempt to realign. 3) Immobilization: The splint must extend above and below the joints surrounding the injury. 4) Secure: Use belts, cloth strips, or tape. Ensure it is snug but does not cut off circulation. 5) Re-assess CSM immediately after securing.",
-  
+
   "choking_protocol": "Red Cross — Conscious Choking (5-and-5 Approach):\n1) Give 5 back blows: Bend the person forward and hit them firmly between the shoulder blades with the heel of your hand. 2) Give 5 abdominal thrusts (Heimlich): Stand behind them, wrap arms around waist, make a fist above the navel, and pull inward and upward sharply. 3) Repeat until the object is forced out or the person becomes unconscious.",
-  
+
   "drowning_cpr_protocol": "Red Cross — Drowning & CPR Basics:\n1) Get the person out of the water to a firm, flat surface. 2) Check for breathing: tilt head back, lift chin, and look/listen for 10 seconds. 3) If not breathing, give 2 rescue breaths (pinch nose, seal mouth, blow until chest rises). 4) Begin chest compressions: 30 compressions (2 inches deep, 100-120 bpm) followed by 2 breaths. Continue until rescuers arrive or person breathes. Do not stop unless exhausted.",
-  
+
   "frostbite_protocol": "Red Cross — Frostbite Treatment:\nSigns: white/waxy skin, numbness, hard/cold feeling. 1) Move to warm area. 2) Do not rub the area (damages tissue). 3) Soak in warm water (100-105°F / 38-40°C) until color/sensation returns. 4) Apply loose, dry dressing. 5) Place gauze between frozen fingers/toes. 6) Seek medical help immediately. Do not rewarm if there is a risk of refreezing.",
-  
+
   "tick_removal_protocol": "CDC — Tick Removal & Lyme Prevention:\n1) Use fine-tipped tweezers to grasp the tick as close to the skin's surface as possible. 2) Pull upward with steady, even pressure. Don't twist or jerk the tick. 3) After removal, clean the bite area and your hands with alcohol or soap and water. 4) If you develop a rash (bullseye) or fever within several weeks, see a doctor. Do not use: nail polish, petroleum jelly, or heat to detach the tick.",
-  
+
   "vehicle_emergency_protocol": "NPS — Wilderness Vehicle Survival:\n1) STAY WITH YOUR VEHICLE. It is easier for rescuers to find a car than a person. 2) Use the car as shelter from sun/cold. 3) Signal for help: Open the hood, tie a bright cloth to the antenna, and use mirrors to signal aircraft. 4) Run the engine sparingly (10 mins per hour) for heat, ensuring the exhaust pipe is clear of snow/mud. 5) If you must leave, leave a detailed note showing your direction and time of departure.",
 
   "nosebleed_protocol": "Red Cross / WFA — Nosebleed (Epistaxis) Management:\n1) POSITION: Sit down and tilt the head SLIGHTLY FORWARD. Do not lean back (causes blood to drain into throat/lungs). 2) PRESSURE: Firmly pinch the nostrils shut for 5-10 minutes. 3) MONITOR: Check after 10 mins; if still bleeding, repeat for 10 more mins. 4) ALTITUDE: In dry air, keep nostrils moist with saline or a thin layer of oil (jojoba/castor). 5) RESCUE: If bleeding lasts >20 mins despite pressure, or was caused by severe trauma, seek medical help.",
@@ -223,8 +223,6 @@
 
   "ranger_beads_tracking": "US Army — Using Ranger Beads (Pace Beads):\n1) 100m TRACKING: Slide one of the lower 9 beads down every time you complete 100 meters. 2) 1km TRACKING: After 10 beads (all lower 9 plus one reset), slide one of the upper 4 beads down to mark 1000 meters (1km). 3) RESET: Reset the lower beads and continue until the next kilometer.",
 
-  "tsunami_protocol": "NOAA / Red Cross — Tsunami Survival:\n1) EVACUATE: Move immediately to higher ground (at least 100 feet above sea level) or inland (1 mile). 2) ON FOOT: Evacuate on foot to avoid traffic jams and blocked roads. 3) STAY: Tsunami waves come in a series that can last for hours. The first wave is rarely the largest. 4) ALL CLEAR: Do not return to the coast until local officials declare it safe. 5) NEVER go to the beach to watch the wave; if you see it, you are too close.",
-
   "tsunami_warning_signs": "NOAA — Natural Tsunami Warnings:\nIf you experience any of these, EVACUATE IMMEDIATELY: 1) Strong or long-lasting earthquake (20+ seconds). 2) LOUD ROAR from the ocean (like a train or jet). 3) UNUSUAL OCEAN BEHAVIOR: Water retreating significantly, exposing the seafloor/reefs, or a rapidly rising flood.",
 
   "nuclear_radiation_protocol": "FEMA / CDC — Nuclear/Radiation Survival:\n1) GET INSIDE: Find a brick or concrete building. 2) STAY INSIDE: Move to the basement or the center of the building; stay away from outer walls and roof. 2) SEAL: Turn off fans/AC and close all windows/dampers. 3) STAY TUNED: Listen to radio/official alerts and stay inside for at least 24 hours unless told otherwise. 4) KI: Do NOT take Potassium Iodide unless specifically instructed by officials.",
@@ -265,5 +263,45 @@
 
   "stop_protocol": "Psychology of Survival — S.T.O.P. Rule:\n1) STOP: Sit down and stop moving to interrupt panic. 2) THINK: Take a breath and acknowledge the situation calmly. 3) OBSERVE: Assess your environment, gear, and physical condition. 4) PLAN: Break large problems into small, manageable tasks.",
 
-  "box_breathing_technique": "Tactical Breathing — Box Breathing:\nUse this to lower heart rate and regain focus: 1) INHALE slowly for 4 seconds. 2) HOLD for 4 seconds. 3) EXHALE slowly for 4 seconds. 4) HOLD for 4 seconds. Repeat for several minutes until calm."
+  "box_breathing_technique": "Tactical Breathing — Box Breathing:\nUse this to lower heart rate and regain focus: 1) INHALE slowly for 4 seconds. 2) HOLD for 4 seconds. 3) EXHALE slowly for 4 seconds. 4) HOLD for 4 seconds. Repeat for several minutes until calm.",
+
+  "stroke_protocol": "CDC / American Stroke Association - Stroke Recognition:\nDuring a stroke, every minute counts. Use FAST: Face drooping, Arm weakness, Speech trouble, Time to call emergency services. Also watch for sudden confusion, vision trouble, dizziness/loss of balance, or severe unexplained headache. Note the exact time symptoms started or when the person was last known well. Do not give food, drink, or aspirin unless a clinician directs it.",
+
+  "stroke_fast_check": "CDC - FAST Field Check:\nAsk the person to smile, raise both arms, and repeat a simple sentence. Any new one-sided face droop, arm drift/weakness, slurred speech, confusion, or trouble understanding speech is an emergency. Keep the person at rest, monitor breathing, and prepare a medication/allergy list for responders.",
+
+  "asthma_breathing_protocol": "Red Cross / CDC - Asthma or Severe Breathing Difficulty:\nHelp the person sit upright and stay calm. Assist with their prescribed quick-relief inhaler if available. Call emergency services if they cannot speak more than a few words, lips/fingernails look blue or gray, breathing is very rapid or shallow, symptoms do not improve after medication, or the person becomes drowsy/confused.",
+
+  "asthma_inhaler_steps": "Red Cross - Quick-Relief Inhaler Support:\nVerify the medication belongs to the person. Shake the inhaler, attach a spacer if available, have them breathe out, seal lips around the mouthpiece, press once, and have them breathe in slowly then hold for 5-10 seconds if able. If using a spacer and they cannot take a deep breath, have them take several normal breaths. Note time and response.",
+
+  "opioid_overdose_protocol": "SAMHSA - Suspected Opioid Overdose:\nOpioid overdose is life-threatening. Signs include very slow or stopped breathing, blue/gray lips or fingernails, gurgling/snoring sounds, limp body, pale clammy skin, vomiting, or inability to wake/speak. Call emergency services immediately. Give naloxone/nalmefene if available and begin CPR if breathing stops or is only gasping.",
+
+  "naloxone_steps": "SAMHSA / FDA - Naloxone Field Use:\nGive naloxone exactly as labeled, usually nasal spray into one nostril or injection if trained. Naloxone is temporary and may wear off before opioids do, so medical care is still urgent. Keep monitoring breathing. If breathing improves, place the person in recovery position. If breathing does not improve, continue CPR if trained and follow the product directions for repeat dosing.",
+
+  "pregnancy_labor_protocol": "CDC / Red Cross - Pregnancy and Labor Emergency:\nCall emergency services for heavy vaginal bleeding, seizure, fainting, severe abdominal pain, trouble breathing, severe headache/vision changes, signs of shock, or birth that seems imminent without medical help. Keep the parent warm, private, and as clean as possible. Do not give food or drink if surgery or urgent transport may be needed.",
+
+  "imminent_birth_steps": "Red Cross / WHO - Imminent Birth Field Support:\nWash hands or use gloves if available. Let birth happen naturally; do not pull on the baby or cord. Support the head and body as they deliver, keep the baby level with the parent, dry and warm the baby immediately, and keep skin-to-skin if breathing well. Do not cut the cord unless trained and equipped. Watch the parent for heavy bleeding.",
+
+  "newborn_immediate_care": "WHO / Red Cross - Newborn First Minutes:\nDry the baby thoroughly, keep warm skin-to-skin, cover the head, and check breathing/crying. If the baby is not breathing, stimulate by rubbing the back or feet and seek emergency help immediately. Keep the baby and parent warm together and monitor for heavy bleeding, weak breathing, blue color, or poor responsiveness.",
+
+  "mental_health_crisis_protocol": "NIMH / 988 Lifeline - Suicide or Mental Health Crisis:\nWarning signs include talking about wanting to die, feeling trapped or unbearable pain, making a plan, giving away possessions, extreme agitation, or increased substance use. If there is immediate danger, call emergency services. In the U.S., call or text 988. Stay with the person, listen without judgment, and move weapons, pills, or other lethal means away only if safe.",
+
+  "mental_health_stabilize": "NIMH / 988 Lifeline - Crisis Stabilization:\nUse calm, direct language. Ask clearly if they are thinking about killing themselves; asking does not put the idea in their head. Do not leave them alone if risk is present. Reduce stimulation, avoid arguing, connect them with a crisis line or trusted person, and document location and immediate hazards for responders.",
+
+  "mass_casualty_triage": "FEMA / START Triage - Multiple Injured People:\nScene safety comes first. Call for help early and give location, hazards, and number injured. Ask anyone who can walk to move to a safe area. Prioritize people who cannot walk, are not breathing normally, have severe bleeding, or are confused/unable to follow commands. Control catastrophic bleeding, open airways, and use bystanders for simple tasks.",
+
+  "power_outage_protocol": "Ready.gov / CDC - Power Outage Safety:\nKeep refrigerator and freezer doors closed. Use flashlights instead of candles when possible. Disconnect sensitive electronics to prevent surge damage. Use generators, grills, and camp stoves only outdoors and away from windows; never use a gas stove or oven to heat the home. Plan backup power or relocation for power-dependent medical devices.",
+
+  "power_medical_device_plan": "Ready.gov - Power-Dependent Medical Equipment:\nConserve device battery, switch to backup power if available, notify emergency services or utility support if a medical device depends on electricity, and move to a powered shelter or medical facility if power will not return in time. Keep medicines cool only as directed and seek pharmacist/clinician guidance for refrigerated medications exposed to heat.",
+
+  "gas_co_triage": "CDC / Ready.gov - Gas and Carbon Monoxide Triage:\nCarbon monoxide cannot be seen or smelled. Suspect CO when several people have headache, dizziness, weakness, nausea, vomiting, chest pain, confusion, or collapse near generators, vehicles, grills, furnaces, or fuel-burning heaters. For gas smell or hissing, treat as explosion risk and leave immediately.",
+
+  "carbon_monoxide_protocol": "CDC - Carbon Monoxide Exposure:\nMove everyone to fresh air immediately. Call emergency services or poison control. Do not re-enter the area until professionals say it is safe. If someone is unconscious or not breathing normally, start CPR if trained and keep yourself out of the contaminated area.",
+
+  "gas_leak_protocol": "Fire Safety / Utility Emergency Guidance - Gas Leak:\nLeave immediately. Do not turn lights on or off, use phones inside, light flames, start vehicles near the leak, or operate appliances. From a safe distance outside, call emergency services or the gas utility. Keep others away from the area until professionals clear it.",
+
+  "chemical_spill_protocol": "CDC / FEMA - Chemical Spill or Release:\nMove away from the source. Outdoors, go uphill and upwind when possible. Avoid vapors, liquids, powders, and contaminated surfaces. Remove contaminated clothing if safe and rinse exposed skin or eyes with clean water. Bring chemical labels or photos only if it can be done without exposure. Seek emergency help for breathing trouble, burns, eye exposure, or altered mental status.",
+
+  "infectious_disease_protocol": "CDC / WHO - Infectious Disease Isolation During Emergencies:\nSeparate the sick person if possible, improve ventilation, use masks when available, wash hands, avoid sharing cups/utensils, clean high-touch surfaces, and protect high-risk people. Seek urgent help for trouble breathing, blue lips, confusion, dehydration, severe weakness, chest pain, or worsening condition.",
+
+  "infection_control_steps": "CDC / WHO - Household Infection Control:\nUse one caregiver if possible, keep the sick person in a separate area, clean hands before and after contact, handle laundry carefully, disinfect high-touch surfaces, and monitor temperature, breathing, hydration, and mental status. Keep a written timeline of symptoms and exposures for clinicians."
 }

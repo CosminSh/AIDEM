@@ -44,6 +44,47 @@ void main() {
 
       expect(missingTargets, isEmpty);
     });
+
+    test('expanded resilience and health protocols have knowledge entries', () {
+      final protocol =
+          jsonDecode(protocolFile.readAsStringSync()) as Map<String, dynamic>;
+      final nodes = protocol['nodes'] as Map<String, dynamic>;
+      final knowledge =
+          jsonDecode(File('assets/data/knowledge_base.json').readAsStringSync())
+              as Map<String, dynamic>;
+
+      const expectedProtocolIds = [
+        'stroke_protocol',
+        'stroke_fast_check',
+        'asthma_breathing_protocol',
+        'asthma_inhaler_steps',
+        'opioid_overdose_protocol',
+        'naloxone_steps',
+        'pregnancy_labor_protocol',
+        'imminent_birth_steps',
+        'newborn_immediate_care',
+        'mental_health_crisis_protocol',
+        'mental_health_stabilize',
+        'mass_casualty_triage',
+        'power_outage_protocol',
+        'power_medical_device_plan',
+        'gas_co_triage',
+        'carbon_monoxide_protocol',
+        'gas_leak_protocol',
+        'chemical_spill_protocol',
+        'infectious_disease_protocol',
+        'infection_control_steps',
+      ];
+
+      for (final id in expectedProtocolIds) {
+        expect(nodes.containsKey(id), isTrue, reason: '$id node missing');
+        expect(
+          knowledge[id]?.toString().trim(),
+          isNot(isEmpty),
+          reason: '$id knowledge entry missing',
+        );
+      }
+    });
   });
 
   group('Emergency number data quality', () {

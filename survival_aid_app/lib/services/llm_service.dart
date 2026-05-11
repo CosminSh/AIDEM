@@ -468,6 +468,30 @@ class AdaptiveMock {
       return "Watch for trouble breathing or swelling of the lips, tongue, face, or throat. If breathing is normal, send a clear photo of the rash or sting if you can.";
     }
 
+    if (_isStroke(msg) || ctx.contains('stroke')) {
+      return "This could be a stroke. Call emergency services now and note the exact time symptoms started or when they were last normal. Keep them resting, do not give food, drink, or aspirin, and tell me if their face droops, one arm is weak, or speech is slurred.";
+    }
+
+    if (_isAsthmaOrBreathingEmergency(msg) || ctx.contains('asthma')) {
+      return "Help them sit upright and use their prescribed quick-relief inhaler if they have one. Call emergency services now if they cannot speak normally, their lips look blue or gray, or the inhaler is not helping. Are they able to talk in full sentences?";
+    }
+
+    if (_isOverdose(msg) || ctx.contains('overdose')) {
+      return "Call emergency services now. If they are very sleepy, not waking, breathing slowly, blue or gray, or making gurgling sounds, give naloxone if available. If they are not breathing normally, start CPR if trained. What did they take and when?";
+    }
+
+    if (_isCarbonMonoxideOrGas(msg) || ctx.contains('carbon monoxide')) {
+      return "Get everyone to fresh air immediately and do not go back inside. Call emergency services or poison control from outside. Carbon monoxide can be deadly without smell or warning. Is anyone unconscious, confused, or having chest pain?";
+    }
+
+    if (_isPregnancyEmergency(msg) || ctx.contains('pregnancy')) {
+      return "Call emergency services now if there is heavy bleeding, severe belly pain, seizure, fainting, trouble breathing, or birth seems imminent. Keep her warm, private, and clean. Is the baby coming now or are there warning signs?";
+    }
+
+    if (_isMentalHealthCrisis(msg) || ctx.contains('mental health crisis')) {
+      return "If there is immediate danger, call emergency services now. If you are in the U.S., call or text 988. Stay with the person, speak calmly, and move weapons, pills, or hazards away only if you can do that safely. Are they in immediate danger right now?";
+    }
+
     if (_isPoisoning(msg) || ctx.contains('poisoning')) {
       return "Do not make them vomit. Move away from fumes or chemicals if needed, and tell me what substance it was, how much, and when it happened.";
     }
@@ -637,6 +661,59 @@ class AdaptiveMock {
         msg.contains('chemical') ||
         msg.contains('bleach') ||
         msg.contains('cleaner');
+  }
+
+  static bool _isStroke(String msg) {
+    return msg.contains('stroke') ||
+        msg.contains('face droop') ||
+        msg.contains('slurred') ||
+        msg.contains('one side weak') ||
+        msg.contains('weak on one side') ||
+        msg.contains('trouble speaking');
+  }
+
+  static bool _isAsthmaOrBreathingEmergency(String msg) {
+    return msg.contains('asthma') ||
+        msg.contains('inhaler') ||
+        msg.contains('wheezing') ||
+        msg.contains('shortness of breath');
+  }
+
+  static bool _isOverdose(String msg) {
+    return msg.contains('overdose') ||
+        msg.contains('naloxone') ||
+        msg.contains('narcan') ||
+        msg.contains('opioid') ||
+        msg.contains('fentanyl') ||
+        msg.contains('heroin') ||
+        msg.contains('too many pills');
+  }
+
+  static bool _isCarbonMonoxideOrGas(String msg) {
+    return msg.contains('carbon monoxide') ||
+        msg.contains('co alarm') ||
+        msg.contains('co detector') ||
+        msg.contains('generator indoors') ||
+        msg.contains('gas leak') ||
+        msg.contains('smell gas');
+  }
+
+  static bool _isPregnancyEmergency(String msg) {
+    return msg.contains('pregnant') ||
+        msg.contains('pregnancy') ||
+        msg.contains('labor') ||
+        msg.contains('contractions') ||
+        msg.contains('water broke') ||
+        msg.contains('giving birth');
+  }
+
+  static bool _isMentalHealthCrisis(String msg) {
+    return msg.contains('suicide') ||
+        msg.contains('self harm') ||
+        msg.contains('kill myself') ||
+        msg.contains('kill himself') ||
+        msg.contains('kill herself') ||
+        msg.contains('mental health crisis');
   }
 
   static bool _isChokingOrBreathing(String msg) {
