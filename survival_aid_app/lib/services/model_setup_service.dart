@@ -10,12 +10,14 @@ class ModelSetupState {
   final double downloadProgress;
   final String statusMessage;
   final String? errorMessage;
+  final String? activeModelPath;
 
   const ModelSetupState({
     required this.status,
     required this.downloadProgress,
     required this.statusMessage,
     this.errorMessage,
+    this.activeModelPath,
   });
 
   ModelSetupState copyWith({
@@ -23,16 +25,31 @@ class ModelSetupState {
     double? downloadProgress,
     String? statusMessage,
     String? errorMessage,
+    String? activeModelPath,
   }) {
     return ModelSetupState(
       status: status ?? this.status,
       downloadProgress: downloadProgress ?? this.downloadProgress,
       statusMessage: statusMessage ?? this.statusMessage,
       errorMessage: errorMessage ?? this.errorMessage,
+      activeModelPath: activeModelPath ?? this.activeModelPath,
     );
   }
 
   bool get isReady => status == ModelStatus.ready;
+
+  String get modelLabel {
+    if (!isReady) {
+      return 'No LLM loaded';
+    }
+
+    final path = activeModelPath;
+    if (path == null || path.isEmpty) {
+      return 'Gemma 4 E2B IT';
+    }
+
+    return path.split(RegExp(r'[\\/]')).last;
+  }
 }
 
 class ModelSetupService extends Notifier<ModelSetupState> {
@@ -94,6 +111,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         state = state.copyWith(
           status: ModelStatus.ready,
           statusMessage: 'Model ready',
+          activeModelPath: _modelFileName,
         );
         return true;
       }
@@ -134,6 +152,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         status: ModelStatus.ready,
         statusMessage: 'Model installed successfully',
         downloadProgress: 1.0,
+        activeModelPath: _modelFileName,
       );
     } catch (e) {
       state = state.copyWith(
@@ -149,6 +168,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
       status: ModelStatus.downloading,
       statusMessage:
           'Copying model to internal storage (this may take a minute)...',
+      activeModelPath: filePath,
     );
 
     try {
@@ -196,6 +216,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         status: ModelStatus.ready,
         statusMessage: 'Model installed from local file',
         downloadProgress: 1.0,
+        activeModelPath: filePath,
       );
     } catch (e) {
       print('LLM Setup: installFromLocalFile error: $e');

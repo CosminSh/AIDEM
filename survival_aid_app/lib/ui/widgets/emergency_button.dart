@@ -4,8 +4,9 @@ import '../../core/theme/app_theme.dart';
 
 class EmergencyButton extends StatefulWidget {
   final VoidCallback onPressed;
+  final double size;
 
-  const EmergencyButton({super.key, required this.onPressed});
+  const EmergencyButton({super.key, required this.onPressed, this.size = 208});
 
   @override
   State<EmergencyButton> createState() => _EmergencyButtonState();
@@ -44,8 +45,8 @@ class _EmergencyButtonState extends State<EmergencyButton>
       child: ScaleTransition(
         scale: _animation,
         child: SizedBox(
-          width: 208,
-          height: 208,
+          width: widget.size,
+          height: widget.size,
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -74,24 +75,24 @@ class _EmergencyButtonState extends State<EmergencyButton>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.emergency_rounded,
                           color: Colors.white,
-                          size: 38,
+                          size: widget.size * 0.18,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: widget.size * 0.06),
                         Text(
                           "I NEED\nHELP",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.spaceGrotesk(
                             color: Colors.white,
-                            fontSize: 27,
+                            fontSize: widget.size * 0.13,
                             fontWeight: FontWeight.w900,
                             height: 1.02,
                             letterSpacing: 0,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: widget.size * 0.05),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,

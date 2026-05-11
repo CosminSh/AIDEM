@@ -1,9 +1,13 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/demo_scenario.dart';
 import '../../providers/global_providers.dart';
+import '../../providers/session_provider.dart';
+import '../../services/llm_service.dart';
+import '../../services/model_setup_service.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/tactical_container.dart';
 import 'active_session_screen.dart';
@@ -44,313 +48,327 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: AidemBackground(
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 24.0,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 980;
+              final horizontalPadding = wide ? 48.0 : 24.0;
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  wide ? 26 : 22,
+                  horizontalPadding,
+                  28,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: wide ? 900 : 760),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'AIDEM',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: AppColors.textPrimary,
-                                fontSize: 30,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0,
+                        _buildHeader(context),
+                        SizedBox(height: wide ? 24 : 28),
+                        if (wide)
+                          Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 620),
+                              child: Column(
+                                children: [
+                                  _buildEmergencyPanel(session, isWide: true),
+                                  const SizedBox(height: 14),
+                                  _buildDesktopActionDock(session),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Offline Emergency Assistant',
-                              style: GoogleFonts.inter(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const StatusPill(
-                              icon: Icons.sensors_rounded,
-                              label: 'Ready',
-                              color: AppColors.brandAi,
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton.filledTonal(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SettingsScreen(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.settings_outlined,
-                                size: 20,
-                              ),
-                              tooltip: 'Settings',
-                            ),
-                          ],
-                        ),
+                          )
+                        else ...[
+                          _buildEmergencyPanel(session, isWide: false),
+                          const SizedBox(height: 14),
+                          _buildDesktopActionDock(session),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 34),
-                    Center(
-                      child: TacticalContainer(
-                        showGlow: false,
-                        padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
-                        child: Column(
-                          children: [
-                            EmergencyButton(
-                              key: const ValueKey('start_emergency'),
-                              onPressed: () async {
-                                await ref
-                                    .read(sessionProvider.notifier)
-                                    .startEmergency();
-                                if (context.mounted) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ActiveSessionScreen(),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 22),
-                            Text(
-                              'Local protocols, location tools, and AI guidance stay available offline.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                            if (session.isEmergencyActive &&
-                                session.currentSessionId != null) ...[
-                              const SizedBox(height: 18),
-                              _buildResumeButton(),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 34),
-                    const SectionLabel(label: 'Operational Modes'),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 560;
-                        final cards = [
-                          _buildModeCard(
-                            icon: Icons.school_outlined,
-                            title: 'Practice',
-                            desc: 'Run a simulated emergency',
-                            color: AppColors.accentBlue,
-                            onTap: () async {
-                              await ref
-                                  .read(sessionProvider.notifier)
-                                  .startPractice();
-                              if (context.mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const ActiveSessionScreen(),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                          _buildModeCard(
-                            icon: Icons.map_outlined,
-                            title: 'Location',
-                            desc: 'Share coordinates in session',
-                            color: AppColors.brandAi,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Location sharing is available inside an active session.',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ];
-
-                        if (compact) {
-                          return Column(
-                            children: [
-                              cards[0],
-                              const SizedBox(height: 12),
-                              cards[1],
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(child: cards[0]),
-                            const SizedBox(width: 12),
-                            Expanded(child: cards[1]),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 30),
-                    SectionLabel(
-                      label: 'Demo Scenarios',
-                      trailing: Text(
-                        'Judge-ready',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.brandAi,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 620;
-                        if (compact) {
-                          return Column(
-                            children: [
-                              for (var i = 0; i < demoScenarios.length; i++)
-                                Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: i == demoScenarios.length - 1
-                                        ? 0
-                                        : 12,
-                                  ),
-                                  child: _buildDemoScenarioCard(
-                                    demoScenarios[i],
-                                  ),
-                                ),
-                            ],
-                          );
-                        }
-
-                        return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: demoScenarios
-                              .map(
-                                (scenario) => SizedBox(
-                                  width: (constraints.maxWidth - 12) / 2,
-                                  child: _buildDemoScenarioCard(scenario),
-                                ),
-                              )
-                              .toList(),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 30),
-                    if (session.sessionHistory.isNotEmpty) ...[
-                      SectionLabel(
-                        label: 'Session History',
-                        trailing: Text(
-                          '${session.sessionHistory.length} total',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: AppColors.textMuted,
-                                letterSpacing: 0,
-                              ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: session.sessionHistory.length,
-                        itemBuilder: (context, index) {
-                          final s = session.sessionHistory[index];
-                          return _buildSessionLogItem(s);
-                        },
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildModeCard({
-    required IconData icon,
-    required String title,
-    required String desc,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-      child: TacticalContainer(
-        padding: const EdgeInsets.all(18),
-        showGlow: false,
-        borderColor: color.withOpacity(0.22),
-        child: Row(
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'AIDEM',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AppColors.textPrimary,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Offline emergency assistant',
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.22)),
-              ),
-              child: Icon(icon, color: color, size: 22),
+            const StatusPill(
+              icon: Icons.sensors_rounded,
+              label: 'Ready',
+              color: AppColors.brandAi,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      letterSpacing: 0,
-                    ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    desc,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
+              icon: const Icon(Icons.settings_outlined, size: 20),
+              tooltip: 'Settings',
             ),
-            Icon(Icons.chevron_right_rounded, color: color, size: 20),
           ],
         ),
+      ],
+    );
+  }
+
+  Future<void> _startEmergencySession() async {
+    await ref.read(sessionProvider.notifier).startEmergency();
+    if (!mounted) {
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+    );
+  }
+
+  Future<void> _startPracticeSession() async {
+    await ref.read(sessionProvider.notifier).startPractice();
+    if (!mounted) {
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+    );
+  }
+
+  Widget _buildEmergencyPanel(SessionState session, {required bool isWide}) {
+    return TacticalContainer(
+      showGlow: true,
+      accentColor: AppColors.accentOrange,
+      borderColor: AppColors.accentOrange.withOpacity(0.22),
+      padding: EdgeInsets.fromLTRB(24, isWide ? 24 : 26, 24, 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Emergency session',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Protocol-guided help that works offline.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const StatusPill(
+                icon: Icons.offline_bolt_outlined,
+                label: 'Offline',
+                color: AppColors.accentOrange,
+              ),
+            ],
+          ),
+          SizedBox(height: isWide ? 22 : 24),
+          Center(
+            child: EmergencyButton(
+              key: const ValueKey('start_emergency'),
+              size: isWide ? 226 : 208,
+              onPressed: _startEmergencySession,
+            ),
+          ),
+          SizedBox(height: isWide ? 22 : 24),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _HomeMetric(
+                  icon: Icons.fact_check_outlined,
+                  label: 'Protocols',
+                  value: '166',
+                  color: AppColors.brandAi,
+                ),
+                _HomeMetric(
+                  icon: Icons.memory_rounded,
+                  label: 'Edge AI',
+                  value: 'Local',
+                  color: AppColors.accentBlue,
+                ),
+                _HomeMetric(
+                  icon: Icons.location_on_outlined,
+                  label: 'Rescue',
+                  value: 'GPS',
+                  color: AppColors.accentOrange,
+                ),
+              ],
+            ),
+          ),
+          if (session.isEmergencyActive &&
+              session.currentSessionId != null) ...[
+            const SizedBox(height: 18),
+            _buildResumeButton(),
+          ],
+        ],
       ),
     );
+  }
+
+  Widget _buildDesktopActionDock(SessionState session) {
+    final setupState = ref.watch(modelSetupServiceProvider);
+    final llmState = ref.watch(llmServiceProvider);
+
+    return TacticalContainer(
+      padding: const EdgeInsets.all(12),
+      showGlow: false,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _HomeCommandButton(
+            icon: Icons.school_outlined,
+            label: 'Practice',
+            color: AppColors.accentBlue,
+            onTap: _startPracticeSession,
+          ),
+          _HomeCommandButton(
+            icon: Icons.map_outlined,
+            label: 'Location',
+            color: AppColors.brandAi,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Location sharing is available inside an active session.',
+                  ),
+                ),
+              );
+            },
+          ),
+          _HomeCommandButton(
+            icon: Icons.playlist_play_rounded,
+            label: 'Demos',
+            color: AppColors.accentOrange,
+            onTap: _showDemoScenariosDialog,
+          ),
+          _HomeCommandButton(
+            icon: Icons.history_rounded,
+            label: 'History ${session.sessionHistory.length}',
+            color: AppColors.textSecondary,
+            onTap: session.sessionHistory.isEmpty
+                ? null
+                : () => _showSessionHistoryDialog(),
+          ),
+          _HomeCommandButton(
+            icon: _modelButtonIcon(setupState, llmState),
+            label: _modelButtonLabel(setupState, llmState),
+            color: _modelButtonColor(setupState, llmState),
+            onTap: _showModelDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _modelButtonIcon(ModelSetupState setupState, LlmState llmState) {
+    if (setupState.status == ModelStatus.downloading ||
+        llmState.status == LlmStatus.loading) {
+      return Icons.hourglass_top_rounded;
+    }
+    if (setupState.status != ModelStatus.ready ||
+        llmState.status == LlmStatus.error ||
+        llmState.status == LlmStatus.mock) {
+      return Icons.warning_amber_rounded;
+    }
+    return Icons.psychology_outlined;
+  }
+
+  String _modelButtonLabel(ModelSetupState setupState, LlmState llmState) {
+    if (setupState.status == ModelStatus.downloading ||
+        llmState.status == LlmStatus.loading) {
+      return 'LLM loading';
+    }
+    if (setupState.status != ModelStatus.ready) {
+      return 'No LLM';
+    }
+    if (llmState.status == LlmStatus.error) {
+      return 'LLM error';
+    }
+    if (llmState.status == LlmStatus.mock) {
+      return 'Mock AI';
+    }
+
+    final label = setupState.modelLabel.toLowerCase();
+    if (label.contains('gemma')) {
+      return 'Gemma 4';
+    }
+    return 'LLM ready';
+  }
+
+  Color _modelButtonColor(ModelSetupState setupState, LlmState llmState) {
+    if (setupState.status == ModelStatus.downloading ||
+        llmState.status == LlmStatus.loading) {
+      return AppColors.accentBlue;
+    }
+    if (setupState.status != ModelStatus.ready ||
+        llmState.status == LlmStatus.error ||
+        llmState.status == LlmStatus.mock) {
+      return AppColors.accentRed;
+    }
+    return AppColors.brandAi;
   }
 
   Widget _buildResumeButton() {
@@ -386,7 +404,324 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDemoScenarioCard(DemoScenario scenario) {
+  Future<void> _showDemoScenariosDialog() async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 620),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const SectionLabel(label: 'Demo Scenarios'),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: demoScenarios.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final scenario = demoScenarios[index];
+                        return _buildDemoScenarioCard(
+                          scenario,
+                          onTap: () {
+                            Navigator.of(dialogContext).pop();
+                            _openDemoScenario(scenario);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSessionHistoryDialog() async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720, maxHeight: 620),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final history = ref.watch(sessionProvider).sessionHistory;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SectionLabel(
+                              label: 'Session History',
+                              trailing: Text(
+                                '${history.length} total',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.textMuted,
+                                      letterSpacing: 0,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (history.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Text(
+                              'No saved sessions yet.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: history.length,
+                            itemBuilder: (context, index) {
+                              return _buildSessionLogItem(
+                                history[index],
+                                closeBeforeOpen: true,
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showModelDialog() async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final setupState = ref.watch(modelSetupServiceProvider);
+                  final llmState = ref.watch(llmServiceProvider);
+                  final color = _modelButtonColor(setupState, llmState);
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _modelButtonIcon(setupState, llmState),
+                            color: color,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'LLM model',
+                              style: GoogleFonts.spaceGrotesk(
+                                color: AppColors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      TacticalContainer(
+                        showGlow: setupState.status != ModelStatus.ready,
+                        accentColor: color,
+                        borderColor: color.withValues(alpha: 0.3),
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              setupState.modelLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.spaceGrotesk(
+                                color: AppColors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _modelStatusText(setupState, llmState),
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (setupState.activeModelPath != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                setupState.activeModelPath!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (setupState.status == ModelStatus.downloading) ...[
+                        const SizedBox(height: 14),
+                        LinearProgressIndicator(
+                          value: setupState.downloadProgress > 0
+                              ? setupState.downloadProgress
+                              : null,
+                          color: AppColors.accentBlue,
+                          backgroundColor: AppColors.background,
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              setupState.status == ModelStatus.downloading
+                              ? null
+                              : _selectModelFile,
+                          icon: const Icon(Icons.folder_open_outlined),
+                          label: const Text('Select another model file'),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _modelStatusText(ModelSetupState setupState, LlmState llmState) {
+    if (setupState.status == ModelStatus.downloading) {
+      return setupState.statusMessage;
+    }
+    if (setupState.status != ModelStatus.ready) {
+      return 'No local LLM is loaded. AIDEM will use fallback responses until a model is selected.';
+    }
+    if (llmState.status == LlmStatus.ready) {
+      return 'Loaded for offline inference.';
+    }
+    if (llmState.status == LlmStatus.loading) {
+      return 'Initializing model...';
+    }
+    if (llmState.status == LlmStatus.mock) {
+      return 'Fallback mode active. Select or reload a local model.';
+    }
+    return llmState.errorMessage ?? 'Model failed to initialize.';
+  }
+
+  Future<void> _selectModelFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.any);
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
+
+      final filePath = result.files.single.path!;
+      await ref
+          .read(modelSetupServiceProvider.notifier)
+          .installFromLocalFile(filePath);
+
+      final setupState = ref.read(modelSetupServiceProvider);
+      if (setupState.status == ModelStatus.ready) {
+        await ref.read(llmServiceProvider.notifier).close();
+        await ref.read(llmServiceProvider.notifier).init();
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(setupState.statusMessage)));
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Model picker error: $e')));
+    }
+  }
+
+  Widget _buildDemoScenarioCard(DemoScenario scenario, {VoidCallback? onTap}) {
     final color = switch (scenario.id) {
       'severe_bleeding_no_kit' => AppColors.accentRed,
       'burn_image_path' => AppColors.accentOrange,
@@ -401,7 +736,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     };
 
     return InkWell(
-      onTap: () => _openDemoScenario(scenario),
+      onTap: onTap ?? () => _openDemoScenario(scenario),
       borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: TacticalContainer(
         padding: const EdgeInsets.all(16),
@@ -479,7 +814,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildSessionLogItem(dynamic s) {
+  Widget _buildSessionLogItem(dynamic s, {bool closeBeforeOpen = false}) {
     final timeAgo = _formatTimeAgo(s.lastUpdated);
     final color = s.isPracticeMode
         ? AppColors.accentBlue
@@ -544,6 +879,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.read(sessionProvider.notifier).deleteSession(s.id),
           ),
           onTap: () async {
+            if (closeBeforeOpen) {
+              Navigator.of(context).pop();
+            }
             await ref.read(sessionProvider.notifier).resumeSession(s.id);
             if (!mounted) {
               return;
@@ -566,5 +904,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+}
+
+class _HomeCommandButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _HomeCommandButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        child: Opacity(
+          opacity: onTap == null ? 0.45 : 1,
+          child: Container(
+            width: 110,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppColors.radius),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeMetric extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _HomeMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 104),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        border: Border.all(color: color.withOpacity(0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.spaceGrotesk(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
