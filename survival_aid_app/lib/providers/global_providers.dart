@@ -38,15 +38,20 @@ final llmServiceProvider = NotifierProvider<LlmService, LlmState>(() {
   return LlmService();
 });
 
-final contextCompactionServiceProvider = Provider<ContextCompactionService>((ref) {
+final contextCompactionServiceProvider = Provider<ContextCompactionService>((
+  ref,
+) {
   return ContextCompactionService();
 });
 
-final modelSetupServiceProvider = NotifierProvider<ModelSetupService, ModelSetupState>(() {
-  return ModelSetupService();
-});
+final modelSetupServiceProvider =
+    NotifierProvider<ModelSetupService, ModelSetupState>(() {
+      return ModelSetupService();
+    });
 
-final sessionPersistenceServiceProvider = Provider<SessionPersistenceService>((ref) {
+final sessionPersistenceServiceProvider = Provider<SessionPersistenceService>((
+  ref,
+) {
   return SessionPersistenceService();
 });
 

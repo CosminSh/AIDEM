@@ -10,11 +10,7 @@ void main() async {
   // Initialize flutter_gemma — no HuggingFace token needed for public models
   FlutterGemma.initialize();
 
-  runApp(
-    const ProviderScope(
-      child: AidemApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: AidemApp()));
 }
 
 class AidemApp extends StatelessWidget {

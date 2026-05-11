@@ -9,9 +9,13 @@ class EmergencyNumberService {
   Future<void> loadDatabase() async {
     if (_isLoaded) return;
     try {
-      final String jsonString = await rootBundle.loadString('assets/data/emergency_numbers.json');
+      final String jsonString = await rootBundle.loadString(
+        'assets/data/emergency_numbers.json',
+      );
       final Map<String, dynamic> jsonData = json.decode(jsonString);
-      _emergencyMap = jsonData.map((key, value) => MapEntry(key, value.toString()));
+      _emergencyMap = jsonData.map(
+        (key, value) => MapEntry(key, value.toString()),
+      );
       _isLoaded = true;
     } catch (e) {
       print('Error loading emergency numbers: $e');

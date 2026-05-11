@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/demo_scenario.dart';
 import '../models/protocol.dart';
 import 'global_providers.dart';
 import '../services/conversation_guard_service.dart';
+import '../services/gps_service.dart';
 import '../services/session_persistence_service.dart';
 
 class SessionState {
@@ -15,6 +17,7 @@ class SessionState {
   final String streamingBuffer;
   final String? currentSessionId;
   final String situationSummary;
+  final List<GpsCoordinates> locationHistory;
   final List<PersistedSession> sessionHistory;
 
   SessionState({
@@ -27,6 +30,7 @@ class SessionState {
     this.streamingBuffer = '',
     this.currentSessionId,
     required this.situationSummary,
+    this.locationHistory = const [],
     this.sessionHistory = const [],
   });
 
@@ -40,6 +44,7 @@ class SessionState {
     String? streamingBuffer,
     String? currentSessionId,
     String? situationSummary,
+    List<GpsCoordinates>? locationHistory,
     List<PersistedSession>? sessionHistory,
     bool clearCurrentNode = false,
     bool clearSessionId = false,
@@ -56,6 +61,7 @@ class SessionState {
           ? null
           : (currentSessionId ?? this.currentSessionId),
       situationSummary: situationSummary ?? this.situationSummary,
+      locationHistory: locationHistory ?? this.locationHistory,
       sessionHistory: sessionHistory ?? this.sessionHistory,
     );
   }
@@ -112,6 +118,7 @@ class SessionNotifier extends Notifier<SessionState> {
         isEmergencyActive: state.isEmergencyActive,
         isPracticeMode: state.isPracticeMode,
         situationSummary: state.situationSummary,
+        locationHistory: state.locationHistory,
         lastUpdated: DateTime.now(),
       ),
     );
@@ -135,6 +142,34 @@ class SessionNotifier extends Notifier<SessionState> {
     _persist();
   }
 
+  Future<void> startDemoScenario(DemoScenario scenario) async {
+    final protocolService = ref.read(protocolServiceProvider);
+    if (!state.isProtocolLoaded) {
+      await protocolService.loadProtocol();
+      state = state.copyWith(isProtocolLoaded: true);
+    }
+
+    final newId = 'demo_${DateTime.now().millisecondsSinceEpoch}';
+    await ref.read(contextCompactionServiceProvider).init(newId);
+
+    final demoNode =
+        protocolService.getNode(scenario.currentNodeId) ??
+        protocolService.startNode;
+
+    state = state.copyWith(
+      currentSessionId: newId,
+      isEmergencyActive: true,
+      isPracticeMode: true,
+      currentNode: demoNode,
+      streamingBuffer: '',
+      isLlmTyping: false,
+      situationSummary: scenario.situationSummary,
+      locationHistory: [],
+      chatHistory: scenario.toChatMessages(),
+    );
+    _persist();
+  }
+
   Future<void> resumeSession(String id) async {
     final persistence = ref.read(sessionPersistenceServiceProvider);
     final restored = await persistence.loadSession(id);
@@ -152,6 +187,7 @@ class SessionNotifier extends Notifier<SessionState> {
             : null,
         chatHistory: restored.chatHistory,
         situationSummary: restored.situationSummary,
+        locationHistory: restored.locationHistory,
       );
     }
   }
@@ -165,10 +201,19 @@ class SessionNotifier extends Notifier<SessionState> {
         clearSessionId: true,
         chatHistory: [],
         situationSummary: '',
+        locationHistory: [],
         clearCurrentNode: true,
       );
     }
     await refreshHistory();
+  }
+
+  void addLocationFix(GpsCoordinates coords) {
+    final updatedHistory = List<GpsCoordinates>.from(state.locationHistory)
+      ..add(coords);
+
+    state = state.copyWith(locationHistory: updatedHistory);
+    _persist();
   }
 
   void _initSession({required bool practice, required String sessionId}) {
@@ -184,6 +229,7 @@ class SessionNotifier extends Notifier<SessionState> {
       currentNode: startNode,
       streamingBuffer: '',
       situationSummary: '',
+      locationHistory: [],
       chatHistory: [
         ChatMessage(
           text: practice
@@ -453,7 +499,7 @@ class SessionNotifier extends Notifier<SessionState> {
       if (ctx.confirmedLacks.isNotEmpty) {
         parts.add('no ${ctx.confirmedLacks.join('/')}');
       }
-      state = state.copyWith(situationSummary: parts.join(' · '));
+      state = state.copyWith(situationSummary: parts.join(' | '));
     }
 
     _persist();
@@ -462,29 +508,117 @@ class SessionNotifier extends Notifier<SessionState> {
   String generateMarkdownExport() {
     final compactionService = ref.read(contextCompactionServiceProvider);
     final ctx = compactionService.context;
+    final attachedImages = state.chatHistory
+        .where((message) => message.imagePath != null)
+        .map((message) => message.imagePath!)
+        .toList();
+    final userMessages = state.chatHistory
+        .where((message) => message.author == MessageAuthor.user)
+        .map((message) => message.text)
+        .where((text) => text.trim().isNotEmpty)
+        .toList();
+    final summary = state.situationSummary.isNotEmpty
+        ? state.situationSummary
+        : userMessages.take(2).join(' ');
 
     final buffer = StringBuffer();
-    buffer.writeln('# AIDEM Session Export');
+    buffer.writeln('# AIDEM Rescue Handoff');
     buffer.writeln('Generated on: ${DateTime.now().toLocal()}');
     buffer.writeln('Mode: ${state.isPracticeMode ? "PRACTICE" : "EMERGENCY"}');
+    buffer.writeln(
+      'Current protocol: ${state.currentNode?.id ?? "conversation"}',
+    );
+    buffer.writeln();
+
+    buffer.writeln('## Safety Notes');
+    buffer.writeln('- AIDEM is protocol-based emergency decision support.');
+    buffer.writeln(
+      '- Call emergency services first whenever they are reachable.',
+    );
+    buffer.writeln(
+      '- Image observations are limited and should not be treated as diagnosis.',
+    );
+    buffer.writeln('- Session data is intended to stay local to this device.');
     buffer.writeln();
 
     buffer.writeln('## Situation Summary');
+    buffer.writeln(summary.isNotEmpty ? summary : 'No summary available.');
+    buffer.writeln();
+
+    buffer.writeln('## Dispatcher Script');
     buffer.writeln(
-      state.situationSummary.isNotEmpty
-          ? state.situationSummary
-          : 'No summary available.',
+      summary.isNotEmpty
+          ? 'I need emergency assistance. Situation: $summary. I can provide GPS coordinates, hazards, current condition, and actions already taken.'
+          : 'I need emergency assistance. I can provide GPS coordinates, hazards, current condition, and actions already taken.',
     );
     buffer.writeln();
 
     buffer.writeln('## Emergency Dispatch Intake (ETHANE)');
-    buffer.writeln('- **Exact Location:** ${ctx.locationDetails}');
-    buffer.writeln('- **Type of Incident:** ${ctx.incidentType}');
-    buffer.writeln('- **Hazards:** ${ctx.hazards}');
-    buffer.writeln('- **Access & Egress:** ${ctx.accessInfo}');
-    buffer.writeln('- **Number of Patients:** ${ctx.patientCount}');
-    buffer.writeln('- **Urgency Level:** ${ctx.urgencyLevel}');
+    buffer.writeln(
+      '- **Exact Location:** ${_valueOrUnknown(ctx.locationDetails)}',
+    );
+    buffer.writeln(
+      '- **Type of Incident:** ${_valueOrUnknown(ctx.incidentType)}',
+    );
+    buffer.writeln('- **Hazards:** ${_valueOrUnknown(ctx.hazards)}');
+    buffer.writeln('- **Access & Egress:** ${_valueOrUnknown(ctx.accessInfo)}');
+    buffer.writeln(
+      '- **Number of Patients:** ${_valueOrUnknown(ctx.patientCount)}',
+    );
+    buffer.writeln('- **Urgency Level:** ${_valueOrUnknown(ctx.urgencyLevel)}');
     buffer.writeln();
+
+    buffer.writeln('## Handoff Checklist');
+    buffer.writeln('- **Known hazards:** ${_valueOrUnknown(ctx.hazards)}');
+    buffer.writeln(
+      '- **Current condition:** ${ctx.injuryType ?? ctx.incidentType}',
+    );
+    buffer.writeln(
+      '- **Actions already taken:** ${ctx.completedSteps.isEmpty ? "None logged" : ctx.completedSteps.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Available resources:** ${ctx.confirmedResources.isEmpty ? "None confirmed" : ctx.confirmedResources.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Missing resources:** ${ctx.confirmedLacks.isEmpty ? "None confirmed" : ctx.confirmedLacks.join(", ")}',
+    );
+    buffer.writeln(
+      '- **Attached images:** ${attachedImages.isEmpty ? "None" : attachedImages.length}',
+    );
+    buffer.writeln(
+      '- **GPS fixes logged:** ${state.locationHistory.isEmpty ? "None" : state.locationHistory.length}',
+    );
+    buffer.writeln();
+
+    if (state.locationHistory.isNotEmpty) {
+      final latest = state.locationHistory.last;
+      buffer.writeln('## Location Timeline');
+      buffer.writeln(
+        '- **Latest Decimal:** ${latest.latitude.toStringAsFixed(6)}, ${latest.longitude.toStringAsFixed(6)}',
+      );
+      buffer.writeln('- **Latest DMS:** ${latest.toDms()}');
+      if (latest.altitude != null) {
+        buffer.writeln(
+          '- **Latest Altitude:** ${latest.altitude!.toStringAsFixed(0)} m',
+        );
+      }
+      buffer.writeln();
+      for (final fix in state.locationHistory.reversed.take(10)) {
+        final timestamp = fix.timestamp.toLocal().toString().split('.')[0];
+        buffer.writeln(
+          '- [$timestamp] ${fix.latitude.toStringAsFixed(6)}, ${fix.longitude.toStringAsFixed(6)} | ${fix.toDms()}',
+        );
+      }
+      buffer.writeln();
+    }
+
+    if (attachedImages.isNotEmpty) {
+      buffer.writeln('## Attached Image References');
+      for (final path in attachedImages) {
+        buffer.writeln('- `$path`');
+      }
+      buffer.writeln();
+    }
 
     buffer.writeln('## Internal Context & Decisions');
     buffer.writeln('- **Injury Type:** ${ctx.injuryType ?? "Unknown"}');
@@ -507,16 +641,25 @@ class SessionNotifier extends Notifier<SessionState> {
     );
     buffer.writeln();
 
-    buffer.writeln('## Chat History');
+    buffer.writeln('## Timeline');
     buffer.writeln();
     for (final msg in state.chatHistory) {
       final role = msg.author == MessageAuthor.ai ? 'Gemma' : 'User';
       final timestamp = msg.timestamp.toLocal().toString().split('.')[0];
       buffer.writeln('### [$timestamp] $role');
       buffer.writeln(msg.text);
+      if (msg.imagePath != null) {
+        buffer.writeln();
+        buffer.writeln('Image: `${msg.imagePath}`');
+      }
       buffer.writeln();
     }
 
     return buffer.toString();
+  }
+
+  String _valueOrUnknown(Object? value) {
+    final trimmed = value?.toString().trim() ?? '';
+    return trimmed.isEmpty ? 'Unknown' : trimmed;
   }
 }

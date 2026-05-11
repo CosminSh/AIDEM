@@ -49,7 +49,7 @@ class SessionLogService {
     //   'timestamp': timestamp,
     //   'user_choice': userChoice,
     // });
-    print('Logged step: $nodeId ($userChoice)');
+    print('Logged step: $nodeId ($userChoice) at $timestamp');
   }
 
   /// Logs a GPS position.

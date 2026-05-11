@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/protocol.dart';
+import 'gps_service.dart';
 
 class PersistedSession {
   final String id;
@@ -10,6 +11,7 @@ class PersistedSession {
   final bool isEmergencyActive;
   final bool isPracticeMode;
   final String situationSummary;
+  final List<GpsCoordinates> locationHistory;
   final DateTime lastUpdated;
 
   PersistedSession({
@@ -19,20 +21,23 @@ class PersistedSession {
     required this.isEmergencyActive,
     required this.isPracticeMode,
     required this.situationSummary,
+    this.locationHistory = const [],
     required this.lastUpdated,
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'chat_history': chatHistory.map((m) => m.toJson()).toList(),
-        'current_node_id': currentNodeId,
-        'is_emergency_active': isEmergencyActive,
-        'is_practice_mode': isPracticeMode,
-        'situation_summary': situationSummary,
-        'last_updated': lastUpdated.toIso8601String(),
-      };
+    'id': id,
+    'chat_history': chatHistory.map((m) => m.toJson()).toList(),
+    'current_node_id': currentNodeId,
+    'is_emergency_active': isEmergencyActive,
+    'is_practice_mode': isPracticeMode,
+    'situation_summary': situationSummary,
+    'location_history': locationHistory.map((fix) => fix.toJson()).toList(),
+    'last_updated': lastUpdated.toIso8601String(),
+  };
 
-  factory PersistedSession.fromJson(Map<String, dynamic> json) => PersistedSession(
+  factory PersistedSession.fromJson(Map<String, dynamic> json) =>
+      PersistedSession(
         id: json['id'] as String,
         chatHistory: (json['chat_history'] as List<dynamic>)
             .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
@@ -41,7 +46,12 @@ class PersistedSession {
         isEmergencyActive: json['is_emergency_active'] as bool,
         isPracticeMode: json['is_practice_mode'] as bool,
         situationSummary: json['situation_summary'] as String,
-        lastUpdated: DateTime.parse(json['last_updated'] as String? ?? DateTime.now().toIso8601String()),
+        locationHistory: (json['location_history'] as List<dynamic>? ?? [])
+            .map((e) => GpsCoordinates.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        lastUpdated: DateTime.parse(
+          json['last_updated'] as String? ?? DateTime.now().toIso8601String(),
+        ),
       );
 }
 
@@ -72,7 +82,8 @@ class SessionPersistenceService {
       final dir = await _getDir();
       final file = File('${dir.path}/session_$id.json');
       if (await file.exists()) {
-        final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        final json =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
         return PersistedSession.fromJson(json);
       }
     } catch (e) {
@@ -84,11 +95,14 @@ class SessionPersistenceService {
   Future<List<PersistedSession>> getAllSessions() async {
     try {
       final dir = await _getDir();
-      final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.json'));
+      final files = dir.listSync().whereType<File>().where(
+        (f) => f.path.endsWith('.json'),
+      );
       final sessions = <PersistedSession>[];
       for (final file in files) {
         try {
-          final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+          final json =
+              jsonDecode(await file.readAsString()) as Map<String, dynamic>;
           sessions.add(PersistedSession.fromJson(json));
         } catch (_) {}
       }
@@ -108,9 +122,11 @@ class SessionPersistenceService {
       if (await file.exists()) {
         await file.delete();
       }
-      
+
       // Also delete the associated context if it exists
-      final contextFile = File('${(await getApplicationDocumentsDirectory()).path}/context_$id.json');
+      final contextFile = File(
+        '${(await getApplicationDocumentsDirectory()).path}/context_$id.json',
+      );
       if (await contextFile.exists()) {
         await contextFile.delete();
       }

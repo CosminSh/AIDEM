@@ -77,7 +77,9 @@ class SpeechService extends Notifier<SpeechState> {
     try {
       await _speech.listen(
         onResult: (result) {
-          print('Speech result: ${result.recognizedWords} (final: ${result.finalResult})');
+          print(
+            'Speech result: ${result.recognizedWords} (final: ${result.finalResult})',
+          );
           state = state.copyWith(lastWords: result.recognizedWords);
           onResult(result.recognizedWords);
         },

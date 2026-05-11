@@ -14,17 +14,21 @@ class ProtocolService {
 
     try {
       // Load protocol tree
-      final String jsonString = await rootBundle.loadString('assets/data/protocol.json');
+      final String jsonString = await rootBundle.loadString(
+        'assets/data/protocol.json',
+      );
       final Map<String, dynamic> jsonData = json.decode(jsonString);
       final Map<String, dynamic> nodesJson = jsonData['nodes'];
 
-      _nodes = nodesJson.map((key, value) => MapEntry(
-            key,
-            ProtocolNode.fromJson(value as Map<String, dynamic>),
-          ));
+      _nodes = nodesJson.map(
+        (key, value) =>
+            MapEntry(key, ProtocolNode.fromJson(value as Map<String, dynamic>)),
+      );
 
       // Load knowledge base
-      final String kbString = await rootBundle.loadString('assets/data/knowledge_base.json');
+      final String kbString = await rootBundle.loadString(
+        'assets/data/knowledge_base.json',
+      );
       final Map<String, dynamic> kbData = json.decode(kbString);
       _knowledgeBase = kbData.map((k, v) => MapEntry(k, v.toString()));
 
@@ -70,7 +74,7 @@ class ProtocolService {
     'pressure_dressing': ['bleeding_protocol'],
     'lost_protocol': ['signaling_protocol', 'shelter_protocol'],
     'signaling_protocol': ['lost_protocol', 'signal_ground_to_air'],
-    'anaphylaxis_protocol': ['triage_selection'],
+    'anaphylaxis_protocol': ['triage_selection', 'allergic_triage'],
     'snake_bite_protocol': ['triage_selection'],
     'heat_stroke': ['heat_protocol'],
     'thermal_burn': ['burn_protocol'],
@@ -94,7 +98,6 @@ class ProtocolService {
     'blister_infection_watch': ['blister_management_protocol'],
     'allergic_triage': ['triage_selection'],
     'mild_allergic_reaction': ['allergic_triage'],
-    'anaphylaxis_protocol': ['allergic_triage'],
     'nosebleed_protocol': ['triage_selection'],
     'ear_bleed_protocol': ['triage_selection', 'concussion_protocol'],
     'heart_attack_protocol': ['triage_selection', 'drowning_cpr_protocol'],

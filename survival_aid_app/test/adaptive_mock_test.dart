@@ -10,7 +10,10 @@ void main() {
         historyCount: 0,
       );
 
-      expect(response.toLowerCase(), anyOf(contains('improvise'), contains('shirt'), contains('cloth')));
+      expect(
+        response.toLowerCase(),
+        anyOf(contains('improvise'), contains('shirt'), contains('cloth')),
+      );
     });
 
     test('No signal gives elevation and SMS advice', () {
@@ -21,7 +24,15 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(contains('signal'), contains('higher'), contains('sms'), contains('text')));
+      expect(
+        lower,
+        anyOf(
+          contains('signal'),
+          contains('higher'),
+          contains('sms'),
+          contains('text'),
+        ),
+      );
     });
 
     test('Unconscious triggers breathing/CPR instructions', () {
@@ -32,7 +43,10 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(contains('breathing'), contains('cpr'), contains('compressions')));
+      expect(
+        lower,
+        anyOf(contains('breathing'), contains('cpr'), contains('compressions')),
+      );
     });
 
     test('Alone scenario gives stay put advice', () {
@@ -43,7 +57,15 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(contains('alone'), contains('stay'), contains('control'), contains('visible')));
+      expect(
+        lower,
+        anyOf(
+          contains('alone'),
+          contains('stay'),
+          contains('control'),
+          contains('visible'),
+        ),
+      );
     });
 
     test('No parroting - does not repeat user message', () {
@@ -81,7 +103,7 @@ void main() {
       expect(lower, contains('stay'));
     });
 
-    test('No water for wound gives alternative cleaning advice', () {
+    test('No water for wound avoids unsafe fluids', () {
       final response = AdaptiveMock.respond(
         userMessage: "I have a cut but no water",
         situationContext: "wound",
@@ -89,7 +111,10 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(contains('liquid'), contains('sports drink'), contains('urine'), contains('flush')));
+      expect(lower, contains('cleanest cloth'));
+      expect(lower, contains('protected'));
+      expect(lower, isNot(contains('sports drink')));
+      expect(lower, isNot(contains('urine')));
     });
 
     test('No tourniquet for bleed gives field tourniquet instructions', () {
@@ -100,7 +125,15 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(contains('tourniquet'), contains('stick'), contains('twist'), contains('strip')));
+      expect(
+        lower,
+        anyOf(
+          contains('tourniquet'),
+          contains('stick'),
+          contains('twist'),
+          contains('strip'),
+        ),
+      );
     });
   });
 

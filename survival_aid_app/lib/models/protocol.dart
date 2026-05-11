@@ -33,7 +33,8 @@ class ProtocolNode {
       question: json['question'] as String,
       source: json['source'] as String?,
       gpsContext: json['gps_context'] as bool? ?? false,
-      branches: (json['branches'] as List<dynamic>?)
+      branches:
+          (json['branches'] as List<dynamic>?)
               ?.map((e) => Branch.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -57,16 +58,16 @@ class ChatMessage {
   });
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'imagePath': imagePath,
-        'author': author.index,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'text': text,
+    'imagePath': imagePath,
+    'author': author.index,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
-        text: json['text'] as String,
-        imagePath: json['imagePath'] as String?,
-        author: MessageAuthor.values[json['author'] as int],
-        timestamp: DateTime.parse(json['timestamp'] as String),
-      );
+    text: json['text'] as String,
+    imagePath: json['imagePath'] as String?,
+    author: MessageAuthor.values[json['author'] as int],
+    timestamp: DateTime.parse(json['timestamp'] as String),
+  );
 }

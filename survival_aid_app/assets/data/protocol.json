@@ -1140,6 +1140,251 @@
         {"label": "Box Breathing", "target": "box_breathing_technique"},
         {"label": "I'm ready now", "target": "start"}
       ]
+    },
+    "stop_protocol": {
+      "id": "stop_protocol",
+      "question": "Stop moving if it is safe. Sit down, breathe, observe your surroundings and gear, then choose the next small action.",
+      "source": "Survival Psychology",
+      "gps_context": true,
+      "branches": [{"label": "Continue triage", "target": "start"}]
+    },
+    "box_breathing_technique": {
+      "id": "box_breathing_technique",
+      "question": "Breathe in for 4 seconds, hold for 4, breathe out for 4, hold for 4. Repeat until you can make the next safe decision.",
+      "source": "Survival Psychology",
+      "gps_context": false,
+      "branches": [{"label": "Ready", "target": "start"}]
+    },
+    "monitor_head_injury": {
+      "id": "monitor_head_injury",
+      "question": "Watch for worsening headache, repeated vomiting, confusion, seizure, unequal pupils, or loss of consciousness. Any of these need urgent rescue.",
+      "source": "Red Cross WFA",
+      "gps_context": true,
+      "branches": [{"label": "Back to triage", "target": "triage_selection"}]
+    },
+    "passive_rewarming": {
+      "id": "passive_rewarming",
+      "question": "Move out of wind and wet conditions, replace wet layers with dry insulation if possible, insulate from the ground, and warm the core gently.",
+      "source": "FEMA / WFA",
+      "gps_context": true,
+      "branches": [{"label": "Monitor patient", "target": "vitals_triage"}]
+    },
+    "nuclear_radiation_protocol": {
+      "id": "nuclear_radiation_protocol",
+      "question": "Get inside a sturdy building, move to the basement or center, remove contaminated outer clothing, seal it away, and wait for official instructions.",
+      "source": "FEMA / CDC",
+      "gps_context": true,
+      "branches": [{"label": "Decontamination", "target": "radiation_decontamination"}]
+    },
+    "radiation_decontamination": {
+      "id": "radiation_decontamination",
+      "question": "Remove outer clothing, bag it if possible, gently wash exposed skin and hair with soap and water, and avoid scrubbing hard.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [{"label": "Shelter status", "target": "nuclear_radiation_protocol"}]
+    },
+    "lightning_survival_protocol": {
+      "id": "lightning_survival_protocol",
+      "question": "If you hear thunder, move to a substantial building or hard-topped vehicle. Avoid open ground, water, isolated trees, ridges, and metal objects.",
+      "source": "NOAA / NWS",
+      "gps_context": true,
+      "branches": [{"label": "Back to disasters", "target": "disaster_selection"}]
+    },
+    "landslide_mudslide_protocol": {
+      "id": "landslide_mudslide_protocol",
+      "question": "Move immediately away from steep slopes, drainage channels, and flowing mud. Get to higher stable ground and do not cross active debris flow.",
+      "source": "USGS / Red Cross",
+      "gps_context": true,
+      "branches": [{"label": "Back to disasters", "target": "disaster_selection"}]
+    },
+    "water_purification_detailed": {
+      "id": "water_purification_detailed",
+      "question": "Boil clear water for at least 1 minute, or use proper disinfectant/tablets if available. Filter cloudy water first when possible.",
+      "source": "CDC",
+      "gps_context": false,
+      "branches": [{"label": "Back to water skills", "target": "water_skills"}]
+    },
+    "fire_skills": {
+      "id": "fire_skills",
+      "question": "Gather tinder, kindling, and fuel before lighting. Build small, protect from wind, and keep water or dirt nearby to control the fire.",
+      "source": "US Army Survival Manual",
+      "gps_context": false,
+      "branches": [{"label": "Choose ignition", "target": "fire_ignition_selection"}]
+    },
+    "fire_starting_methods": {
+      "id": "fire_starting_methods",
+      "question": "Use the safest reliable ignition source first: lighter, matches, ferro rod, battery/steel wool, or lens in strong sun.",
+      "source": "US Army Survival Manual",
+      "gps_context": false,
+      "branches": [{"label": "Choose layout", "target": "fire_layout_selection"}]
+    },
+    "fire_structure": {
+      "id": "fire_structure",
+      "question": "Use a teepee for quick heat, a log-cabin for stability, or a lean-to fire when wind direction matters. Keep it small and manageable.",
+      "source": "US Army Survival Manual",
+      "gps_context": false,
+      "branches": [{"label": "Done", "target": "skills_selection"}]
+    },
+    "rope_knot_skills": {
+      "id": "rope_knot_skills",
+      "question": "Use simple knots you can inspect: square knot for joining equal rope, bowline for a fixed loop, and taut-line hitch for adjustable tension.",
+      "source": "Wilderness First Aid",
+      "gps_context": false,
+      "branches": [{"label": "Cordage options", "target": "improvised_cordage"}]
+    },
+    "improvised_cordage": {
+      "id": "improvised_cordage",
+      "question": "Use strips of clothing, pack straps, shoelaces, bark fiber, or vines only for light-duty tasks. Do not trust improvised cordage for climbing or rescue loads.",
+      "source": "Wilderness First Aid",
+      "gps_context": false,
+      "branches": [{"label": "Done", "target": "skills_selection"}]
+    },
+    "whistle_alternatives": {
+      "id": "whistle_alternatives",
+      "question": "Signal in groups of three using voice, claps, metal-on-metal, phone alarm, or any sharp repeated sound. Pause and listen after each set.",
+      "source": "NASAR",
+      "gps_context": true,
+      "branches": [{"label": "Visual signals", "target": "visual_signal_triage"}]
+    },
+    "signaling_improvisation": {
+      "id": "signaling_improvisation",
+      "question": "Use bright clothing, reflective metal, a phone screen, smoke, or contrast on the ground. Make signals large and repeatable.",
+      "source": "NASAR",
+      "gps_context": true,
+      "branches": [{"label": "Ground codes", "target": "ground_to_air_codes"}]
+    },
+    "ground_to_air_codes": {
+      "id": "ground_to_air_codes",
+      "question": "Make symbols large and high-contrast: X for need assistance, V for require help, arrow for direction of travel, SOS for emergency.",
+      "source": "NASAR",
+      "gps_context": true,
+      "branches": [{"label": "Done", "target": "lost_protocol"}]
+    },
+    "bear_encounter_protocol": {
+      "id": "bear_encounter_protocol",
+      "question": "Stay calm, speak firmly, back away slowly, and do not run. If attacked defensively, protect your neck and play dead; if stalked, fight back.",
+      "source": "NPS / Parks Canada",
+      "gps_context": true,
+      "branches": [{"label": "Back to animal hazards", "target": "animal_hazard_triage"}]
+    },
+    "wolf_encounter_protocol": {
+      "id": "wolf_encounter_protocol",
+      "question": "Stand tall, group together, make noise, maintain eye contact, and do not run. If attacked, fight back aggressively.",
+      "source": "NPS / Parks Canada",
+      "gps_context": true,
+      "branches": [{"label": "Back to animal hazards", "target": "animal_hazard_triage"}]
+    },
+    "boar_encounter_protocol": {
+      "id": "boar_encounter_protocol",
+      "question": "Move away from piglets or dense brush. If charged, climb or get behind a barrier; do not run in a straight line through open ground.",
+      "source": "Wilderness Medicine",
+      "gps_context": true,
+      "branches": [{"label": "Back to animal hazards", "target": "animal_hazard_triage"}]
+    },
+    "water_rescue_swimming": {
+      "id": "water_rescue_swimming",
+      "question": "Do not enter swift water unless there is no safer option. Reach or throw aid first. If swept away, float feet-first and angle toward shore.",
+      "source": "Red Cross / WFA",
+      "gps_context": true,
+      "branches": [{"label": "Done", "target": "triage_selection"}]
+    },
+    "avalanche_survival_protocol": {
+      "id": "avalanche_survival_protocol",
+      "question": "Move to the side if possible, discard heavy gear if safe, fight to stay near the surface, and create an air pocket as snow slows.",
+      "source": "AIARE / Parks Canada",
+      "gps_context": true,
+      "branches": [{"label": "Rescue steps", "target": "avalanche_rescue_steps"}]
+    },
+    "avalanche_rescue_steps": {
+      "id": "avalanche_rescue_steps",
+      "question": "If you are a rescuer, watch for secondary slides, call for help, search last-seen area, expose airway first, then treat hypothermia and trauma.",
+      "source": "AIARE / Parks Canada",
+      "gps_context": true,
+      "branches": [{"label": "Done", "target": "triage_selection"}]
+    },
+    "watch_compass_method": {
+      "id": "watch_compass_method",
+      "question": "In the northern hemisphere, point the hour hand at the sun; south is roughly halfway between the hour hand and 12. Reverse carefully in the southern hemisphere.",
+      "source": "US Army Survival Manual",
+      "gps_context": true,
+      "branches": [{"label": "Back to navigation", "target": "navigation_selection"}]
+    },
+    "terrain_features_guide": {
+      "id": "terrain_features_guide",
+      "question": "Use ridges, valleys, streams, roads, and power lines as handrails. Avoid descending blindly into drainages unless you know they lead to help.",
+      "source": "Wilderness Navigation",
+      "gps_context": true,
+      "branches": [{"label": "Back to navigation", "target": "navigation_selection"}]
+    },
+    "pace_counting_guide": {
+      "id": "pace_counting_guide",
+      "question": "Count every other step over a known distance to estimate pace count. Recheck often; fatigue, slope, and terrain change your count.",
+      "source": "Wilderness Navigation",
+      "gps_context": true,
+      "branches": [{"label": "Back to navigation", "target": "navigation_selection"}]
+    },
+    "urban_emergency_safety": {
+      "id": "urban_emergency_safety",
+      "question": "Stay away from windows, avoid crowds and conflict, keep exits known, conserve battery, and establish a safe meeting point if separated.",
+      "source": "Red Cross / State Department",
+      "gps_context": true,
+      "branches": [{"label": "Done", "target": "disaster_selection"}]
+    },
+    "hypothermia_prevention_cold": {
+      "id": "hypothermia_prevention_cold",
+      "question": "Use COLD: keep clothing Clean, avoid Overheating, wear Layers, and stay Dry. Insulate from the ground and protect head, neck, and hands.",
+      "source": "NOLS / WFA",
+      "gps_context": false,
+      "branches": [{"label": "Layering", "target": "layering_system_protocol"}]
+    },
+    "layering_system_protocol": {
+      "id": "layering_system_protocol",
+      "question": "Use a wicking base layer, insulating middle layer, and wind/waterproof outer layer. Avoid cotton when cold and wet.",
+      "source": "NOLS / WFA",
+      "gps_context": false,
+      "branches": [{"label": "Done", "target": "triage_selection"}]
+    },
+    "wound_infection_monitoring": {
+      "id": "wound_infection_monitoring",
+      "question": "Watch for increasing pain, swelling, warmth, pus, fever, or red streaks. Red streaks, fever, or worsening illness need urgent medical help.",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [{"label": "Treatment options", "target": "infection_treatment_wfa"}]
+    },
+    "infection_treatment_wfa": {
+      "id": "infection_treatment_wfa",
+      "question": "Clean with safe water if available, cover with a clean dressing, keep elevated, and seek medical care if infection spreads or fever appears.",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [{"label": "Monitor vitals", "target": "vitals_triage"}]
+    },
+    "avpu_responsiveness_scale": {
+      "id": "avpu_responsiveness_scale",
+      "question": "Check AVPU: Alert, responds to Voice, responds to Pain, or Unresponsive. Any worsening level is a serious evacuation sign.",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [{"label": "Vital signs", "target": "patient_monitoring_vitals"}]
+    },
+    "patient_monitoring_vitals": {
+      "id": "patient_monitoring_vitals",
+      "question": "Record breathing rate, pulse, skin color/temperature, mental status, pain, and changes every 10-15 minutes if the situation is unstable.",
+      "source": "WFA",
+      "gps_context": true,
+      "branches": [{"label": "Evacuation decision", "target": "evacuation_triage"}]
+    },
+    "evacuation_decision_logic": {
+      "id": "evacuation_decision_logic",
+      "question": "Evacuate urgently for airway trouble, severe bleeding, chest pain, altered mental status, spinal concern, severe burns, or worsening vitals.",
+      "source": "NOLS / WFA",
+      "gps_context": true,
+      "branches": [{"label": "Wait or move", "target": "evacuation_vs_wait"}]
+    },
+    "evacuation_vs_wait": {
+      "id": "evacuation_vs_wait",
+      "question": "Stay put if moving worsens injury or loses your known location. Move only for immediate danger, shelter, water, or a clearly safer rescue point.",
+      "source": "NOLS / WFA",
+      "gps_context": true,
+      "branches": [{"label": "Rescue call", "target": "rescue_call"}]
     }
   }
 }

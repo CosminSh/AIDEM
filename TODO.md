@@ -119,8 +119,8 @@
 - [x] `StepDetailScreen` (expanded view, shows diagram if available)
 - [x] `SessionSummaryScreen`:
   - [x] Full session path (node IDs + user choices + timestamps)
-  - [ ] Location log timeline
-  - [ ] "Share summary" action (for when rescuers arrive)
+  - [x] Location log timeline
+  - [x] "Share summary" action (for when rescuers arrive)
 - [x] `OnboardingDisclaimerScreen` (first-launch only, one-time acknowledgment):
   - [x] Red Cross / WHO / NASAR protocol credit
   - [x] Medical disclaimer
@@ -163,13 +163,13 @@
   - [ ] Protocol loads from JSON
   - [ ] Gemma generates response
   - [ ] Rescue script generated with real coordinates
-- [ ] Test Practice Mode (no GPS, no real escalation)
-- [ ] Test LLM anti-hallucination: ask off-topic questions, verify refusal
-- [ ] Test ambiguous voice input classification
-- [ ] Test emergency numbers lookup for at least 10 different countries
+- [x] Test Practice Mode (no GPS, no real escalation)
+- [x] Test LLM anti-hallucination: ask off-topic questions, verify refusal
+- [x] Test ambiguous voice input classification
+- [x] Test emergency numbers lookup for at least 10 different countries
 - [ ] Performance: first Gemma token < 3 seconds on mid-range device
 - [ ] Accessibility: minimum font size 18px, high contrast, large tap targets
-- [ ] Review all protocol nodes for source citation completeness
+- [x] Review all protocol nodes for source citation completeness
 
 ---
 
@@ -182,14 +182,39 @@
   - [ ] Scene 5: Show airplane mode ON + GPS active + Gemma running
   - [ ] Closing: Future roadmap callout
 - [ ] Write `README.md`:
-  - [ ] Architecture diagram (ASCII or image)
-  - [ ] Protocol source citations table
-  - [ ] GPS implementation notes (offline GNSS, no internet)
-  - [ ] Local build instructions
-  - [ ] Responsible AI / disclaimer section
+  - [x] Architecture diagram (ASCII or image)
+  - [x] Protocol source citations table
+  - [x] GPS implementation notes (offline GNSS, no internet)
+  - [x] Local build instructions
+  - [x] Responsible AI / disclaimer section
   - [ ] Airplane mode + GPS screenshot
 - [ ] Final GitHub push (clean history, tag `v1.0-hackathon`)
 - [ ] Submit to Kaggle/Google DeepMind hackathon portal
+
+---
+
+## Gemma Hackathon Prize Plan Implementation
+
+### App
+- [x] Build one-tap demo scenarios for lost hiker, severe bleeding, burn image flow, and hypothermia exposure
+- [x] Make demo mode work even when the local model is unavailable, with clear mock/demo labeling
+- [x] Show visible safety and trust markers in the live session UI
+- [x] Add a stronger rescue handoff screen with situation summary, timeline, hazards, actions, and dispatcher script
+- [x] Add a rescue-summary action from the active session header
+- [x] Make multimodal image input matter in at least one polished demo path
+- [x] Add a small scenario evaluation set for protocol adherence and unsafe-advice checks
+- [x] Export a rescue report as Markdown/PDF or strengthen the existing Markdown export
+- [x] Add a clear local privacy/offline indicator
+- [x] Package a stable Android APK with demo instructions
+
+### Presentation
+- [x] Draft the Kaggle writeup around Global Resilience, Safety & Trust, and LiteRT edge AI
+- [x] Add an architecture diagram showing user input, protocol layer, Gemma, local knowledge base, GPS/image/speech tools, and rescue summary output
+- [x] Document exactly where Gemma is used: context extraction, follow-up questions, summarization, multilingual input, and protocol routing
+- [x] Document safety design: emergency-service-first policy, protocol constraints, uncertainty handling, and unsafe-advice prevention
+- [x] Include evaluation evidence from the scenario test set
+- [x] Write simple judge demo instructions for APK, model setup, demo mode, and expected device requirements
+- [x] Script a tight 3-minute demo video with one emotional end-to-end scenario
 
 ---
 
@@ -199,11 +224,11 @@
 - [ ] UTM / MGRS coordinate display option
 - [ ] what3words integration (supplemental, clearly labeled)
 - [ ] Offline map rendering (embedded OpenStreetMap tiles)
-- [ ] Track recording during self-evacuation
+- [x] Track recording during self-evacuation
 - [ ] Multi-person triage support
 - [ ] Long-term off-grid medical care module
 - [ ] Migrate JSON persistence to SQLite for "Black Box" flight-recorder style logging
-- [ ] Implement path-based GPS tracking (breadcrumbs)
+- [x] Implement path-based GPS tracking (breadcrumbs)
 
 ---
 

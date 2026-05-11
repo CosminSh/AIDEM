@@ -292,5 +292,28 @@ void main() {
       expect(facts, contains('bleeding is almost stopped'));
       expect(facts, contains('bleeding has stopped'));
     });
+
+    test(
+      'ambiguous voice transcript typos still classify useful facts',
+      () async {
+        final service = ContextCompactionService();
+        await service.init(null);
+
+        service.noteUserMessage('i fell and my finder is somehow deesp cut');
+        service.noteUserMessage(
+          'its red and bleeds fairly bad but steady flow',
+          previousAiMessage:
+              'Tell me what you can see and whether the bleeding is spurting or steady.',
+        );
+
+        final ctx = service.context;
+        final facts = ctx.answeredFacts.join(' ').toLowerCase();
+
+        expect(ctx.incidentType, anyOf('cut', 'injury'));
+        expect(facts, contains('fairly heavy'));
+        expect(facts, contains('steady flow'));
+        expect(facts, contains('deep'));
+      },
+    );
   });
 }

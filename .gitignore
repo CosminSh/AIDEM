@@ -25,7 +25,4 @@ java/
 Assets/Models/
 Assets/cmdline-tools/
 Assets/*.exe
-Releases/**/models/
-Releases/**/*.so
-Releases/**/*.dll
-Releases/**/*.exe
+Releases/

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/demo_scenario.dart';
 import '../../providers/global_providers.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/tactical_container.dart';
@@ -214,6 +215,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       },
                     ),
                     const SizedBox(height: 30),
+                    SectionLabel(
+                      label: 'Demo Scenarios',
+                      trailing: Text(
+                        'Judge-ready',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.brandAi,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 620;
+                        if (compact) {
+                          return Column(
+                            children: [
+                              for (var i = 0; i < demoScenarios.length; i++)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: i == demoScenarios.length - 1
+                                        ? 0
+                                        : 12,
+                                  ),
+                                  child: _buildDemoScenarioCard(
+                                    demoScenarios[i],
+                                  ),
+                                ),
+                            ],
+                          );
+                        }
+
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: demoScenarios
+                              .map(
+                                (scenario) => SizedBox(
+                                  width: (constraints.maxWidth - 12) / 2,
+                                  child: _buildDemoScenarioCard(scenario),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 30),
                     if (session.sessionHistory.isNotEmpty) ...[
                       SectionLabel(
                         label: 'Session History',
@@ -322,6 +370,110 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.brandAi,
           side: BorderSide(color: AppColors.brandAi.withOpacity(0.45)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openDemoScenario(DemoScenario scenario) async {
+    await ref.read(sessionProvider.notifier).startDemoScenario(scenario);
+    if (!mounted) {
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+    );
+  }
+
+  Widget _buildDemoScenarioCard(DemoScenario scenario) {
+    final color = switch (scenario.id) {
+      'severe_bleeding_no_kit' => AppColors.accentRed,
+      'burn_image_path' => AppColors.accentOrange,
+      'hypothermia_exposure' => AppColors.accentBlue,
+      _ => AppColors.brandAi,
+    };
+    final icon = switch (scenario.id) {
+      'severe_bleeding_no_kit' => Icons.healing_outlined,
+      'burn_image_path' => Icons.local_fire_department_outlined,
+      'hypothermia_exposure' => Icons.ac_unit_rounded,
+      _ => Icons.hiking_rounded,
+    };
+
+    return InkWell(
+      onTap: () => _openDemoScenario(scenario),
+      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+      child: TacticalContainer(
+        padding: const EdgeInsets.all(16),
+        showGlow: false,
+        borderColor: color.withOpacity(0.22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(color: color.withOpacity(0.22)),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const Spacer(),
+                Icon(Icons.play_arrow_rounded, color: color, size: 22),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              scenario.title,
+              style: GoogleFonts.spaceGrotesk(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              scenario.subtitle,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: scenario.tags
+                  .map(
+                    (tag) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: color.withOpacity(0.18)),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ),
       ),
     );

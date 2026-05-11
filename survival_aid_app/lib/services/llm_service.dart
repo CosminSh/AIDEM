@@ -56,6 +56,7 @@ RULES (FOLLOW EXACTLY):
 10. GENERAL TRIAGE: For any situation, first handle immediate danger, then learn the one most important missing fact before concluding. Use what the user already told you. Good missing facts are: breathing/consciousness, bleeding control, pain severity, movement/feeling, swelling/deformity, exposure/substance, location/signal, and available supplies.
 11. PHOTO TIMING: Do not ask for a photo before urgent actions like calling emergency services, stopping heavy bleeding, cooling a burn, choking first aid, or using epinephrine. After the urgent step is underway, a photo can help visual assessment.
 12. BLEEDING WORDING: Do not say bright red blood means an artery is involved. Treat spurting, pulsing, soaking through cloth, or bleeding that will not slow as the danger signs.
+13. SCOPE: If the user asks for unrelated help, refuse briefly and redirect to emergency, first-aid, survival, or rescue support.
 
 $situationContext
 
@@ -389,6 +390,10 @@ class AdaptiveMock {
     final msg = userMessage.toLowerCase();
     final ctx = situationContext.toLowerCase();
 
+    if (_isOffTopic(msg)) {
+      return "I can only help with emergency, first-aid, survival, or rescue support. Tell me the immediate safety problem, injuries, location, and what supplies you have.";
+    }
+
     if (_isBackInjury(msg) || (msg.contains('fell') && msg.contains('back'))) {
       return "CRITICAL: Do not move him. Call 911 now. Keep him completely still — his spine may be injured. Do not let him sit up, stand, or walk. Support his head in the position you found him. Is he breathing normally?";
     }
@@ -405,6 +410,21 @@ class AdaptiveMock {
         msg.contains('not waking') ||
         msg.contains('not breathing')) {
       return "Call 911 immediately. Check if he is breathing by looking at his chest for 10 seconds. If not breathing, start CPR — push hard and fast on the center of his chest, 30 compressions then 2 breaths. If breathing, put him on his side in recovery position. Keep his airway clear. Do not leave him alone.";
+    }
+
+    if (msg.contains('[image attached]')) {
+      if (_isBurn(msg) || ctx.contains('burn')) {
+        return "Image received. I can use visible clues like redness, blistering, swelling, or charring, but I cannot safely diagnose burn depth from a photo alone. Cool the burn under clean cool running water for 20 minutes if available, then tell me if there are blisters, numb white or black skin, or the burn is larger than the patient's palm.";
+      }
+      if (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut')) {
+        return "Image received. I can use visible clues like bleeding, gaping edges, dirt, or swelling, but I cannot measure depth or rule out hidden damage from a photo. Keep pressure on any active bleeding, then tell me if the wound is deep, numb, dirty, or hard to move.";
+      }
+      if (_isBiteOrSting(msg) ||
+          ctx.contains('bite') ||
+          ctx.contains('sting')) {
+        return "Image received. I can look for visible swelling, spreading redness, or a retained stinger, but I cannot identify every bite or venom risk from a photo. Wash the area if safe and tell me if swelling is spreading or breathing feels hard.";
+      }
+      return "Image received. I can use visible clues, but I cannot diagnose severity from a photo alone. Tell me what happened, whether there is severe bleeding, trouble breathing, confusion, or worsening pain.";
     }
 
     if (_isBurn(msg) || ctx.contains('burn')) {
@@ -452,6 +472,10 @@ class AdaptiveMock {
       return "Do not make them vomit. Move away from fumes or chemicals if needed, and tell me what substance it was, how much, and when it happened.";
     }
 
+    if (_isColdExposure(msg) || ctx.contains('hypothermia')) {
+      return "Cold exposure with confusion or strong shivering can be serious. Get out of wind and rain, remove wet outer layers only if you can replace them with dry insulation, warm the core gently, and call emergency services if reachable. Are they awake enough to swallow warm sweet drinks?";
+    }
+
     if (_isChokingOrBreathing(msg) || ctx.contains('breathing problem')) {
       return "This is urgent if they cannot breathe, cough, or speak. Call emergency services now if needed, and tell me whether they are conscious and able to cough.";
     }
@@ -489,7 +513,7 @@ class AdaptiveMock {
     final isAlone = msg.contains('alone') || msg.contains('by myself');
     if (lacksWater &&
         (_isBleeding(msg) || ctx.contains('wound') || ctx.contains('cut'))) {
-      return "Without water, use any clear liquid available to clean the wound — diluted sports drink works, even fresh urine is sterile. Flush by squeezing liquid from a cloth above the wound, don't rub. Cover with the cleanest available material, the inside of a shirt works. What can you use to cover it?";
+      return "Without clean water, do not scrub the wound or use unsafe fluids. Apply firm pressure with the cleanest cloth you have, cover it, and keep it protected until clean water or medical help is available. What can you use as a clean covering?";
     }
 
     if (lacksBandage &&
@@ -551,6 +575,25 @@ class AdaptiveMock {
         msg.contains('neck');
   }
 
+  static bool _isOffTopic(String msg) {
+    final asksForEntertainment =
+        msg.contains('tell me a joke') ||
+        msg.contains('write a poem') ||
+        msg.contains('write me a poem') ||
+        msg.contains('sing') ||
+        msg.contains('movie recommendation');
+    final asksForGeneralKnowledge =
+        msg.contains('stock price') ||
+        msg.contains('bitcoin') ||
+        msg.contains('homework') ||
+        msg.contains('essay') ||
+        msg.contains('recipe') ||
+        msg.contains('who won') ||
+        msg.contains('capital of');
+
+    return asksForEntertainment || asksForGeneralKnowledge;
+  }
+
   static bool _isBurn(String msg) {
     return msg.contains('burn') ||
         msg.contains('burned') ||
@@ -604,6 +647,15 @@ class AdaptiveMock {
         msg.contains('not breathing') ||
         msg.contains('trouble breathing') ||
         msg.contains('wheezing');
+  }
+
+  static bool _isColdExposure(String msg) {
+    return msg.contains('hypothermia') ||
+        msg.contains('shivering') ||
+        msg.contains('freezing') ||
+        msg.contains('very cold') ||
+        (msg.contains('cold') && msg.contains('wet')) ||
+        (msg.contains('rain') && msg.contains('confused'));
   }
 
   static bool _isBiteOrSting(String msg) {

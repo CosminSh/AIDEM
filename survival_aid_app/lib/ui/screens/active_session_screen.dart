@@ -11,6 +11,7 @@ import '../../services/context_compaction_service.dart';
 import '../../models/protocol.dart';
 import '../widgets/tactical_container.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'session_summary_screen.dart';
 
 bool isBinaryYesNoQuestion(String text) {
   final trimmed = text.trim();
@@ -78,6 +79,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   late AnimationController _typingDotController;
   late AnimationController _breathController;
   late Animation<double> _breathAnimation;
+  bool _isTrackingPath = false;
+  DateTime? _lastPathFixAt;
 
   @override
   void initState() {
@@ -98,6 +101,30 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
     Future.microtask(() async {
       await ref.read(speechServiceProvider.notifier).init();
+    });
+
+    ref.listenManual(gpsStreamProvider, (previous, next) {
+      if (!_isTrackingPath) {
+        return;
+      }
+
+      final coords = next.when(
+        data: (value) => value,
+        error: (_, _) => null,
+        loading: () => null,
+      );
+      if (coords == null) {
+        return;
+      }
+
+      final now = DateTime.now();
+      if (_lastPathFixAt != null &&
+          now.difference(_lastPathFixAt!).inSeconds < 30) {
+        return;
+      }
+
+      _lastPathFixAt = now;
+      ref.read(sessionProvider.notifier).addLocationFix(coords);
     });
   }
 
@@ -178,7 +205,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file:',
-      fileName: 'survival_aid_export.md',
+      fileName: 'AIDEM_rescue_handoff.md',
       type: FileType.any,
     );
 
@@ -282,6 +309,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final gps = ref.read(gpsServiceProvider);
       final location = await gps.getCurrentLocation();
       final dms = location.toDms();
+      ref.read(sessionProvider.notifier).addLocationFix(location);
 
       // Add a special message to chat about location
       await ref
@@ -300,6 +328,39 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
       }
     }
+  }
+
+  void _togglePathTracking() {
+    setState(() {
+      _isTrackingPath = !_isTrackingPath;
+      _lastPathFixAt = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _isTrackingPath
+              ? 'Path recording started. GPS fixes will be added to the handoff.'
+              : 'Path recording stopped.',
+        ),
+      ),
+    );
+  }
+
+  void _openRescueSummary() {
+    final session = ref.read(sessionProvider);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SessionSummaryScreen(
+          history: session.chatHistory,
+          situationSummary: session.situationSummary,
+          isPracticeMode: session.isPracticeMode,
+          currentNodeId: session.currentNode?.id,
+          locationHistory: session.locationHistory,
+        ),
+      ),
+    );
   }
 
   String _formatPhaseTitle(String id) {
@@ -445,6 +506,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             onPressed: _showLanguageDialog,
           ),
           IconButton(
+            icon: const Icon(Icons.assignment_turned_in_outlined),
+            tooltip: 'Rescue Summary',
+            onPressed: session.chatHistory.isEmpty ? null : _openRescueSummary,
+          ),
+          IconButton(
             icon: const Icon(Icons.download_rounded),
             tooltip: 'Export Chat',
             onPressed: _exportChat,
@@ -461,12 +527,33 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               tooltip: 'Share My Location',
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              onPressed: _togglePathTracking,
+              icon: Icon(
+                _isTrackingPath ? Icons.route_rounded : Icons.route_outlined,
+                size: 20,
+                color: _isTrackingPath
+                    ? AppColors.brandAi
+                    : AppColors.textSecondary,
+              ),
+              tooltip: _isTrackingPath
+                  ? 'Stop path recording'
+                  : 'Start path recording',
+            ),
+          ),
         ],
       ),
       body: AidemBackground(
         child: Column(
           children: [
             const Divider(color: AppColors.border, height: 1),
+
+            _buildSafetyStrip(
+              rescueReady: session.chatHistory.length > 1,
+              isPracticeMode: session.isPracticeMode,
+            ),
 
             // Situation context chip (shows what Gemma knows)
             if (session.situationSummary.isNotEmpty)
@@ -884,6 +971,55 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSafetyStrip({
+    required bool rescueReady,
+    required bool isPracticeMode,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            const StatusPill(
+              icon: Icons.fact_check_outlined,
+              label: 'Protocol-based',
+              color: AppColors.brandAi,
+            ),
+            const SizedBox(width: 8),
+            const StatusPill(
+              icon: Icons.call_outlined,
+              label: 'Call services first',
+              color: AppColors.accentOrange,
+            ),
+            const SizedBox(width: 8),
+            const StatusPill(
+              icon: Icons.lock_outline_rounded,
+              label: 'Local data',
+              color: AppColors.accentBlue,
+            ),
+            const SizedBox(width: 8),
+            StatusPill(
+              icon: rescueReady
+                  ? Icons.assignment_turned_in_outlined
+                  : Icons.assignment_outlined,
+              label: rescueReady ? 'Summary ready' : 'Building summary',
+              color: rescueReady ? AppColors.brandAi : AppColors.textMuted,
+            ),
+            if (isPracticeMode) ...[
+              const SizedBox(width: 8),
+              const StatusPill(
+                icon: Icons.school_outlined,
+                label: 'Practice/demo',
+                color: AppColors.accentBlue,
+              ),
+            ],
           ],
         ),
       ),
