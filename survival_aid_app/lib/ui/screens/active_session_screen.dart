@@ -81,6 +81,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   late Animation<double> _breathAnimation;
   bool _isTrackingPath = false;
   DateTime? _lastPathFixAt;
+  String? _lastSpokenAiSignature;
 
   @override
   void initState() {
@@ -125,6 +126,43 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
       _lastPathFixAt = now;
       ref.read(sessionProvider.notifier).addLocationFix(coords);
+    });
+
+    ref.listenManual(sessionProvider, (previous, next) {
+      if (next.isLlmTyping || next.chatHistory.isEmpty) {
+        return;
+      }
+
+      final lastMessage = next.chatHistory.last;
+      if (lastMessage.author != MessageAuthor.ai) {
+        return;
+      }
+
+      final signature =
+          '${lastMessage.timestamp.toIso8601String()}-${lastMessage.text}';
+      if (_lastSpokenAiSignature == signature) {
+        return;
+      }
+
+      _lastSpokenAiSignature = signature;
+      final language = ref
+          .read(contextCompactionServiceProvider)
+          .context
+          .detectedLanguage;
+      ref
+          .read(voiceServiceProvider.notifier)
+          .speakAiMessage(lastMessage.text, language: language);
+    });
+
+    ref.listenManual(voiceServiceProvider, (previous, next) {
+      final error = next.errorMessage;
+      if (error == null || previous?.errorMessage == error || !mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     });
   }
 
@@ -347,6 +385,38 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     );
   }
 
+  Future<void> _toggleVoiceReading() async {
+    final voice = ref.read(voiceServiceProvider);
+    await ref.read(voiceServiceProvider.notifier).toggle();
+    final updated = ref.read(voiceServiceProvider);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!voice.enabled && updated.enabled) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voice reading enabled.')));
+
+      final session = ref.read(sessionProvider);
+      if (session.chatHistory.isNotEmpty &&
+          session.chatHistory.last.author == MessageAuthor.ai) {
+        final language = ref
+            .read(contextCompactionServiceProvider)
+            .context
+            .detectedLanguage;
+        await ref
+            .read(voiceServiceProvider.notifier)
+            .speakAiMessage(session.chatHistory.last.text, language: language);
+      }
+    } else if (voice.enabled && !updated.enabled) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voice reading disabled.')));
+    }
+  }
+
   void _openRescueSummary() {
     final session = ref.read(sessionProvider);
     Navigator.push(
@@ -504,6 +574,32 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             ),
             tooltip: 'Change Language',
             onPressed: _showLanguageDialog,
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              final voice = ref.watch(voiceServiceProvider);
+              final color = voice.enabled
+                  ? AppColors.brandAi
+                  : voice.available
+                  ? AppColors.textSecondary
+                  : AppColors.textMuted;
+
+              return IconButton(
+                icon: Icon(
+                  voice.isSpeaking
+                      ? Icons.record_voice_over_rounded
+                      : voice.enabled
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_outlined,
+                  size: 20,
+                  color: color,
+                ),
+                tooltip: voice.enabled
+                    ? 'Disable voice reading'
+                    : 'Enable voice reading',
+                onPressed: voice.isInitializing ? null : _toggleVoiceReading,
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.assignment_turned_in_outlined),

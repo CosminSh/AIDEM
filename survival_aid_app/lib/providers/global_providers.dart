@@ -9,11 +9,16 @@ import '../services/context_compaction_service.dart';
 import '../services/model_setup_service.dart';
 import '../services/session_persistence_service.dart';
 import '../services/speech_service.dart';
+import '../services/voice_service.dart';
 
 // --- Services ---
 
 final speechServiceProvider = NotifierProvider<SpeechService, SpeechState>(() {
   return SpeechService();
+});
+
+final voiceServiceProvider = NotifierProvider<VoiceService, VoiceState>(() {
+  return VoiceService();
 });
 
 final protocolServiceProvider = Provider<ProtocolService>((ref) {
