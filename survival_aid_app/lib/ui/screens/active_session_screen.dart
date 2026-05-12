@@ -339,8 +339,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   Future<bool> _startVoskDictation() async {
     final vosk = ref.read(voskSpeechProvider.notifier);
+    final settings = ref.read(voiceInputSettingsProvider);
 
-    await vosk.startListening(onResult: _applyDictationText);
+    await vosk.startListening(
+      onResult: _applyDictationText,
+      deviceId: settings.inputDeviceId,
+    );
     final state = ref.read(voskSpeechProvider);
     if (state.isListening) {
       if (mounted) {

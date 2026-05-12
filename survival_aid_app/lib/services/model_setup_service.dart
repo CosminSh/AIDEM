@@ -53,12 +53,17 @@ class ModelSetupState {
 }
 
 class ModelSetupService extends Notifier<ModelSetupState> {
+  static const String recommendedModelName =
+      'litert-community/gemma-4-E2B-it-litert-lm';
+  static const String recommendedModelPageUrl =
+      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/tree/main';
+  static const String recommendedModelDownloadUrl =
+      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
+
   static const String _modelFileName = 'gemma-4-e2b-it.litertlm';
   static const String _lastUsedModelKey = 'last_used_model_path';
   static const String _defaultModelPath =
       r'G:\Antigravity Projects\AIDEM\Assets\Models\gemma-4-E2B-it.litertlm';
-  static const String _huggingFaceBaseUrl =
-      'https://huggingface.co/google/gemma-4-2b-it-lite-rt-gguf/resolve/main/gemma4-2b-it-lite-rt-web.zip';
 
   @override
   ModelSetupState build() {
@@ -137,7 +142,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
     try {
       await FlutterGemma.installModel(modelType: ModelType.gemma4)
-          .fromNetwork(_huggingFaceBaseUrl, token: huggingFaceToken)
+          .fromNetwork(recommendedModelDownloadUrl, token: huggingFaceToken)
           .withProgress((progress) {
             // progress is an int representing percentage (0-100)
             final p = progress;

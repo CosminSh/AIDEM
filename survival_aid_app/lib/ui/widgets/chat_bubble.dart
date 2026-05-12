@@ -15,23 +15,32 @@ class ChatBubble extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final wide = screenWidth > 760;
     final maxBubbleWidth = wide ? 720.0 : screenWidth * 0.86;
-    final isGuidance = isAi && message.text.length > 120;
+    final textStyle = isAi
+        ? GoogleFonts.inter(
+            color: AppColors.brandAi,
+            fontSize: wide ? 17 : 16,
+            fontWeight: FontWeight.w700,
+            height: 1.42,
+            letterSpacing: 0,
+          )
+        : GoogleFonts.inter(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            height: 1.48,
+            letterSpacing: 0,
+          );
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: isGuidance ? 12 : 7,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Align(
         alignment: isAi ? Alignment.centerLeft : Alignment.centerRight,
         child: Container(
           constraints: BoxConstraints(maxWidth: maxBubbleWidth),
-          padding: EdgeInsets.all(isGuidance ? 18 : 16),
+          padding: EdgeInsets.fromLTRB(16, isAi ? 15 : 14, 16, 15),
           decoration: BoxDecoration(
-            color: isGuidance
-                ? Colors.transparent
-                : isAi
-                ? AppColors.surfaceElevated.withValues(alpha: 0.64)
+            color: isAi
+                ? AppColors.surfaceElevated.withValues(alpha: 0.58)
                 : AppColors.brandAi.withValues(alpha: 0.14),
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
@@ -39,24 +48,20 @@ class ChatBubble extends StatelessWidget {
               bottomLeft: Radius.circular(isAi ? 8 : 18),
               bottomRight: Radius.circular(isAi ? 18 : 8),
             ),
-            border: isGuidance
-                ? null
-                : Border.all(
-                    color: isAi
-                        ? AppColors.border
-                        : AppColors.brandAi.withValues(alpha: 0.34),
-                    width: 1,
-                  ),
-            boxShadow: isGuidance
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      blurRadius: 20,
-                      spreadRadius: -16,
-                      offset: const Offset(0, 14),
-                    ),
-                  ],
+            border: Border.all(
+              color: isAi
+                  ? AppColors.brandAi.withValues(alpha: 0.18)
+                  : AppColors.brandAi.withValues(alpha: 0.34),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.16),
+                blurRadius: 18,
+                spreadRadius: -15,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +92,7 @@ class ChatBubble extends StatelessWidget {
                       errorBuilder: (context, error, stackTrace) => Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
@@ -108,16 +113,7 @@ class ChatBubble extends StatelessWidget {
                     ),
                   ),
                 ),
-              SelectableText(
-                message.text,
-                style: GoogleFonts.inter(
-                  color: isGuidance ? AppColors.brandAi : AppColors.textPrimary,
-                  fontSize: isGuidance ? (wide ? 24 : 18) : 15,
-                  fontWeight: isGuidance ? FontWeight.w700 : FontWeight.w500,
-                  height: isGuidance ? 1.35 : 1.55,
-                  letterSpacing: 0,
-                ),
-              ),
+              SelectableText(message.text, style: textStyle),
             ],
           ),
         ),

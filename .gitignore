@@ -26,3 +26,15 @@ Assets/Models/
 Assets/cmdline-tools/
 Assets/*.exe
 Releases/
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+**/build/
+**/android/app/build/
+**/android/.gradle/
+**/windows/flutter/ephemeral/
+**/ios/Flutter/ephemeral/

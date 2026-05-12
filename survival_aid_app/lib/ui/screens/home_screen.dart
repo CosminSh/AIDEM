@@ -9,6 +9,7 @@ import '../../providers/session_provider.dart';
 import '../../services/llm_service.dart';
 import '../../services/model_setup_service.dart';
 import '../widgets/emergency_button.dart';
+import '../widgets/model_recommendation_card.dart';
 import '../widgets/tactical_container.dart';
 import 'active_session_screen.dart';
 import 'model_setup_screen.dart';
@@ -66,7 +67,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: wide ? 620 : double.infinity,
+                            ),
+                            child: _buildHeader(context),
+                          ),
+                        ),
                         SizedBox(height: wide ? 24 : 28),
                         if (wide)
                           Center(
@@ -165,8 +173,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.brandAi,
             ),
             const SizedBox(width: 8),
-            IconButton.filledTonal(
-              onPressed: () {
+            _HeaderIconButton(
+              icon: Icons.settings_outlined,
+              tooltip: 'Settings',
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -174,8 +184,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               },
-              icon: const Icon(Icons.settings_outlined, size: 20),
-              tooltip: 'Settings',
             ),
           ],
         ),
@@ -293,56 +301,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final setupState = ref.watch(modelSetupServiceProvider);
     final llmState = ref.watch(llmServiceProvider);
 
-    return TacticalContainer(
-      padding: const EdgeInsets.all(10),
-      showGlow: false,
-      borderRadius: 22,
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          _HomeCommandButton(
-            icon: Icons.school_outlined,
-            label: 'Practice',
-            color: AppColors.accentBlue,
-            onTap: _startPracticeSession,
-          ),
-          _HomeCommandButton(
-            icon: Icons.map_outlined,
-            label: 'Location',
-            color: AppColors.brandAi,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Location sharing is available inside an active session.',
+    return Align(
+      alignment: Alignment.center,
+      child: TacticalContainer(
+        padding: const EdgeInsets.all(10),
+        showGlow: false,
+        borderRadius: 22,
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          runAlignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _HomeCommandButton(
+              icon: Icons.school_outlined,
+              label: 'Practice',
+              color: AppColors.accentBlue,
+              onTap: _startPracticeSession,
+            ),
+            _HomeCommandButton(
+              icon: Icons.map_outlined,
+              label: 'Location',
+              color: AppColors.brandAi,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Location sharing is available inside an active session.',
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-          _HomeCommandButton(
-            icon: Icons.playlist_play_rounded,
-            label: 'Demos',
-            color: AppColors.accentOrange,
-            onTap: _showDemoScenariosDialog,
-          ),
-          _HomeCommandButton(
-            icon: Icons.history_rounded,
-            label: 'History ${session.sessionHistory.length}',
-            color: AppColors.textSecondary,
-            onTap: session.sessionHistory.isEmpty
-                ? null
-                : () => _showSessionHistoryDialog(),
-          ),
-          _HomeCommandButton(
-            icon: _modelButtonIcon(setupState, llmState),
-            label: _modelButtonLabel(setupState, llmState),
-            color: _modelButtonColor(setupState, llmState),
-            onTap: _showModelDialog,
-          ),
-        ],
+                );
+              },
+            ),
+            _HomeCommandButton(
+              icon: Icons.playlist_play_rounded,
+              label: 'Demos',
+              color: AppColors.accentOrange,
+              onTap: _showDemoScenariosDialog,
+            ),
+            _HomeCommandButton(
+              icon: Icons.history_rounded,
+              label: 'History ${session.sessionHistory.length}',
+              color: AppColors.textSecondary,
+              onTap: session.sessionHistory.isEmpty
+                  ? null
+                  : () => _showSessionHistoryDialog(),
+            ),
+            _HomeCommandButton(
+              icon: _modelButtonIcon(setupState, llmState),
+              label: _modelButtonLabel(setupState, llmState),
+              color: _modelButtonColor(setupState, llmState),
+              onTap: _showModelDialog,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -411,7 +424,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         label: const Text('Resume active session'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.brandAi,
-          side: BorderSide(color: AppColors.brandAi.withOpacity(0.45)),
+          side: BorderSide(color: AppColors.brandAi.withValues(alpha: 0.45)),
         ),
       ),
     );
@@ -657,6 +670,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 14),
+                      const ModelRecommendationCard(compact: true),
                       if (setupState.status == ModelStatus.downloading) ...[
                         const SizedBox(height: 14),
                         LinearProgressIndicator(
@@ -765,7 +780,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: TacticalContainer(
         padding: const EdgeInsets.all(16),
         showGlow: false,
-        borderColor: color.withOpacity(0.22),
+        borderColor: color.withValues(alpha: 0.22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -775,9 +790,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: color.withOpacity(0.22)),
+                    border: Border.all(color: color.withValues(alpha: 0.22)),
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
@@ -816,9 +831,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.08),
+                        color: color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: color.withOpacity(0.18)),
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.18),
+                        ),
                       ),
                       child: Text(
                         tag,
@@ -862,9 +879,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(11),
-              border: Border.all(color: color.withOpacity(0.2)),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
             ),
             child: Icon(
               s.isPracticeMode
@@ -982,6 +999,47 @@ class _HomeCommandButton extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppColors.surfaceMuted.withValues(alpha: 0.72),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          hoverColor: AppColors.brandAi.withValues(alpha: 0.08),
+          highlightColor: AppColors.brandAi.withValues(alpha: 0.12),
+          splashColor: AppColors.brandAi.withValues(alpha: 0.14),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.brandAi.withValues(alpha: 0.24),
+              ),
+            ),
+            child: Icon(icon, color: AppColors.textSecondary, size: 20),
           ),
         ),
       ),

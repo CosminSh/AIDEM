@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:record/record.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/global_providers.dart';
@@ -48,12 +47,11 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
       ),
     );
 
-    final recorder = AudioRecorder();
     try {
-      final hasMicPermission = await recorder.hasPermission(request: false);
-      final devices = hasMicPermission
-          ? await recorder.listInputDevices()
-          : const <InputDevice>[];
+      final devices = await ref
+          .read(voskSpeechProvider.notifier)
+          .listInputDevices();
+      final hasMicPermission = devices.isNotEmpty || !Platform.isWindows;
       rows.add(
         _DiagnosticRow(
           label: 'Microphone',
@@ -73,8 +71,6 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
           color: AppColors.accentRed,
         ),
       );
-    } finally {
-      await recorder.dispose();
     }
 
     final nativeSpeech = ref.read(speechServiceProvider);
@@ -171,7 +167,10 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
       return;
     }
     setState(() => _isProbingMic = true);
-    await ref.read(voskSpeechProvider.notifier).runMicrophoneProbe();
+    final selectedDeviceId = ref.read(voiceInputSettingsProvider).inputDeviceId;
+    await ref
+        .read(voskSpeechProvider.notifier)
+        .runMicrophoneProbe(deviceId: selectedDeviceId);
     if (!mounted) {
       return;
     }
@@ -183,6 +182,7 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
     final voskState = ref.watch(voskSpeechProvider);
     final voiceState = ref.watch(voiceServiceProvider);
     final inputSettings = ref.watch(voiceInputSettingsProvider);
+    final inputDevices = voskState.inputDevices;
 
     return TacticalContainer(
       padding: const EdgeInsets.all(18),
@@ -258,6 +258,64 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
                 .read(voiceInputSettingsProvider.notifier)
                 .setDebugEnabled(enabled),
           ),
+          const SectionLabel(label: 'Microphone device'),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String?>(
+            value: inputSettings.inputDeviceId,
+            isExpanded: true,
+            dropdownColor: AppColors.surface,
+            decoration: const InputDecoration(hintText: 'System default input'),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('System default input'),
+              ),
+              for (final device in inputDevices)
+                DropdownMenuItem<String?>(
+                  value: device.id,
+                  child: Text(
+                    device.label.isEmpty ? device.id : device.label,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: (id) {
+              String? label;
+              if (id != null) {
+                for (final device in inputDevices) {
+                  if (device.id == id) {
+                    label = device.label;
+                    break;
+                  }
+                }
+              }
+              ref
+                  .read(voiceInputSettingsProvider.notifier)
+                  .setInputDevice(id: id, label: label);
+            },
+          ),
+          if (inputDevices.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Refresh diagnostics to list microphones.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+              ),
+            ),
+          if (inputDevices.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'If peak stays 0%, choose another input device and run the probe again.',
+                style: GoogleFonts.inter(
+                  color: AppColors.warning,
+                  fontSize: 11,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
           for (final row in _rows) _DiagnosticTile(row: row),
           const SizedBox(height: 14),
           SizedBox(
@@ -374,6 +432,11 @@ class _DebugGrid extends StatelessWidget {
       _DiagnosticRow(
         label: 'Status',
         value: voskState.debugStatus,
+        color: AppColors.textSecondary,
+      ),
+      _DiagnosticRow(
+        label: 'Active device',
+        value: voskState.activeInputDeviceLabel ?? 'System default input',
         color: AppColors.textSecondary,
       ),
       _DiagnosticRow(

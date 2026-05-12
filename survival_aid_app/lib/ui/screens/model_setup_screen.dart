@@ -2,10 +2,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/global_providers.dart';
 import '../../services/model_setup_service.dart';
+import '../widgets/model_recommendation_card.dart';
 import '../widgets/tactical_container.dart';
 import 'home_screen.dart';
 
@@ -66,15 +66,15 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                       width: 58,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: AppColors.accentBlue.withOpacity(0.12),
+                        color: AppColors.brandAi.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.accentBlue.withOpacity(0.24),
+                          color: AppColors.brandAi.withValues(alpha: 0.24),
                         ),
                       ),
                       child: const Icon(
                         Icons.psychology_outlined,
-                        color: AppColors.accentBlue,
+                        color: AppColors.brandAi,
                         size: 30,
                       ),
                     ),
@@ -90,7 +90,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'Install the Gemma model once. After setup, AIDEM can run fully offline on this device.',
+                      'Install a local LLM once. After setup, AIDEM can run fully offline on this device.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 16,
@@ -98,6 +98,8 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    const ModelRecommendationCard(),
+                    const SizedBox(height: 14),
                     TacticalContainer(
                       padding: const EdgeInsets.all(18),
                       showGlow: false,
@@ -107,13 +109,13 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                           _InfoRow(
                             icon: Icons.psychology,
                             label: 'Model',
-                            value: 'Gemma 4 E2B',
+                            value: 'Gemma 4 E2B IT LiteRT',
                           ),
                           SizedBox(height: 10),
                           _InfoRow(
                             icon: Icons.list_alt,
                             label: 'Size',
-                            value: '~2.1 GB',
+                            value: '~2.6 GB for the standard .litertlm file',
                           ),
                           SizedBox(height: 10),
                           _InfoRow(
@@ -174,69 +176,35 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final compact = constraints.maxWidth < 430;
-                          final buttons = [
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                try {
-                                  final result = await FilePicker.platform
-                                      .pickFiles(type: FileType.any);
-                                  if (result != null &&
-                                      result.files.single.path != null) {
-                                    ref
-                                        .read(
-                                          modelSetupServiceProvider.notifier,
-                                        )
-                                        .installFromLocalFile(
-                                          result.files.single.path!,
-                                        );
-                                  }
-                                } catch (e) {
-                                  if (!context.mounted) {
-                                    return;
-                                  }
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('File picker error: $e'),
-                                    ),
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.folder_open),
-                              label: const Text('Select local file'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => launchUrl(
-                                Uri.parse(
-                                  'https://huggingface.co/google/gemma-4-2b-it-lite-rt-gguf',
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              final result = await FilePicker.platform
+                                  .pickFiles(type: FileType.any);
+                              if (result != null &&
+                                  result.files.single.path != null) {
+                                ref
+                                    .read(modelSetupServiceProvider.notifier)
+                                    .installFromLocalFile(
+                                      result.files.single.path!,
+                                    );
+                              }
+                            } catch (e) {
+                              if (!context.mounted) {
+                                return;
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('File picker error: $e'),
                                 ),
-                              ),
-                              icon: const Icon(Icons.open_in_new),
-                              label: const Text('Model page'),
-                            ),
-                          ];
-
-                          if (compact) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                buttons[0],
-                                const SizedBox(height: 12),
-                                buttons[1],
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(child: buttons[0]),
-                              const SizedBox(width: 12),
-                              Expanded(child: buttons[1]),
-                            ],
-                          );
-                        },
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.folder_open),
+                          label: const Text('Select local file'),
+                        ),
                       ),
                       const SizedBox(height: 18),
                       SizedBox(
@@ -268,7 +236,7 @@ class _DownloadProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     return TacticalContainer(
       showGlow: false,
-      borderColor: AppColors.accentBlue.withOpacity(0.28),
+      borderColor: AppColors.accentBlue.withValues(alpha: 0.28),
       padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

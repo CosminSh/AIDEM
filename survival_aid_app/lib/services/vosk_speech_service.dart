@@ -22,6 +22,9 @@ class VoskSpeechState {
   final String lastPartialJson;
   final String lastResultJson;
   final String debugStatus;
+  final List<InputDevice> inputDevices;
+  final String? activeInputDeviceId;
+  final String? activeInputDeviceLabel;
 
   const VoskSpeechState({
     this.isAvailable = false,
@@ -38,6 +41,9 @@ class VoskSpeechState {
     this.lastPartialJson = '',
     this.lastResultJson = '',
     this.debugStatus = 'Idle',
+    this.inputDevices = const [],
+    this.activeInputDeviceId,
+    this.activeInputDeviceLabel,
   });
 
   VoskSpeechState copyWith({
@@ -55,6 +61,10 @@ class VoskSpeechState {
     String? lastPartialJson,
     String? lastResultJson,
     String? debugStatus,
+    List<InputDevice>? inputDevices,
+    String? activeInputDeviceId,
+    String? activeInputDeviceLabel,
+    bool clearActiveInputDevice = false,
     bool clearError = false,
   }) {
     return VoskSpeechState(
@@ -72,6 +82,13 @@ class VoskSpeechState {
       lastPartialJson: lastPartialJson ?? this.lastPartialJson,
       lastResultJson: lastResultJson ?? this.lastResultJson,
       debugStatus: debugStatus ?? this.debugStatus,
+      inputDevices: inputDevices ?? this.inputDevices,
+      activeInputDeviceId: clearActiveInputDevice
+          ? null
+          : (activeInputDeviceId ?? this.activeInputDeviceId),
+      activeInputDeviceLabel: clearActiveInputDevice
+          ? null
+          : (activeInputDeviceLabel ?? this.activeInputDeviceLabel),
     );
   }
 }
@@ -151,7 +168,10 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
     }
   }
 
-  Future<void> startListening({required void Function(String) onResult}) async {
+  Future<void> startListening({
+    required void Function(String) onResult,
+    String? deviceId,
+  }) async {
     if (state.isListening) {
       return;
     }
@@ -172,13 +192,15 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
 
     try {
       await _recognizer!.reset();
+      final selectedDevice = await _resolveInputDevice(deviceId: deviceId);
       final stream = await _recorder.startStream(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: _sampleRate,
           numChannels: 1,
           autoGain: true,
           noiseSuppress: true,
+          device: selectedDevice,
         ),
       );
 
@@ -191,7 +213,11 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
         lastPeak: 0,
         lastPartialJson: '',
         lastResultJson: '',
-        debugStatus: 'Listening to microphone stream',
+        activeInputDeviceId: selectedDevice?.id,
+        activeInputDeviceLabel: selectedDevice?.label ?? 'System default',
+        clearActiveInputDevice: selectedDevice == null,
+        debugStatus:
+            'Listening to ${selectedDevice?.label ?? 'system default input'}',
         clearError: true,
       );
 
@@ -266,8 +292,24 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
     }
   }
 
+  Future<List<InputDevice>> listInputDevices() async {
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      state = state.copyWith(
+        error: 'Microphone permission was denied.',
+        debugStatus: 'Microphone permission denied',
+      );
+      return const [];
+    }
+
+    final devices = await _recorder.listInputDevices();
+    state = state.copyWith(inputDevices: devices);
+    return devices;
+  }
+
   Future<bool> runMicrophoneProbe({
     Duration duration = const Duration(seconds: 3),
+    String? deviceId,
   }) async {
     if (state.isListening) {
       return false;
@@ -288,13 +330,15 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
     var peak = 0.0;
 
     try {
+      final selectedDevice = await _resolveInputDevice(deviceId: deviceId);
       final stream = await _recorder.startStream(
-        const RecordConfig(
+        RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: _sampleRate,
           numChannels: 1,
           autoGain: true,
           noiseSuppress: true,
+          device: selectedDevice,
         ),
       );
       subscription = stream.listen((chunk) {
@@ -303,7 +347,13 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
         peak = math.max(peak, _peakLevel(chunk));
       });
 
-      state = state.copyWith(debugStatus: 'Running microphone probe...');
+      state = state.copyWith(
+        activeInputDeviceId: selectedDevice?.id,
+        activeInputDeviceLabel: selectedDevice?.label ?? 'System default',
+        clearActiveInputDevice: selectedDevice == null,
+        debugStatus:
+            'Running microphone probe on ${selectedDevice?.label ?? 'system default input'}...',
+      );
       await Future<void>.delayed(duration);
       await subscription.cancel();
       await _recorder.stop();
@@ -357,6 +407,25 @@ class VoskFallbackSpeechService extends Notifier<VoskSpeechState> {
       ),
     );
     return _modelLoader.loadFromNetwork(modelDescription.url);
+  }
+
+  Future<InputDevice?> _resolveInputDevice({String? deviceId}) async {
+    final devices = await listInputDevices();
+    final selectedId = deviceId;
+    if (selectedId == null || selectedId.isEmpty) {
+      return null;
+    }
+
+    for (final device in devices) {
+      if (device.id == selectedId) {
+        return device;
+      }
+    }
+
+    state = state.copyWith(
+      debugStatus: 'Selected microphone was not found; using system default',
+    );
+    return null;
   }
 
   String _extractText(String rawJson) {
