@@ -76,11 +76,7 @@ class _TacticalContainerState extends State<TacticalContainer>
           margin: widget.margin,
           padding: widget.padding ?? const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.surfaceElevated, AppColors.surface],
-            ),
+            color: AppColors.surfaceElevated.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(
               widget.borderRadius ?? AppColors.radiusLarge,
             ),
@@ -98,20 +94,20 @@ class _TacticalContainerState extends State<TacticalContainer>
                 ? [
                     BoxShadow(
                       color: (widget.accentColor ?? AppColors.brandAi)
-                          .withOpacity(
-                            widget.animatePulse
+                          .withValues(
+                            alpha: widget.animatePulse
                                 ? _pulseAnimation.value * 0.28
                                 : 0.06,
                           ),
-                      blurRadius: 18,
-                      spreadRadius: -8,
-                      offset: const Offset(0, 10),
+                      blurRadius: 42,
+                      spreadRadius: -24,
+                      offset: const Offset(0, 24),
                     ),
                     const BoxShadow(
                       color: AppColors.shadow,
-                      blurRadius: 18,
-                      spreadRadius: -14,
-                      offset: Offset(0, 14),
+                      blurRadius: 24,
+                      spreadRadius: -18,
+                      offset: Offset(0, 22),
                     ),
                   ]
                 : null,
@@ -191,7 +187,12 @@ class AidemBackground extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.backgroundAlt, AppColors.background],
+                colors: [
+                  AppColors.backgroundAlt,
+                  AppColors.background,
+                  Color(0xFF010607),
+                ],
+                stops: [0, 0.58, 1],
               ),
             ),
           ),
@@ -213,7 +214,7 @@ class SectionLabel extends StatelessWidget {
     final text = Text(
       label.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: AppColors.textSecondary,
+        color: AppColors.brandAi,
         letterSpacing: 0,
       ),
     );
@@ -241,22 +242,27 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.09),
+        color: AppColors.surfaceMuted.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.28)),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 14),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 6),
           Text(
-            label,
+            label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
-              fontSize: 11,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
               letterSpacing: 0,
             ),
           ),

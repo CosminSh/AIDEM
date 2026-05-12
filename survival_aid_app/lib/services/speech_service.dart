@@ -65,10 +65,10 @@ class SpeechService extends Notifier<SpeechState> {
     }
   }
 
-  Future<void> startListening({required Function(String) onResult}) async {
+  Future<bool> startListening({required Function(String) onResult}) async {
     if (!state.isAvailable) {
       final ok = await init();
-      if (!ok) return;
+      if (!ok) return false;
     }
 
     state = state.copyWith(isListening: true, lastWords: '', clearError: true);
@@ -89,9 +89,11 @@ class SpeechService extends Notifier<SpeechState> {
         partialResults: true,
         listenMode: ListenMode.dictation, // Better for Windows/Desktop
       );
+      return true;
     } catch (e) {
       print('Speech: Listen exception: $e');
       state = state.copyWith(isListening: false, error: e.toString());
+      return false;
     }
   }
 

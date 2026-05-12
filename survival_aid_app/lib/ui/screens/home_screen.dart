@@ -107,24 +107,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'AIDEM',
-                style: GoogleFonts.spaceGrotesk(
-                  color: AppColors.textPrimary,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Offline emergency assistant',
-                style: GoogleFonts.inter(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: AppColors.brandAi.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.brandAi.withValues(alpha: 0.24),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      color: AppColors.brandAi,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AIDEM',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      Text(
+                        'OFFLINE EMERGENCY ASSISTANT',
+                        style: GoogleFonts.inter(
+                          color: AppColors.brandAi,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -180,13 +206,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmergencyPanel(SessionState session, {required bool isWide}) {
-    return TacticalContainer(
-      showGlow: true,
-      accentColor: AppColors.accentOrange,
-      borderColor: AppColors.accentOrange.withOpacity(0.22),
-      padding: EdgeInsets.fromLTRB(24, isWide ? 24 : 26, 24, 22),
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, isWide ? 18 : 16, 12, 18),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
             children: [
@@ -198,14 +221,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       'Emergency session',
                       style: GoogleFonts.spaceGrotesk(
                         color: AppColors.textPrimary,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Protocol-guided help that works offline.',
+                      'Protocol-guided help. Local first.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -220,15 +243,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          SizedBox(height: isWide ? 22 : 24),
+          SizedBox(height: isWide ? 34 : 28),
           Center(
             child: EmergencyButton(
               key: const ValueKey('start_emergency'),
-              size: isWide ? 226 : 208,
+              size: isWide ? 236 : 212,
               onPressed: _startEmergencySession,
             ),
           ),
-          SizedBox(height: isWide ? 22 : 24),
+          SizedBox(height: isWide ? 32 : 24),
           Center(
             child: Wrap(
               alignment: WrapAlignment.center,
@@ -271,8 +294,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final llmState = ref.watch(llmServiceProvider);
 
     return TacticalContainer(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       showGlow: false,
+      borderRadius: 22,
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 10,
@@ -931,11 +955,12 @@ class _HomeCommandButton extends StatelessWidget {
           opacity: onTap == null ? 0.45 : 1,
           child: Container(
             width: 110,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppColors.radius),
-              border: Border.all(color: color.withValues(alpha: 0.2)),
+              color: AppColors.surfaceMuted.withValues(alpha: 0.54),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.28)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -944,12 +969,12 @@ class _HomeCommandButton extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    label,
+                    label.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.spaceGrotesk(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
+                      color: color,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
                     ),
@@ -981,11 +1006,11 @@ class _HomeMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minWidth: 104),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(AppColors.radius),
-        border: Border.all(color: color.withOpacity(0.18)),
+        color: AppColors.surfaceMuted.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -999,7 +1024,7 @@ class _HomeMetric extends StatelessWidget {
                 value,
                 style: GoogleFonts.spaceGrotesk(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
                 ),
@@ -1008,7 +1033,7 @@ class _HomeMetric extends StatelessWidget {
                 label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 10,
+                  fontSize: 9,
                   letterSpacing: 0,
                 ),
               ),

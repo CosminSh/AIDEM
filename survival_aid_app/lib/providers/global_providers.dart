@@ -10,12 +10,24 @@ import '../services/model_setup_service.dart';
 import '../services/session_persistence_service.dart';
 import '../services/speech_service.dart';
 import '../services/voice_service.dart';
+import '../services/voice_input_settings_service.dart';
+import '../services/vosk_speech_service.dart';
 
 // --- Services ---
 
 final speechServiceProvider = NotifierProvider<SpeechService, SpeechState>(() {
   return SpeechService();
 });
+
+final voskSpeechProvider =
+    NotifierProvider<VoskFallbackSpeechService, VoskSpeechState>(() {
+      return VoskFallbackSpeechService();
+    });
+
+final voiceInputSettingsProvider =
+    NotifierProvider<VoiceInputSettingsService, VoiceInputSettingsState>(() {
+      return VoiceInputSettingsService();
+    });
 
 final voiceServiceProvider = NotifierProvider<VoiceService, VoiceState>(() {
   return VoiceService();

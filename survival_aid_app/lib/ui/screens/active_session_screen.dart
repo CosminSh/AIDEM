@@ -9,6 +9,7 @@ import '../widgets/chat_list_view.dart';
 import '../../providers/global_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../services/context_compaction_service.dart';
+import '../../services/voice_input_settings_service.dart';
 import '../../models/protocol.dart';
 import '../widgets/tactical_container.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -264,44 +265,105 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   Future<void> _toggleDictation() async {
     final speech = ref.read(speechServiceProvider.notifier);
     final speechState = ref.read(speechServiceProvider);
+    final vosk = ref.read(voskSpeechProvider.notifier);
+    final voskState = ref.read(voskSpeechProvider);
+    final inputMode = ref.read(voiceInputSettingsProvider).mode;
 
-    if (speechState.isListening) {
+    if (speechState.isListening || voskState.isListening) {
       await speech.stopListening();
+      await vosk.stopListening();
+      return;
+    }
+
+    if (inputMode == VoiceInputMode.offlineVosk ||
+        (inputMode == VoiceInputMode.automatic && Platform.isWindows)) {
+      final started = await _startVoskDictation();
+      if (started) {
+        return;
+      }
+      if (inputMode == VoiceInputMode.offlineVosk) {
+        return;
+      }
+    }
+
+    final available = await speech.init();
+    if (!available) {
+      final started = await _startVoskDictation();
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Voice input is unavailable. Open Settings > Voice diagnostics to prepare the offline fallback.',
+            ),
+          ),
+        );
+      }
     } else {
-      final available = await speech.init();
-      if (!available) {
-        if (mounted) {
+      final started = await speech.startListening(
+        onResult: _applyDictationText,
+      );
+      final newState = ref.read(speechServiceProvider);
+      if ((!started || newState.error != null) &&
+          inputMode != VoiceInputMode.nativeSystem &&
+          mounted) {
+        final fallbackStarted = await _startVoskDictation();
+        if (!fallbackStarted && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Speech recognition not available. Please check your microphone and Windows settings.',
+                'Dictation Error: ${newState.error ?? 'Native speech did not start.'}',
               ),
             ),
           );
         }
-        return;
-      }
-
-      await speech.startListening(
-        onResult: (words) {
-          setState(() {
-            _textController.text = words;
-            // Move cursor to end
-            _textController.selection = TextSelection.fromPosition(
-              TextPosition(offset: _textController.text.length),
-            );
-          });
-        },
-      );
-
-      // Check for immediate errors after starting
-      final newState = ref.read(speechServiceProvider);
-      if (newState.error != null && mounted) {
+      } else if ((!started || newState.error != null) && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Dictation Error: ${newState.error}')),
+          SnackBar(
+            content: Text(
+              'Native dictation error: ${newState.error ?? 'Native speech did not start.'}',
+            ),
+          ),
         );
       }
     }
+  }
+
+  void _applyDictationText(String words) {
+    setState(() {
+      _textController.text = words;
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
+    });
+  }
+
+  Future<bool> _startVoskDictation() async {
+    final vosk = ref.read(voskSpeechProvider.notifier);
+
+    await vosk.startListening(onResult: _applyDictationText);
+    final state = ref.read(voskSpeechProvider);
+    if (state.isListening) {
+      if (mounted) {
+        final debugEnabled = ref.read(voiceInputSettingsProvider).debugEnabled;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              debugEnabled
+                  ? 'Offline voice input active. Speak now; debug counters are in Settings.'
+                  : 'Offline voice input active.',
+            ),
+          ),
+        );
+      }
+      return true;
+    }
+
+    if (state.error != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!)));
+    }
+    return false;
   }
 
   Future<void> _showLanguageDialog() async {
@@ -1032,21 +1094,29 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                             final speechState = ref.watch(
                               speechServiceProvider,
                             );
-                            final isListening = speechState.isListening;
+                            final voskState = ref.watch(voskSpeechProvider);
+                            final isListening =
+                                speechState.isListening ||
+                                voskState.isListening;
+                            final isPreparing = voskState.isPreparing;
 
                             return IconButton(
                               icon: Icon(
-                                isListening
+                                isPreparing
+                                    ? Icons.hourglass_top_rounded
+                                    : isListening
                                     ? Icons.graphic_eq_rounded
                                     : Icons.mic,
                                 color: isListening
                                     ? AppColors.accentRed
                                     : AppColors.textSecondary,
                               ),
-                              tooltip: isListening
+                              tooltip: isPreparing
+                                  ? 'Preparing offline voice input'
+                                  : isListening
                                   ? 'Stop dictation'
                                   : 'Dictate',
-                              onPressed: session.isLlmTyping
+                              onPressed: session.isLlmTyping || isPreparing
                                   ? null
                                   : _toggleDictation,
                             );
@@ -1117,7 +1187,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 : _buildCollapsedDesktopRail(session),
           ),
           SizedBox(width: _desktopToolsExpanded ? 16 : 12),
-          Expanded(child: _buildDesktopChatPanel(session)),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 980),
+                child: _buildDesktopChatPanel(session),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1643,22 +1720,22 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(18),
+          color: AppColors.surfaceMuted.withValues(alpha: 0.76),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: session.isLlmTyping
-                ? AppColors.brandAi.withOpacity(0.45)
+                ? AppColors.brandAi.withValues(alpha: 0.46)
                 : AppColors.border,
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.brandAi.withOpacity(
-                session.isLlmTyping ? 0.12 : 0.04,
+              color: AppColors.brandAi.withValues(
+                alpha: session.isLlmTyping ? 0.12 : 0.04,
               ),
-              blurRadius: 18,
-              spreadRadius: -10,
-              offset: const Offset(0, 10),
+              blurRadius: 26,
+              spreadRadius: -18,
+              offset: const Offset(0, 18),
             ),
           ],
         ),
@@ -1712,17 +1789,30 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             Consumer(
               builder: (context, ref, _) {
                 final speechState = ref.watch(speechServiceProvider);
-                final isListening = speechState.isListening;
+                final voskState = ref.watch(voskSpeechProvider);
+                final isListening =
+                    speechState.isListening || voskState.isListening;
+                final isPreparing = voskState.isPreparing;
 
                 return IconButton(
                   icon: Icon(
-                    isListening ? Icons.graphic_eq_rounded : Icons.mic,
+                    isPreparing
+                        ? Icons.hourglass_top_rounded
+                        : isListening
+                        ? Icons.graphic_eq_rounded
+                        : Icons.mic,
                     color: isListening
                         ? AppColors.accentRed
                         : AppColors.textSecondary,
                   ),
-                  tooltip: isListening ? 'Stop dictation' : 'Dictate',
-                  onPressed: session.isLlmTyping ? null : _toggleDictation,
+                  tooltip: isPreparing
+                      ? 'Preparing offline voice input'
+                      : isListening
+                      ? 'Stop dictation'
+                      : 'Dictate',
+                  onPressed: session.isLlmTyping || isPreparing
+                      ? null
+                      : _toggleDictation,
                 );
               },
             ),
@@ -1733,10 +1823,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 color: _isSending || session.isLlmTyping
                     ? AppColors.border
                     : AppColors.brandAi,
-                borderRadius: BorderRadius.circular(AppColors.radius),
+                shape: const CircleBorder(),
                 child: InkWell(
                   key: const ValueKey('send_button'),
-                  borderRadius: BorderRadius.circular(AppColors.radius),
+                  customBorder: const CircleBorder(),
                   onTap: (_isSending || session.isLlmTyping)
                       ? null
                       : _sendMessage,

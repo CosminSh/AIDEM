@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/protocol.dart';
 
@@ -12,39 +13,50 @@ class ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAi = message.author == MessageAuthor.ai;
     final screenWidth = MediaQuery.of(context).size.width;
-    final maxBubbleWidth = screenWidth > 760 ? 620.0 : screenWidth * 0.86;
+    final wide = screenWidth > 760;
+    final maxBubbleWidth = wide ? 720.0 : screenWidth * 0.86;
+    final isGuidance = isAi && message.text.length > 120;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7.0, horizontal: 16.0),
+      padding: EdgeInsets.symmetric(
+        vertical: isGuidance ? 12 : 7,
+        horizontal: 16,
+      ),
       child: Align(
         alignment: isAi ? Alignment.centerLeft : Alignment.centerRight,
         child: Container(
           constraints: BoxConstraints(maxWidth: maxBubbleWidth),
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(isGuidance ? 18 : 16),
           decoration: BoxDecoration(
-            color: isAi
-                ? AppColors.surfaceElevated
-                : AppColors.accentBlue.withOpacity(0.13),
+            color: isGuidance
+                ? Colors.transparent
+                : isAi
+                ? AppColors.surfaceElevated.withValues(alpha: 0.64)
+                : AppColors.brandAi.withValues(alpha: 0.14),
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(AppColors.radius),
-              topRight: const Radius.circular(AppColors.radius),
-              bottomLeft: Radius.circular(isAi ? 6.0 : AppColors.radius),
-              bottomRight: Radius.circular(isAi ? AppColors.radius : 6.0),
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isAi ? 8 : 18),
+              bottomRight: Radius.circular(isAi ? 18 : 8),
             ),
-            border: Border.all(
-              color: isAi
-                  ? AppColors.border
-                  : AppColors.accentBlue.withOpacity(0.34),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.18),
-                blurRadius: 18,
-                spreadRadius: -14,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            border: isGuidance
+                ? null
+                : Border.all(
+                    color: isAi
+                        ? AppColors.border
+                        : AppColors.brandAi.withValues(alpha: 0.34),
+                    width: 1,
+                  ),
+            boxShadow: isGuidance
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 20,
+                      spreadRadius: -16,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,10 +66,10 @@ class ChatBubble extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Text(
                     'AIDEM',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: AppColors.brandAi,
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: 0,
                     ),
                   ),
@@ -98,10 +110,12 @@ class ChatBubble extends StatelessWidget {
                 ),
               SelectableText(
                 message.text,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  height: 1.55,
+                style: GoogleFonts.inter(
+                  color: isGuidance ? AppColors.brandAi : AppColors.textPrimary,
+                  fontSize: isGuidance ? (wide ? 24 : 18) : 15,
+                  fontWeight: isGuidance ? FontWeight.w700 : FontWeight.w500,
+                  height: isGuidance ? 1.35 : 1.55,
+                  letterSpacing: 0,
                 ),
               ),
             ],

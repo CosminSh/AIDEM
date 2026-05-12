@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -223,14 +224,9 @@ class VoiceService extends Notifier<VoiceState> {
     final runId = ++_speechRun;
     state = state.copyWith(isSpeaking: true, clearError: true);
 
-    const script = '''
-Add-Type -AssemblyName System.Speech
-\$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-\$synth.Rate = -1
-\$synth.Volume = 100
-\$synth.Speak(\$args[0])
-\$synth.Dispose()
-''';
+    final encodedCommand = _buildWindowsSpeechCommand(
+      _limitWindowsSpeechText(spokenText),
+    );
 
     try {
       final process = await Process.start('powershell.exe', [
@@ -240,13 +236,18 @@ Add-Type -AssemblyName System.Speech
         'Hidden',
         '-ExecutionPolicy',
         'Bypass',
-        '-Command',
-        script,
-        _limitWindowsSpeechText(spokenText),
+        '-EncodedCommand',
+        encodedCommand,
       ]);
       _windowsSpeechProcess = process;
+      final stderrBuffer = StringBuffer();
       unawaited(process.stdout.drain<void>());
-      unawaited(process.stderr.drain<void>());
+      unawaited(
+        process.stderr
+            .transform(utf8.decoder)
+            .listen((chunk) => stderrBuffer.write(chunk))
+            .asFuture<void>(),
+      );
 
       unawaited(
         process.exitCode
@@ -262,13 +263,16 @@ Add-Type -AssemblyName System.Speech
                 return;
               }
               _windowsSpeechProcess = null;
+              final errorDetails = stderrBuffer.toString().trim();
               state = state.copyWith(
                 isSpeaking: false,
                 available: true,
                 enabled: code == 0 && state.enabled,
                 errorMessage: code == 0
                     ? null
-                    : 'Windows voice output failed and was disabled.',
+                    : errorDetails.isEmpty
+                    ? 'Windows voice output failed and was disabled.'
+                    : 'Windows voice output failed: $errorDetails',
                 clearError: code == 0,
               );
             })
@@ -363,6 +367,29 @@ Add-Type -AssemblyName System.Speech
       return text;
     }
     return '${text.substring(0, maxChars)}...';
+  }
+
+  String _buildWindowsSpeechCommand(String text) {
+    final textBase64 = base64Encode(utf8.encode(text));
+    final script =
+        """
+\$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Speech
+\$bytes = [System.Convert]::FromBase64String('$textBase64')
+\$text = [System.Text.Encoding]::UTF8.GetString(\$bytes)
+\$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+\$synth.Rate = -1
+\$synth.Volume = 100
+\$synth.Speak(\$text)
+\$synth.Dispose()
+""";
+    final bytes = <int>[];
+    for (final codeUnit in script.codeUnits) {
+      bytes
+        ..add(codeUnit & 0xff)
+        ..add((codeUnit >> 8) & 0xff);
+    }
+    return base64Encode(bytes);
   }
 
   String _localeForLanguage(String? language) {

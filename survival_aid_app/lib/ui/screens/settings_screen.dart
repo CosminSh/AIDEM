@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/global_providers.dart';
 import '../../services/model_setup_service.dart';
 import '../widgets/tactical_container.dart';
+import '../widgets/voice_diagnostics_panel.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -135,6 +136,10 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    const SectionLabel(label: 'Voice'),
+                    const SizedBox(height: 12),
+                    const VoiceDiagnosticsPanel(),
                     const SizedBox(height: 32),
                     const SectionLabel(label: 'Permissions'),
                     const SizedBox(height: 12),

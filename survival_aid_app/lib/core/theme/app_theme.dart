@@ -2,31 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color background = Color(0xFF070B0E);
-  static const Color backgroundAlt = Color(0xFF0A1114);
-  static const Color surface = Color(0xFF101A1C);
-  static const Color surfaceElevated = Color(0xFF162326);
-  static const Color surfaceMuted = Color(0xFF0C1417);
-  static const Color surfaceHover = Color(0xFF1B2A2E);
+  static const Color background = Color(0xFF02090B);
+  static const Color backgroundAlt = Color(0xFF061012);
+  static const Color surface = Color(0xFF0B1719);
+  static const Color surfaceElevated = Color(0xFF102326);
+  static const Color surfaceMuted = Color(0xFF061113);
+  static const Color surfaceHover = Color(0xFF142C2F);
 
-  static const Color brandAi = Color(0xFF10B981);
-  static const Color accentOrange = Color(0xFFF97316);
-  static const Color accentBlue = Color(0xFF3B82F6);
+  static const Color brandAi = Color(0xFF27D3C3);
+  static const Color accentOrange = Color(0xFFE69535);
+  static const Color accentBlue = Color(0xFF5AA9FF);
   static const Color accentRed = Color(0xFFEF4444);
 
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textPrimary = Color(0xFFF4FAFA);
+  static const Color textSecondary = Color(0xFF8DA7AA);
+  static const Color textMuted = Color(0xFF51676C);
   static const Color success = brandAi;
   static const Color warning = accentOrange;
 
-  static const Color border = Color(0xFF213138);
-  static const Color borderSoft = Color(0xFF162327);
-  static const Color emeraldGlow = Color(0x3310B981);
+  static const Color border = Color(0xFF173A3C);
+  static const Color borderSoft = Color(0xFF0D2426);
+  static const Color emeraldGlow = Color(0x3327D3C3);
   static const Color shadow = Color(0x66000000);
 
-  static const double radius = 14.0;
-  static const double radiusLarge = 20.0;
+  static const double radius = 18.0;
+  static const double radiusLarge = 30.0;
 }
 
 class AppTheme {
@@ -51,7 +51,7 @@ class AppTheme {
       titleTextStyle: GoogleFonts.spaceGrotesk(
         color: AppColors.textPrimary,
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         letterSpacing: 0,
       ),
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
@@ -132,9 +132,7 @@ class AppTheme {
           fontWeight: FontWeight.w800,
           letterSpacing: 0,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppColors.radius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -143,13 +141,11 @@ class AppTheme {
         side: const BorderSide(color: AppColors.border),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         textStyle: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppColors.radius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -175,15 +171,15 @@ class AppTheme {
       hintStyle: const TextStyle(color: AppColors.textMuted),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppColors.radius),
+        borderRadius: BorderRadius.circular(22),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppColors.radius),
+        borderRadius: BorderRadius.circular(22),
         borderSide: const BorderSide(color: AppColors.borderSoft),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppColors.radius),
+        borderRadius: BorderRadius.circular(22),
         borderSide: const BorderSide(color: AppColors.brandAi, width: 1.4),
       ),
     ),
