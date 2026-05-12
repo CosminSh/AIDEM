@@ -261,7 +261,7 @@ class _VoiceDiagnosticsPanelState extends ConsumerState<VoiceDiagnosticsPanel> {
           const SectionLabel(label: 'Microphone device'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
-            value: inputSettings.inputDeviceId,
+            initialValue: inputSettings.inputDeviceId,
             isExpanded: true,
             dropdownColor: AppColors.surface,
             decoration: const InputDecoration(hintText: 'System default input'),

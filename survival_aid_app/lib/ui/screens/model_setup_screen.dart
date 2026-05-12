@@ -17,8 +17,6 @@ class ModelSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
-  final TextEditingController _tokenController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -29,12 +27,6 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
         _goToHome();
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _tokenController.dispose();
-    super.dispose();
   }
 
   void _goToHome() {
@@ -90,7 +82,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'Install a local LLM once. After setup, AIDEM can run fully offline on this device.',
+                      'Download the recommended Gemma LiteRT file, then select it here once. After setup, AIDEM can run fully offline on this device.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 16,
@@ -149,36 +141,9 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                     ],
                     if (setupState.status != ModelStatus.downloading) ...[
                       const SizedBox(height: 26),
-                      const SectionLabel(label: 'HuggingFace Token'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _tokenController,
-                        obscureText: true,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(hintText: 'hf_...'),
-                      ),
-                      const SizedBox(height: 22),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            final token = _tokenController.text.trim();
-                            ref
-                                .read(modelSetupServiceProvider.notifier)
-                                .downloadAndInstall(
-                                  huggingFaceToken: token.isNotEmpty
-                                      ? token
-                                      : null,
-                                );
-                          },
-                          icon: const Icon(Icons.download_rounded),
-                          label: const Text('Download and install Gemma'),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
                           onPressed: () async {
                             try {
                               final result = await FilePicker.platform
@@ -202,8 +167,8 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                               );
                             }
                           },
-                          icon: const Icon(Icons.folder_open),
-                          label: const Text('Select local file'),
+                          icon: const Icon(Icons.folder_open_outlined),
+                          label: const Text('Select downloaded model file'),
                         ),
                       ),
                       const SizedBox(height: 18),
