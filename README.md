@@ -72,8 +72,8 @@ graph TD
 ### Installation
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/CosminSh/survival-aid-offline.git
-    cd survival-aid-offline/survival_aid_app
+    git clone https://github.com/CosminSh/aidem-offline.git
+    cd aidem-offline/aidem_app
     ```
 2.  **Install Dependencies**:
     ```bash
@@ -122,7 +122,7 @@ flowchart TD
 | Disasters, shelter, radiation, wildfire, flood | FEMA / CDC / NOAA / USGS |
 | Bites, ticks, poisoning, allergy, infection monitoring | CDC / WHO / Red Cross |
 
-The runtime protocol nodes live in `survival_aid_app/assets/data/protocol.json`, and expanded retrieval text lives in `survival_aid_app/assets/data/knowledge_base.json`.
+The runtime protocol nodes live in `aidem_app/assets/data/protocol.json`, and expanded retrieval text lives in `aidem_app/assets/data/knowledge_base.json`.
 
 ## Offline GPS Notes
 
@@ -131,7 +131,7 @@ AIDEM uses device GNSS through `geolocator`. A GPS fix can work without mobile d
 ## Local Build Commands
 
 ```bash
-cd survival_aid_app
+cd aidem_app
 flutter pub get
 flutter run -d windows
 flutter run -d android

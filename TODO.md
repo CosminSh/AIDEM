@@ -7,7 +7,7 @@
 - [x] Install Node.js (v24+)
 - [x] Install Flutter SDK to `G:\flutter` (downloading)
 - [x] Project structure planned (UI, Data, Services, Core, Providers)
-- [x] Run `flutter create survival_aid_app --org com.survivalaid`
+- [x] Run `flutter create aidem_app --org com.aidem`
 - [x] Configure `pubspec.yaml`:
   - [x] Add `flutter_riverpod` (state management)
   - [x] Add `geolocator` (offline GPS)

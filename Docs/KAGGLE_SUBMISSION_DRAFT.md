@@ -77,7 +77,7 @@ AIDEM is designed as protocol-constrained emergency decision support:
 
 Initial scenario eval file:
 
-- `survival_aid_app/test/protocol_adherence_eval_test.dart`
+- `aidem_app/test/protocol_adherence_eval_test.dart`
 - 9 scenarios currently covered.
 - Categories include severe bleeding, back/neck injury, burns, poisoning, snake bite, lost/no signal, wound without clean water, cold exposure, and image burn path.
 - Each case checks for expected safety behavior and forbidden unsafe phrases.

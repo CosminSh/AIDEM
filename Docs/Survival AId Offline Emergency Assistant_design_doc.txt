@@ -1,263 +1,0 @@
-Survival AId: Offline Emergency Assistant
-— Design & Product Document
-Version: 0.2 — Hackathon Concept (Gemma 4 Good, May 2026)
-Author: Cosmin Sh
-Status: Pre-development specification
-
-Overview
-Survival AI Partner is a fully offline mobile application that guides users through real-world wilderness emergencies using a structured decision tree, with Gemma 4 E2B as the natural language and multimodal interface layer. The app does not function as a general-purpose chatbot — it is a decision support tool grounded in officially accepted survival and first aid protocols (Red Cross, WHO, NASAR).
-The core philosophy: ask the right question at the right time, defer to human rescuers whenever possible, and only provide autonomous guidance when outside help is unreachable. The AI's job is to make the decision tree feel like a calm, knowledgeable companion rather than a form or checklist.
-
-Problem Statement
-Every year, thousands of hikers, trail runners, cyclists, and outdoor enthusiasts face emergencies in environments without cellular coverage. In those moments, a person needs calm, structured guidance — not a search engine, not a chatbot that can hallucinate dangerous advice, and not a manual they have to read.
-Existing apps are either:
-* Too passive — static PDFs or reference libraries the user has to navigate themselves
-* Too dependent on connectivity — cloud-based AI assistants that fail precisely when needed most
-* Too generic — not structured around real emergency decision flows
-Survival AI Partner solves this by combining a hardcoded, vetted protocol engine with the natural conversational interface of Gemma 4 E2B, running entirely on-device, with no internet required.
-
-Hackathon Context
-* Competition: Gemma 4 Good Hackathon (Kaggle / Google DeepMind, 2026)
-* Track: Global Resilience
-* Model: Gemma 4 E2B (multimodal: text + image + audio input, text output)
-* Deadline: May 18, 2026
-* Demo focus: Wilderness survival + wound treatment scenario
-
-Core Principles
-1. Offline-first, always. The app must function with airplane mode enabled. No feature may require a network call.
-2. Defer to rescuers. The very first question is always whether the user can contact emergency services. If yes, the app steps back and supports that path only.
-3. Grounded, not generative. The AI drives conversation and interprets input, but all protocol steps come from an embedded, vetted knowledge base — not model hallucination.
-4. Voice-accessible. A person with a broken arm, cold hands, or limited visibility must be able to use the app by voice alone.
-5. Calm and clear. Tone, typography, and UX are designed for a stressed user. No jargon, no information overload, one step at a time.
-
-Architecture
-High-Level Components
-?????????????????????????????????????????????????????????????????
-?                      Mobile App (Flutter)                     ?
-?                                                               ?
-?  ???????????????????    ????????????????????????????????????  ?
-?  ?  Conversation   ?    ?   Decision Tree Engine           ?  ?
-?  ?  UI (voice +    ??????   (State Machine)                ?  ?
-?  ?   text + image) ?    ?   JSON Protocol Database         ?  ?
-?  ???????????????????    ????????????????????????????????????  ?
-?           ?                          ?                        ?
-?           ?                          ?                        ?
-?  ???????????????????                 ?                        ?
-?  ?  Gemma 4 E2B    ???????????????????                        ?
-?  ?  (on-device,    ?  routes user responses                   ?
-?  ?   LiteRT-LM)    ?  to correct tree node                    ?
-?  ???????????????????                                          ?
-?                                                               ?
-?  ???????????????????????????????????????????????????????????? ?
-?  ?  GPS / Location Layer (on-device, offline)               ? ?
-?  ?  - Reads lat/lon/altitude from device GNSS               ? ?
-?  ?  - Formats coordinates for rescue communication          ? ?
-?  ?  - Logs last-known position with timestamp               ? ?
-?  ?  - Surfaces in Rescuer Mode and Lost protocols           ? ?
-?  ???????????????????????????????????????????????????????????? ?
-?????????????????????????????????????????????????????????????????
-
-Component Responsibilities
-ComponentRoleGemma 4 E2BNatural language I/O, voice transcription interpretation, image analysis (wound classification), ambiguous answer resolution, conversational toneDecision Tree EngineState machine that tracks current node in the emergency protocol; drives the logic flowProtocol DatabaseEmbedded JSON/SQLite database of vetted survival and first aid steps (Red Cross, WHO, NASAR)Conversation UIChat-like interface with voice input, image capture button, and step-by-step guidance displayGPS / Location LayerOn-device GNSS positioning; no internet required; feeds location data into rescue reporting and lost-person protocols
-Why This Architecture Wins
-The model is the interface, not the knowledge source. This means:
-* No hallucination risk on critical medical steps (steps come from verified protocols)
-* The model can still interpret ambiguous, emotional, or unexpected user inputs
-* The system is auditable — every protocol step can be traced to a source
-* The model adds genuine value over a simple form-based app
-
-Decision Tree — Primary Flow
-The root of every session is the same, regardless of scenario.
-START
-?
-??? [Q1] Can you call or reach emergency services right now?
-?         (mountain rescue, 112, satellite communicator, etc.)
-?
-?    YES ??? [RESCUER MODE]
-?            - "Great. Follow their instructions exactly."
-?            - App enters relay/standby mode
-?            - Display GPS coordinates prominently — share with rescuers
-?            - Offer rescue call script with coordinates pre-filled
-?            - No further autonomous guidance unless user re-enters
-?
-?    NO  ??? [Q2] Are you injured?
-?
-?             YES ??? [Q3] Is the injury life-threatening?
-?             ?            (heavy bleeding, no breathing, unconscious)
-?             ?
-?             ?       YES ??? [CRITICAL CARE PROTOCOL]
-?             ?               (stop bleeding / airway / shock — immediate steps)
-?             ?
-?             ?       NO  ??? [Q4] Can you move/walk?
-?             ?
-?             ?               YES ??? [SELF-EVACUATION PROTOCOL]
-?             ?               NO  ??? [SHELTER-IN-PLACE PROTOCOL]
-?             ?
-?             NO  ??? [Q5] Do you know where you are / can you get back?
-?
-?                      YES ??? [NAVIGATION / RETURN PROTOCOL]
-?                      NO  ??? [LOST PROTOCOL]
-?                               - GPS coordinates shown immediately
-?                               - Stay put, signal, shelter, water
-
-Each terminal node (CRITICAL CARE, SELF-EVACUATION, etc.) expands into its own step-by-step protocol sub-tree, also embedded in the Protocol Database.
-
-GPS & Location Features
-How GPS Works Offline
-A smartphone's GNSS chip receives signals directly from satellites (GPS, GLONASS, Galileo, BeiDou depending on device) without any cellular or internet connection. The phone can determine latitude, longitude, and altitude from satellite triangulation alone. This means location features work in full airplane mode — exactly the scenario this app targets. The only caveat is a slightly longer fix time on first cold start if Assisted GPS (A-GPS) cache is stale; in practice, a modern phone gets a fix within 30–60 seconds in open sky.
-v1.0 GPS Features (Hackathon Demo)
-1. Live Coordinate Display
-At any point in the session, the current coordinates are available via a persistent "My Location" button. Displayed as:
-* Decimal degrees: 44.3561° N, 24.8742° E (primary — most widely understood)
-* DMS (Degrees Minutes Seconds): 44° 21' 21.96" N, 24° 52' 27.12" E (secondary)
-* Altitude: 847 m (important for mountain rescue — narrows search area significantly)
-Decimal degrees is the recommended primary format for SAR communication; it is unambiguous and supported by all dispatch systems. UTM/MGRS display can be added in a future update for users who prefer grid references.
-2. Rescue Call Script
-When the user confirms they can reach rescuers (Q1 = YES), the app generates a pre-formatted rescue script screen with their GPS data pre-filled:
-"I need mountain rescue. My name is [name]. I am at coordinates [lat], [lon], altitude approximately [alt] metres. I am [injury/situation summary]. I have [phone battery %] battery remaining."
-The user reads this aloud or hands the phone to someone with signal. Large text, high contrast, no distractions.
-3. Coordinate Copy & Share
-One-tap copy of coordinates to clipboard, formatted for SMS. When signal returns (even briefly), the user can paste into a text message instantly without having to re-read or re-type coordinates.
-4. Last-Known Position Log
-The app silently logs GPS coordinates with timestamps every 5 minutes during an active session, stored locally. This serves two purposes:
-* If the user moves and later regains signal, they can report their movement history to rescuers
-* In the worst case, if the phone is found, the log shows the last known positions
-5. Prominent Display in Lost Protocol
-When the user enters the LOST sub-tree, their current coordinates are shown at the top of every screen, always visible. The core advice is still "stay put" — but the coordinates help them report their position if any signal window appears.
-What GPS Does NOT Do in v1.0
-* No map rendering or offline navigation (larger scope, out of hackathon demo)
-* No what3words output (see note below on format choice)
-* No route recording or waypoint tracking
-* No region-specific emergency number lookup (see Future Roadmap)
-Note on what3words
-what3words is NOT used as a primary coordinate format. Mountain Rescue England and Wales has formally noted that what3words can produce errors in remote mountain terrain, and multiple SAR teams have raised reliability concerns for emergency use. Latitude/longitude is universal, unambiguous, and understood by all dispatch systems worldwide. If what3words is added in a future version, it will be presented as a secondary supplemental format only.
-
-Phase 1 Scope — Hackathon Demo
-The demo focuses on the wilderness + wound treatment scenario. This covers:
-Included in v1.0 (Demo)
-* Full root triage tree (all Q1–Q5 paths)
-* Critical Care sub-tree: severe bleeding (tourniquet, direct pressure), choking, shock position
-* Wound Treatment sub-tree: wound classification via image input, cleaning, bandaging, infection watch
-* Lost in the Wild sub-tree: stay put decision, signaling (whistle, mirror, fire), emergency shelter basics, water sourcing priority
-* GPS / Location Layer: live coordinates, rescue script, coordinate copy, last-known position log
-* Voice input for all questions (dictation via on-device speech-to-text)
-* Image input at wound assessment node
-* Offline operation (full airplane mode)
-* Light/dark mode UI, calm visual design
-Explicitly Out of Scope for v1.0
-* Nuclear / CBRN scenarios
-* Tsunami / earthquake protocols
-* Urban survival
-* Multi-person triage
-* Offline maps / navigation
-* Region packs (see Future Roadmap)
-* Cloud sync or user accounts
-
-Gemma 4 E2B — Specific Usage
-Model Specs
-* Parameters: ~2 billion (edge-optimized)
-* Inputs: Text, image, audio
-* Output: Text only
-* On-device runtime: LiteRT-LM (Android) / MediaPipe (iOS)
-* RAM usage: ~3 GB — runs on most modern smartphones (2022+)
-* Thermal stability: Suitable for sustained 10–15 min sessions (E2B preferred over E4B for this reason)
-What the Model Does in This App
-TaskHow Gemma 4 E2B Is UsedDrive Q&AAsks each decision tree question in natural, calm languageInterpret answersClassifies ambiguous responses ("I think my wrist is broken") to correct tree branchWound image triageAnalyzes wound photo at the wound assessment node; estimates severity to route protocolVoice input processingInterprets transcribed speech, handles incomplete or panicked answersContextual step guidanceAt each protocol step, adds contextual explanation based on what the user told the modelTone managementKeeps language calm, simple, one-step-at-a-time regardless of severityRescue script generationIntegrates GPS coordinates and session context into a readable rescue call script
-What the Model Does NOT Do
-* Generate protocol steps from scratch (all steps are from the embedded database)
-* Access the internet
-* Remember sessions between app launches
-* Make diagnostic or medical decisions independently
-
-User Experience Flow
-Session Start Screen
-* Single large button: "I need help"
-* Secondary: "Learn / Practice" (dry-run mode for non-emergency use)
-* Microphone always visible and accessible
-* Subtle GPS status indicator (acquiring / ready)
-Conversation Screen
-* Chat-style interface, large readable text
-* Current "phase" shown as a subtle header (e.g., "Injury Assessment")
-* Each AI message = one question or one instruction step only
-* Image capture button appears contextually (only at wound assessment node)
-* Voice input always available via large mic button
-* Progress indicator: simple numbered steps within current protocol
-* Persistent "My Location" button — always one tap away from coordinate display
-Rescue Script Screen (triggered when Q1 = YES)
-* Full-screen, high-contrast, large text
-* GPS coordinates pre-filled
-* Phonetic spelling guidance for coordinates
-* Copy to clipboard button
-* "I've spoken to rescuers — continue" button to return to session
-Tone & Copy Guidelines
-* Short sentences. No medical jargon.
-* Affirm the user's responses before moving on ("Got it. Let's handle the bleeding first.")
-* Never overwhelm with options — one question, one step at a time.
-* In critical protocols, use numbered steps with confirmation before advancing ("Done? Say yes or tap to continue.")
-
-Protocol Database — Sources
-All protocols embedded in the app must be traceable to one of these official sources:
-DomainSourceWilderness first aidRed Cross Wilderness & Remote First AidWound careWHO Wound Management GuidelinesSearch & rescue signalingNASAR (National Association for Search and Rescue)General emergencyFEMA / Ready.gov Wilderness SafetyTourniquet / bleedingTCCC (Tactical Combat Casualty Care) — civilian adaptationCoordinate reportingSAR standard: decimal degrees lat/lon + altitude
-The database is structured as a JSON tree where each node contains:
-* id: unique node identifier
-* question or step: the prompt shown to the user
-* source: citation to protocol origin
-* branches: possible user responses and where they lead
-* media: optional images or diagrams (embedded assets, no CDN)
-* gps_context: boolean flag — whether this node should surface GPS data in the UI
-
-Technology Stack
-LayerTechnologyMobile frameworkFlutter (cross-platform Android + iOS)On-device AI runtimeLiteRT-LM (Android primary) / MediaPipe (iOS)ModelGemma 4 E2B (quantized, INT4)Speech-to-textOn-device (Android SpeechRecognizer / iOS SFSpeechRecognizer)Protocol storageEmbedded SQLite or JSON asset bundleState managementFlutter Riverpod or BlocGPS / GNSSFlutter Geolocator package (on-device, no internet required)Location loggingLocal SQLite — timestamped position log, session-scopedOffline detectionNone needed — app always runs offline-first
-
-Screens Summary
-1. Home / Emergency Start — "I need help" + "Practice mode" + GPS status
-2. Active Session — Conversational interface, mic, image capture, persistent location button
-3. Rescue Script — Full-screen coordinates + call script, copy button
-4. My Location — Coordinate detail view (decimal degrees + DMS + altitude + position log)
-5. Step Detail — Expanded view of current protocol step with diagram/image if available
-6. Session Summary — After session, shows path taken + timestamps + location log (useful if user later reaches rescuers)
-7. Settings — Language, text size, coordinate format preference, practice mode, about + disclaimer
-
-Disclaimer Strategy
-The app opens with a one-time acknowledgment:
-"This app provides structured guidance based on Red Cross, WHO, and NASAR wilderness first aid protocols. It is a decision support tool — not a substitute for professional medical care. Always contact emergency services if at all possible."
-This is shown at first launch and accessible from Settings.
-
-Hackathon Submission Plan
-Demo Video Script (3–5 min)
-1. (0:00–0:30) Problem setup: solo hiker, no signal, real scenario
-2. (0:30–1:00) Open app ? "I need help" ? Q1: signal found ? Rescue Script screen with GPS coordinates shown ? explain the feature
-3. (1:00–1:30) Restart scenario: no signal ? Q2: injured ? wound image capture ? Gemma classifies wound ? step-by-step bleeding control
-4. (1:30–2:30) Parallel: lost + no injury path ? coordinates shown at top of Lost protocol
-5. (2:30–3:00) Technical callout: airplane mode visible, GPS fix active, model running on-device
-6. (3:00–3:30) Closing: future roadmap (offline maps, region packs, earthquake/urban modules)
-README Must Include
-* Architecture diagram
-* Protocol source citations
-* GPS implementation notes (offline GNSS, no internet required)
-* Instructions to run locally
-* Responsible AI / disclaimer section
-* Screenshot of airplane mode + app running with GPS coordinates
-
-Future Roadmap (Post-Hackathon)
-Additional Scenario Modules
-Each module is a self-contained sub-tree that plugs into the root triage flow, added one by one:
-* ?? Flood / Tsunami
-* ??? Earthquake (urban)
-* ?? Nuclear / CBRN hazard
-* ?? Wildfire
-* ?? Avalanche / extreme cold
-* ?? Long-term off-grid medical care
-Region Packs (Downloadable)
-A lightweight, optionally downloadable data bundle per region/country containing:
-* Local emergency phone numbers (mountain rescue, coastguard, general emergency)
-* Region-specific SAR contact notes
-* Coordinate format preference for local rescue services (some countries prefer UTM/MGRS over decimal degrees)
-* Future: offline map tiles for the region
-* Future: local hazard-specific guidance (e.g., avalanche risk zones in the Alps vs. flash flood patterns in Mediterranean terrain)
-Region packs are intentionally excluded from v1.0. Emergency phone number data alone is a small file (a few hundred rows), so the app size saving is marginal. The real value of region packs comes with offline maps and region-specific guidance — features that belong in a post-hackathon release. For the demo, a hardcoded universal emergency number guidance ("call 112 in Europe, 911 in North America, or your local emergency number") is sufficient.
-Additional GPS Features
-* Offline map rendering (e.g., embedded OpenStreetMap tiles for preloaded regions)
-* Track recording during self-evacuation
-* UTM / MGRS coordinate display option
-* what3words as a secondary supplemental format (clearly labeled, not primary)

@@ -14,7 +14,7 @@ def extract_prompt(file_path):
 def run_simulation():
     # Paths
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    llm_service_path = os.path.join(project_root, 'survival_aid_app', 'lib', 'services', 'llm_service.dart')
+    llm_service_path = os.path.join(project_root, 'aidem_app', 'lib', 'services', 'llm_service.dart')
     
     prompt = extract_prompt(llm_service_path)
     
