@@ -8,6 +8,9 @@ import '../../providers/global_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../services/llm_service.dart';
 import '../../services/model_setup_service.dart';
+import '../../services/ui_sound_service.dart';
+import '../navigation/app_routes.dart';
+import '../widgets/brand_mark.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/model_recommendation_card.dart';
 import '../widgets/tactical_container.dart';
@@ -85,6 +88,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   _buildEmergencyPanel(session, isWide: true),
                                   const SizedBox(height: 14),
                                   _buildDesktopActionDock(session),
+                                  const SizedBox(height: 14),
+                                  _buildOfflineReadinessCard(),
                                 ],
                               ),
                             ),
@@ -93,6 +98,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           _buildEmergencyPanel(session, isWide: false),
                           const SizedBox(height: 14),
                           _buildDesktopActionDock(session),
+                          const SizedBox(height: 14),
+                          _buildOfflineReadinessCard(),
                         ],
                       ],
                     ),
@@ -107,6 +114,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final setupState = ref.watch(modelSetupServiceProvider);
+    final llmState = ref.watch(llmServiceProvider);
+    final ready =
+        setupState.status == ModelStatus.ready &&
+        llmState.status == LlmStatus.ready;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -118,21 +131,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.brandAi.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.brandAi.withValues(alpha: 0.24),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      color: AppColors.brandAi,
-                      size: 18,
-                    ),
+                  const AidemBrandMark(
+                    size: 36,
+                    padding: EdgeInsets.all(4),
+                    glow: false,
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -167,22 +169,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const StatusPill(
-              icon: Icons.sensors_rounded,
-              label: 'Ready',
-              color: AppColors.brandAi,
+            StatusPill(
+              icon: ready
+                  ? Icons.verified_user_outlined
+                  : Icons.info_outline_rounded,
+              label: ready ? 'Offline ready' : 'Protocol ready',
+              color: ready ? AppColors.brandAi : AppColors.accentOrange,
             ),
             const SizedBox(width: 8),
             _HeaderIconButton(
               icon: Icons.settings_outlined,
               tooltip: 'Settings',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
+                Navigator.push(context, polishedRoute(const SettingsScreen()));
               },
             ),
           ],
@@ -196,10 +195,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
-    );
+    Navigator.push(context, polishedRoute(const ActiveSessionScreen()));
   }
 
   Future<void> _startPracticeSession() async {
@@ -207,10 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
-    );
+    Navigator.push(context, polishedRoute(const ActiveSessionScreen()));
   }
 
   Widget _buildEmergencyPanel(SessionState session, {required bool isWide}) {
@@ -315,6 +308,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           runSpacing: 10,
           children: [
             _HomeCommandButton(
+              icon: Icons.movie_filter_outlined,
+              label: 'Best demo',
+              color: AppColors.brandAi,
+              onTap: _startBestDemo,
+            ),
+            _HomeCommandButton(
               icon: Icons.school_outlined,
               label: 'Practice',
               color: AppColors.accentBlue,
@@ -413,12 +412,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ActiveSessionScreen(),
-            ),
-          );
+          Navigator.push(context, polishedRoute(const ActiveSessionScreen()));
         },
         icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
         label: const Text('Resume active session'),
@@ -435,10 +429,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ActiveSessionScreen()),
+    Navigator.push(context, polishedRoute(const ActiveSessionScreen()));
+  }
+
+  Future<void> _startBestDemo() async {
+    final scenario = demoScenarios.firstWhere(
+      (scenario) => scenario.id == 'lost_hiker_ankle',
+      orElse: () => demoScenarios.first,
     );
+    await _openDemoScenario(scenario);
   }
 
   Future<void> _showDemoScenariosDialog() async {
@@ -462,6 +461,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(
                     children: [
                       const SectionLabel(label: 'Demo Scenarios'),
+                      const SizedBox(width: 10),
+                      const StatusPill(
+                        icon: Icons.movie_filter_outlined,
+                        label: 'Judge-ready',
+                        color: AppColors.brandAi,
+                      ),
                       const Spacer(),
                       IconButton(
                         tooltip: 'Close',
@@ -775,7 +780,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     };
 
     return InkWell(
-      onTap: onTap ?? () => _openDemoScenario(scenario),
+      onTap: () {
+        UiSoundService.tap();
+        (onTap ?? () => _openDemoScenario(scenario))();
+      },
       borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: TacticalContainer(
         padding: const EdgeInsets.all(16),
@@ -797,6 +805,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Icon(icon, color: color, size: 20),
                 ),
                 const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.brandAi.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppColors.brandAi.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: const Text(
+                    'DEMO MODE',
+                    style: TextStyle(
+                      color: AppColors.brandAi,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Icon(Icons.play_arrow_rounded, color: color, size: 22),
               ],
             ),
@@ -927,12 +957,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (!mounted) {
               return;
             }
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ActiveSessionScreen(),
-              ),
-            );
+            Navigator.push(context, polishedRoute(const ActiveSessionScreen()));
           },
         ),
       ),
@@ -945,6 +970,125 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+
+  Widget _buildOfflineReadinessCard() {
+    final setupState = ref.watch(modelSetupServiceProvider);
+    final llmState = ref.watch(llmServiceProvider);
+    final modelReady =
+        setupState.status == ModelStatus.ready &&
+        llmState.status == LlmStatus.ready;
+    final modelLabel = switch (llmState.status) {
+      LlmStatus.ready => 'Local model ready',
+      LlmStatus.loading => 'Model initializing',
+      LlmStatus.mock => 'Fallback mode labeled',
+      LlmStatus.error => 'Protocol fallback active',
+    };
+
+    return TacticalContainer(
+      padding: const EdgeInsets.all(14),
+      showGlow: false,
+      borderRadius: 18,
+      borderColor: (modelReady ? AppColors.brandAi : AppColors.accentOrange)
+          .withValues(alpha: 0.24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                modelReady
+                    ? Icons.offline_bolt_rounded
+                    : Icons.fact_check_outlined,
+                color: modelReady ? AppColors.brandAi : AppColors.accentOrange,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                modelReady ? 'Offline Ready' : 'Protocol Ready',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Runs local-first',
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ReadinessPill(
+                icon: Icons.memory_rounded,
+                label: modelLabel,
+                color: modelReady ? AppColors.brandAi : AppColors.accentOrange,
+              ),
+              const _ReadinessPill(
+                icon: Icons.my_location_outlined,
+                label: 'GPS tool available',
+                color: AppColors.accentBlue,
+              ),
+              const _ReadinessPill(
+                icon: Icons.storage_outlined,
+                label: 'Emergency data local',
+                color: AppColors.brandAi,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadinessPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _ReadinessPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -966,7 +1110,12 @@ class _HomeCommandButton extends StatelessWidget {
     return Tooltip(
       message: label,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null
+            ? null
+            : () {
+                UiSoundService.tap();
+                onTap!();
+              },
         borderRadius: BorderRadius.circular(AppColors.radius),
         child: Opacity(
           opacity: onTap == null ? 0.45 : 1,
@@ -1025,7 +1174,10 @@ class _HeaderIconButton extends StatelessWidget {
         color: AppColors.surfaceMuted.withValues(alpha: 0.72),
         shape: const CircleBorder(),
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            UiSoundService.tap();
+            onTap();
+          },
           customBorder: const CircleBorder(),
           hoverColor: AppColors.brandAi.withValues(alpha: 0.08),
           highlightColor: AppColors.brandAi.withValues(alpha: 0.12),

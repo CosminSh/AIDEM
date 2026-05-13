@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/ui_sound_service.dart';
 
 class EmergencyButton extends StatefulWidget {
   final VoidCallback onPressed;
@@ -100,7 +101,10 @@ class _EmergencyButtonState extends State<EmergencyButton>
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: widget.onPressed,
+                    onTap: () {
+                      UiSoundService.confirm();
+                      widget.onPressed();
+                    },
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

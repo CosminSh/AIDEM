@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/ui_sound_service.dart';
 
 class ImageCaptureButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -16,7 +17,10 @@ class ImageCaptureButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          UiSoundService.tap();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(AppColors.radius),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),

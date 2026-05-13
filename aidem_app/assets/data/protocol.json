@@ -280,7 +280,16 @@
       "gps_context": true,
       "branches": [
         {"label": "Yes", "target": "rescue_call"},
-        {"label": "No", "target": "signaling_protocol"}
+        {"label": "No", "target": "phone_power_conservation"}
+      ]
+    },
+    "phone_power_conservation": {
+      "id": "phone_power_conservation",
+      "question": "If you may be waiting for help, turn on battery saver/low power mode now. Dim the screen, close unused apps, keep the phone warm in cold weather, and use flashlight, screen, and GPS in short bursts instead of continuously.",
+      "source": "NASAR / Ready.gov",
+      "gps_context": false,
+      "branches": [
+        {"label": "Continue to signaling", "target": "signaling_protocol"}
       ]
     },
     "signaling_protocol": {

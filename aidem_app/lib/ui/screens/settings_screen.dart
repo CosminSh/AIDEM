@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/global_providers.dart';
 import '../../services/model_setup_service.dart';
+import '../widgets/brand_mark.dart';
 import '../widgets/tactical_container.dart';
 import '../widgets/voice_diagnostics_panel.dart';
 
@@ -14,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setupState = ref.watch(modelSetupServiceProvider);
+    final soundState = ref.watch(uiSoundSettingsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,21 +48,10 @@ class SettingsScreen extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Container(
-                                width: 42,
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppColors.brandAi.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppColors.brandAi.withOpacity(0.22),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.psychology_outlined,
-                                  color: AppColors.brandAi,
-                                  size: 22,
-                                ),
+                              const AidemBrandMark(
+                                size: 42,
+                                padding: EdgeInsets.all(5),
+                                glow: false,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -140,6 +131,41 @@ class SettingsScreen extends ConsumerWidget {
                     const SectionLabel(label: 'Voice'),
                     const SizedBox(height: 12),
                     const VoiceDiagnosticsPanel(),
+                    const SizedBox(height: 32),
+                    const SectionLabel(label: 'Interface'),
+                    const SizedBox(height: 12),
+                    TacticalContainer(
+                      padding: EdgeInsets.zero,
+                      showGlow: false,
+                      child: SwitchListTile(
+                        secondary: const Icon(
+                          Icons.volume_up_outlined,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        title: Text(
+                          'Interface sounds',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Very subtle tap feedback for app controls.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        value: soundState.enabled,
+                        activeThumbColor: AppColors.brandAi,
+                        onChanged: (value) => ref
+                            .read(uiSoundSettingsProvider.notifier)
+                            .setEnabled(value),
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     const SectionLabel(label: 'Permissions'),
                     const SizedBox(height: 12),

@@ -9,8 +9,11 @@ import '../widgets/chat_list_view.dart';
 import '../../providers/global_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../services/context_compaction_service.dart';
+import '../../services/ui_sound_service.dart';
 import '../../services/voice_input_settings_service.dart';
 import '../../models/protocol.dart';
+import '../navigation/app_routes.dart';
+import '../widgets/brand_mark.dart';
 import '../widgets/tactical_container.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'session_summary_screen.dart';
@@ -429,9 +432,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'GPS is unavailable right now. Move toward open sky, check location permission, or describe landmarks manually. Details: $e',
+            ),
+          ),
+        );
       }
     }
   }
@@ -489,8 +496,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final session = ref.read(sessionProvider);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SessionSummaryScreen(
+      polishedRoute(
+        SessionSummaryScreen(
           history: session.chatHistory,
           situationSummary: session.situationSummary,
           isPracticeMode: session.isPracticeMode,
@@ -527,30 +534,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           children: [
             ScaleTransition(
               scale: _breathAnimation,
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.brandAi.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.brandAi.withOpacity(0.35),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.brandAi.withOpacity(0.12),
-                      blurRadius: 12,
-                      spreadRadius: -5,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.psychology_outlined,
-                  color: AppColors.brandAi,
-                  size: 18,
-                ),
-              ),
+              child: const AidemBrandMark(size: 34, padding: EdgeInsets.all(4)),
             ),
             const SizedBox(width: 12),
             Column(
@@ -725,6 +709,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               children: [
                 const Divider(color: AppColors.border, height: 1),
 
+                _buildEmergencyCallBanner(compact: true),
+
                 _buildSafetyStrip(
                   rescueReady: session.chatHistory.length > 1,
                   isPracticeMode: session.isPracticeMode,
@@ -772,6 +758,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         ],
                       ),
                     ),
+                  ),
+
+                if (session.currentNode != null &&
+                    session.currentNode?.id != 'start')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: _buildWhyThisMatters(session.currentNode!),
                   ),
 
                 // Initial Language Selector
@@ -842,7 +835,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.accentBlue.withOpacity(0.3),
+                            color: AppColors.accentBlue.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Text(
@@ -912,30 +905,45 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.accentBlue.withOpacity(0.3),
+                        color: AppColors.accentBlue.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Stack(
+                    child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(_pendingImagePath!),
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: -8,
-                          right: -8,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.cancel,
-                              color: AppColors.accentRed,
-                              size: 20,
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(_pendingImagePath!),
+                                height: 86,
+                                width: 86,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                            onPressed: _clearPendingImage,
+                            Positioned(
+                              top: -8,
+                              right: -8,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.cancel,
+                                  color: AppColors.accentRed,
+                                  size: 20,
+                                ),
+                                onPressed: _clearPendingImage,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Image attached. AIDEM can use visible context, but it cannot diagnose depth, fracture severity, or hidden injury from an image alone.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
                           ),
                         ),
                       ],
@@ -971,7 +979,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                             vertical: 8,
                           ),
                           side: BorderSide(
-                            color: AppColors.brandAi.withOpacity(0.5),
+                            color: AppColors.brandAi.withValues(alpha: 0.5),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1027,14 +1035,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: session.isLlmTyping
-                            ? AppColors.brandAi.withOpacity(0.45)
+                            ? AppColors.brandAi.withValues(alpha: 0.45)
                             : AppColors.border,
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.brandAi.withOpacity(
-                            session.isLlmTyping ? 0.12 : 0.04,
+                          color: AppColors.brandAi.withValues(
+                            alpha: session.isLlmTyping ? 0.12 : 0.04,
                           ),
                           blurRadius: 18,
                           spreadRadius: -10,
@@ -1143,7 +1151,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                               ),
                               onTap: (_isSending || session.isLlmTyping)
                                   ? null
-                                  : _sendMessage,
+                                  : () {
+                                      UiSoundService.confirm();
+                                      _sendMessage();
+                                    },
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: _isSending
@@ -1276,6 +1287,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     return SingleChildScrollView(
       child: Column(
         children: [
+          _buildEmergencyCallBanner(),
+          const SizedBox(height: 12),
           TacticalContainer(
             showGlow: false,
             padding: const EdgeInsets.all(18),
@@ -1349,6 +1362,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             ),
           ),
           const SizedBox(height: 12),
+          if (session.currentNode != null && session.currentNode?.id != 'start')
+            _buildWhyThisMatters(session.currentNode!),
+          if (session.currentNode != null && session.currentNode?.id != 'start')
+            const SizedBox(height: 12),
           TacticalContainer(
             showGlow: false,
             padding: const EdgeInsets.all(16),
@@ -1556,7 +1573,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+              border: Border.all(
+                color: AppColors.accentBlue.withValues(alpha: 0.3),
+              ),
             ),
             child: Text(
               session.streamingBuffer,
@@ -1623,29 +1642,44 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.3)),
       ),
-      child: Stack(
+      child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.file(
-              File(_pendingImagePath!),
-              height: 92,
-              width: 92,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: -8,
-            right: -8,
-            child: IconButton(
-              icon: const Icon(
-                Icons.cancel,
-                color: AppColors.accentRed,
-                size: 20,
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(_pendingImagePath!),
+                  height: 82,
+                  width: 82,
+                  fit: BoxFit.cover,
+                ),
               ),
-              onPressed: _clearPendingImage,
+              Positioned(
+                top: -8,
+                right: -8,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.cancel,
+                    color: AppColors.accentRed,
+                    size: 20,
+                  ),
+                  onPressed: _clearPendingImage,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Image attached. Visible context only; AIDEM will avoid diagnosing hidden or uncertain injury details.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
             ),
           ),
         ],
@@ -1678,7 +1712,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             ),
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            side: BorderSide(color: AppColors.brandAi.withOpacity(0.5)),
+            side: BorderSide(color: AppColors.brandAi.withValues(alpha: 0.5)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1833,7 +1867,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   customBorder: const CircleBorder(),
                   onTap: (_isSending || session.isLlmTyping)
                       ? null
-                      : _sendMessage,
+                      : () {
+                          UiSoundService.confirm();
+                          _sendMessage();
+                        },
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: _isSending
@@ -1911,6 +1948,113 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       ),
     );
   }
+
+  Widget _buildEmergencyCallBanner({bool compact = false}) {
+    return Padding(
+      padding: compact
+          ? const EdgeInsets.fromLTRB(16, 10, 16, 0)
+          : EdgeInsets.zero,
+      child: TacticalContainer(
+        showGlow: false,
+        borderRadius: AppColors.radius,
+        borderColor: AppColors.accentOrange.withValues(alpha: 0.28),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 14,
+          vertical: compact ? 10 : 12,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.local_phone_outlined,
+              color: AppColors.accentOrange,
+              size: 17,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Call emergency services first whenever reachable. Use AIDEM for offline guidance and handoff notes.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: compact ? 11.5 : 12,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhyThisMatters(ProtocolNode node) {
+    final text = _whyThisMattersText(node.id);
+    if (text == null) {
+      return const SizedBox.shrink();
+    }
+
+    return TacticalContainer(
+      showGlow: false,
+      borderRadius: AppColors.radius,
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: ThemeData.dark().copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          leading: const Icon(
+            Icons.help_outline_rounded,
+            color: AppColors.accentBlue,
+            size: 18,
+          ),
+          title: Text(
+            'Why this matters',
+            style: GoogleFonts.spaceGrotesk(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _whyThisMattersText(String nodeId) {
+    if (nodeId.contains('bleeding')) {
+      return 'Severe bleeding can become life-threatening quickly. The safest priority is firm pressure, escalation, and avoiding repeated wound checks.';
+    }
+    if (nodeId.contains('lost') || nodeId.contains('signal')) {
+      return 'Rescuers search from the last known location. Staying put, conserving battery, and making repeatable signals improves the chance of being found.';
+    }
+    if (nodeId.contains('shelter') || nodeId.contains('hypothermia')) {
+      return 'Exposure can worsen injuries and thinking. Shelter, insulation, and dry layers protect the patient while waiting or planning the next move.';
+    }
+    if (nodeId.contains('burn')) {
+      return 'Burn care should cool tissue safely and avoid remedies that trap heat or contaminate the wound. Images cannot confirm burn depth.';
+    }
+    if (nodeId.contains('rescue')) {
+      return 'A concise handoff helps dispatchers and rescuers understand location, condition, hazards, and actions already taken.';
+    }
+    if (nodeId.contains('spinal') || nodeId.contains('head')) {
+      return 'Movement can worsen some head, neck, or spine injuries. The protocol prioritizes stabilization and urgent rescue signs.';
+    }
+    return null;
+  }
 }
 
 class _DesktopInfoRow extends StatelessWidget {
@@ -1935,9 +2079,9 @@ class _DesktopInfoRow extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
           child: Icon(icon, color: color, size: 18),
         ),
@@ -1990,7 +2134,12 @@ class _DesktopRailButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null
+            ? null
+            : () {
+                UiSoundService.tap();
+                onTap!();
+              },
         borderRadius: BorderRadius.circular(AppColors.radius),
         child: Opacity(
           opacity: onTap == null ? 0.45 : 1,
@@ -2026,7 +2175,12 @@ class _DesktopToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              UiSoundService.tap();
+              onTap!();
+            },
       borderRadius: BorderRadius.circular(AppColors.radius),
       child: Opacity(
         opacity: onTap == null ? 0.45 : 1,

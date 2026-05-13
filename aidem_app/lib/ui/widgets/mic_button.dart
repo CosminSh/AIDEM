@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/ui_sound_service.dart';
 
 class MicButton extends StatefulWidget {
   final bool isListening;
@@ -44,7 +45,10 @@ class _MicButtonState extends State<MicButton>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: () {
+        UiSoundService.toggle();
+        widget.onTap();
+      },
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {

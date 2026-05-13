@@ -12,6 +12,7 @@ import '../services/speech_service.dart';
 import '../services/voice_service.dart';
 import '../services/voice_input_settings_service.dart';
 import '../services/vosk_speech_service.dart';
+import '../services/ui_sound_service.dart';
 
 // --- Services ---
 
@@ -32,6 +33,11 @@ final voiceInputSettingsProvider =
 final voiceServiceProvider = NotifierProvider<VoiceService, VoiceState>(() {
   return VoiceService();
 });
+
+final uiSoundSettingsProvider =
+    NotifierProvider<UiSoundSettingsService, UiSoundState>(() {
+      return UiSoundSettingsService();
+    });
 
 final protocolServiceProvider = Provider<ProtocolService>((ref) {
   return ProtocolService();

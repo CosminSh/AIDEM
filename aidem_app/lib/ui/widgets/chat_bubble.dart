@@ -69,14 +69,21 @@ class ChatBubble extends StatelessWidget {
               if (isAi)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    'AIDEM',
-                    style: GoogleFonts.inter(
-                      color: AppColors.brandAi,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _BubbleBadge(
+                        icon: Icons.psychology_outlined,
+                        label: 'AIDEM',
+                        color: AppColors.brandAi,
+                      ),
+                      _BubbleBadge(
+                        icon: Icons.fact_check_outlined,
+                        label: 'Protocol',
+                        color: AppColors.accentBlue,
+                      ),
+                    ],
                   ),
                 ),
               if (message.imagePath != null)
@@ -117,6 +124,46 @@ class ChatBubble extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BubbleBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _BubbleBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 11),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
       ),
     );
   }

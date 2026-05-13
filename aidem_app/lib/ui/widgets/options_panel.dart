@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/protocol.dart';
+import '../../services/ui_sound_service.dart';
 
 class OptionsPanel extends StatelessWidget {
   final List<Branch> branches;
@@ -25,7 +26,10 @@ class OptionsPanel extends StatelessWidget {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => onSelected(branch),
+                onPressed: () {
+                  UiSoundService.tap();
+                  onSelected(branch);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.surface,
                   foregroundColor: AppColors.textPrimary,
@@ -40,7 +44,7 @@ class OptionsPanel extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        branch.label,
+                        _displayLabel(branch.label),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 15,
@@ -58,5 +62,14 @@ class OptionsPanel extends StatelessWidget {
         }).toList(),
       ),
     );
+  }
+
+  String _displayLabel(String label) {
+    final normalized = label.trim().toLowerCase();
+    if (normalized == 'done') return "I've done this";
+    if (normalized == 'got it') return 'Understood';
+    if (normalized == 'next') return 'Continue';
+    if (normalized == 'done / stable') return 'Stable now';
+    return label;
   }
 }

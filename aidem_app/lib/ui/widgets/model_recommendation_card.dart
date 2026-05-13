@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../services/model_setup_service.dart';
+import 'brand_mark.dart';
 import 'tactical_container.dart';
 
 class ModelRecommendationCard extends StatelessWidget {
@@ -23,21 +24,10 @@ class ModelRecommendationCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.brandAi.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.brandAi.withValues(alpha: 0.24),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.psychology_outlined,
-                  color: AppColors.brandAi,
-                  size: 19,
-                ),
+              const AidemBrandMark(
+                size: 34,
+                padding: EdgeInsets.all(4),
+                glow: false,
               ),
               const SizedBox(width: 12),
               Expanded(

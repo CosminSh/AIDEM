@@ -53,12 +53,12 @@ class SessionSummaryScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  _buildSituationCard(),
+                  _buildSituationCard(context),
                   const SizedBox(height: 16),
-                  _buildHandoffCard(),
+                  _buildHandoffCard(context),
                   if (locationHistory.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    _buildLocationTimelineCard(),
+                    _buildLocationTimelineCard(context),
                   ],
                   const SizedBox(height: 22),
                   Text(
@@ -104,11 +104,14 @@ class SessionSummaryScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: const Row(
           children: [
-            Icon(Icons.history, color: AppColors.accentBlue),
+            Icon(
+              Icons.assignment_turned_in_outlined,
+              color: AppColors.accentBlue,
+            ),
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                "Show this timeline to rescuers if it helps explain what happened.",
+                "Professional handoff view: share location, situation, timeline, and actions already taken.",
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
             ),
@@ -118,7 +121,7 @@ class SessionSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSituationCard() {
+  Widget _buildSituationCard(BuildContext context) {
     final summary = situationSummary.trim().isNotEmpty
         ? situationSummary.trim()
         : 'No structured situation summary has been created yet.';
@@ -126,7 +129,7 @@ class SessionSummaryScreen extends StatelessWidget {
     return TacticalContainer(
       showGlow: false,
       borderRadius: AppColors.radius,
-      borderColor: AppColors.brandAi.withOpacity(0.28),
+      borderColor: AppColors.brandAi.withValues(alpha: 0.28),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,12 +183,14 @@ class SessionSummaryScreen extends StatelessWidget {
                 _buildMiniPill(Icons.route_outlined, currentNodeId!),
             ],
           ),
+          const SizedBox(height: 14),
+          _buildCopyAction(context, 'Copy situation', summary),
         ],
       ),
     );
   }
 
-  Widget _buildHandoffCard() {
+  Widget _buildHandoffCard(BuildContext context) {
     final userMessages = history
         .where((message) => message.author == MessageAuthor.user)
         .map((message) => message.text)
@@ -197,6 +202,8 @@ class SessionSummaryScreen extends StatelessWidget {
         .map((message) => message.text)
         .toList();
 
+    final dispatcherScript = _buildDispatcherScript(userMessages);
+
     return TacticalContainer(
       showGlow: false,
       borderRadius: AppColors.radius,
@@ -204,18 +211,28 @@ class SessionSummaryScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Dispatcher Script',
-            style: GoogleFonts.spaceGrotesk(
-              color: AppColors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.support_agent_rounded,
+                color: AppColors.accentOrange,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Dispatcher Script',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Text(
-            _buildDispatcherScript(userMessages),
+            dispatcherScript,
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,
@@ -245,18 +262,41 @@ class SessionSummaryScreen extends StatelessWidget {
             _findFirstMention(['gps', 'coordinate', 'location']) ??
                 'Use the location button during the session.',
           ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCopyAction(
+                  context,
+                  'Copy script',
+                  dispatcherScript,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCopyAction(
+                  context,
+                  'Copy report',
+                  _buildShareText(),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLocationTimelineCard() {
+  Widget _buildLocationTimelineCard(BuildContext context) {
     final latest = locationHistory.last;
+    final latestText =
+        '${_formatDecimal(latest)}\n${latest.toDms()}'
+        '${latest.altitude == null ? '' : '\nAltitude: ${latest.altitude!.toStringAsFixed(0)} m'}';
 
     return TacticalContainer(
       showGlow: false,
       borderRadius: AppColors.radius,
-      borderColor: AppColors.accentBlue.withOpacity(0.28),
+      borderColor: AppColors.accentBlue.withValues(alpha: 0.28),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,6 +337,8 @@ class SessionSummaryScreen extends StatelessWidget {
               'Altitude',
               '${latest.altitude!.toStringAsFixed(0)} m',
             ),
+          const SizedBox(height: 4),
+          _buildCopyAction(context, 'Copy latest location', latestText),
           const SizedBox(height: 12),
           for (final fix in locationHistory.reversed.take(5))
             _buildLocationFix(fix),
@@ -388,6 +430,26 @@ class SessionSummaryScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCopyAction(BuildContext context, String label, String value) {
+    return OutlinedButton.icon(
+      onPressed: () async {
+        await Clipboard.setData(ClipboardData(text: value));
+        if (!context.mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$label copied.')));
+      },
+      icon: const Icon(Icons.copy_rounded, size: 15),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 42),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
       ),
     );
   }

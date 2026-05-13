@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import '../models/protocol.dart';
@@ -49,7 +49,7 @@ RULES (FOLLOW EXACTLY):
 3. PLAIN WORDS: No jargon or protocol labels. Do not say "blanching", "distal", "proximal", or ask the user to classify first/second/third degree. Ask what they can see or feel.
 4. NEXT STEP: Give the next safe action and at most one simple question.
 5. BREVITY: Write 1-3 short sentences. No headings, bullets, numbered lists, or intake labels.
-6. VISION: If an image is provided, describe what you see and base advice on it. If there is a visible injury and immediate danger is controlled, ask for a clear photo when it would help: wounds, burns, swelling, bites, stings, rashes, deformity.
+6. VISION: If an image is provided, describe only visible signs and state uncertainty. Do not diagnose burn depth, fracture severity, infection spread, venom risk, internal injury, or hidden damage from an image alone. If immediate danger is controlled, ask for a clear photo when it would help: wounds, burns, swelling, bites, stings, rashes, deformity.
 7. STUCK: If your next answer repeats the last answer, STOP and move to a different useful next step.
 8. CHOICE QUESTIONS: If you asked an either/or question and the user picked one option, accept that answer and continue. Do not ask the same either/or question again.
 9. CUTS: For a finger cut, do not decide it is minor until you know bleeding control plus at least one wound-detail check: deep/gaping, numbness/movement, dirt, or whether it can be cleaned and covered.
@@ -142,28 +142,30 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
     if (state.status == LlmStatus.ready && _model != null) return true;
 
     state = state.copyWith(status: LlmStatus.loading);
-    print('LLM: Initializing Gemma model...');
+    debugPrint('LLM: Initializing Gemma model...');
 
     try {
       try {
-        print('LLM: Attempting GPU initialization (2048 tokens)...');
+        debugPrint('LLM: Attempting GPU initialization (2048 tokens)...');
         _model = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
           supportImage: true,
         );
-        print('LLM: GPU initialization successful.');
+        debugPrint('LLM: GPU initialization successful.');
       } catch (gpuError) {
-        print('LLM: GPU failed ($gpuError). Attempting CPU (1024 tokens)...');
+        debugPrint(
+          'LLM: GPU failed ($gpuError). Attempting CPU (1024 tokens)...',
+        );
         try {
           _model = await FlutterGemma.getActiveModel(
             maxTokens: 1024,
             preferredBackend: PreferredBackend.cpu,
             supportImage: true,
           );
-          print('LLM: CPU initialization successful.');
+          debugPrint('LLM: CPU initialization successful.');
         } catch (cpuError) {
-          print(
+          debugPrint(
             'LLM: CPU (1024) failed ($cpuError). Attempting Conservative CPU (512 tokens)...',
           );
           _model = await FlutterGemma.getActiveModel(
@@ -171,14 +173,14 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
             preferredBackend: PreferredBackend.cpu,
             supportImage: true,
           );
-          print('LLM: Conservative CPU initialization successful.');
+          debugPrint('LLM: Conservative CPU initialization successful.');
         }
       }
 
       state = state.copyWith(status: LlmStatus.ready);
       return true;
     } catch (e) {
-      print('LLM: Final initialization error: $e');
+      debugPrint('LLM: Final initialization error: $e');
       state = state.copyWith(
         status: LlmStatus.mock,
         errorMessage: e.toString(),
@@ -226,7 +228,7 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
         try {
           imageBytes = await File(imagePath).readAsBytes();
         } catch (e) {
-          print('LLM: Error reading image bytes: $e');
+          debugPrint('LLM: Error reading image bytes: $e');
         }
       }
 
@@ -249,7 +251,7 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
             try {
               histImageBytes = await File(msg.imagePath!).readAsBytes();
             } catch (e) {
-              print('LLM: Error reading history image: $e');
+              debugPrint('LLM: Error reading history image: $e');
             }
           }
 
@@ -349,7 +351,7 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
       await chat.close();
       return buffer.toString();
     } catch (e) {
-      print('LLM: Extraction error: $e');
+      debugPrint('LLM: Extraction error: $e');
       return '';
     }
   }

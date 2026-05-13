@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/ui_sound_service.dart';
 
 class ConfirmationStep extends StatelessWidget {
   final String label;
@@ -17,7 +18,10 @@ class ConfirmationStep extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       child: ElevatedButton(
-        onPressed: onConfirmed,
+        onPressed: () {
+          UiSoundService.confirm();
+          onConfirmed();
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.success,
           foregroundColor: Colors.black,
