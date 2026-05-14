@@ -51,4 +51,4 @@ To avoid the "forgetfulness" of small context windows, AIDEM uses a background *
 
 ---
 **Technical Lead**: Antigravity AI
-**Repository**: CosminSh/survival-aid-offline
+**Repository**: CosminSh/AIDEM
