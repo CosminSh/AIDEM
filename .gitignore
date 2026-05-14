@@ -1,6 +1,7 @@
 # System files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # IDEs
 .vscode/
@@ -9,15 +10,55 @@ Thumbs.db
 
 # Local server logs
 *.log
+*.tmp
+*.temp
+
+# Secrets, signing, and local machine config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+key.properties
+**/key.properties
+local.properties
+**/local.properties
+google-services.json
+**/google-services.json
+GoogleService-Info.plist
+**/GoogleService-Info.plist
 
 # Large binaries and SDKs
 *.bin
 *.task
+*.litertlm
+*.tflite
+*.onnx
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.ckpt
 *.zip
 *.tar.gz
+*.7z
+*.rar
 *.exe
 *.apk
+*.aab
+*.ipa
+*.msix
+*.app
+*.dSYM
+*.pdb
 *.dll
+*.so
+*.dylib
 scratch/
 flutter/
 android_sdk/
@@ -25,7 +66,14 @@ java/
 Assets/Models/
 Assets/cmdline-tools/
 Assets/*.exe
+Assets/*.zip
 Releases/
+aidem_app/assets/models/*
+!aidem_app/assets/models/README.md
+vosk-model*/
+**/vosk-model*/
+
+# Flutter, Dart, and generated native assets
 build/
 .dart_tool/
 .packages
@@ -34,7 +82,23 @@ build/
 .pub-cache/
 .pub/
 **/build/
+**/.dart_tool/
 **/android/app/build/
 **/android/.gradle/
+**/android/local.properties
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
 **/windows/flutter/ephemeral/
 **/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# Generated release/install artifacts
+*.symbols
+*.map
+*.appinstaller
+*.msi
+*.pkg
+*.dmg
