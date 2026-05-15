@@ -55,7 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 980;
-              final horizontalPadding = wide ? 48.0 : 24.0;
+              final horizontalPadding = wide ? 48.0 : 20.0;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -97,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         else ...[
                           _buildEmergencyPanel(session, isWide: false),
                           const SizedBox(height: 14),
-                          _buildDesktopActionDock(session),
+                          _buildDesktopActionDock(session, compact: true),
                           const SizedBox(height: 14),
                           _buildOfflineReadinessCard(),
                         ],
@@ -137,35 +137,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     glow: false,
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AIDEM',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      Text(
-                        'OFFLINE EMERGENCY ASSISTANT',
-                        style: GoogleFonts.inter(
-                          color: AppColors.brandAi,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'AIDEM',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -173,8 +159,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: ready
                   ? Icons.verified_user_outlined
                   : Icons.info_outline_rounded,
-              label: ready ? 'Offline ready' : 'Protocol ready',
-              color: ready ? AppColors.brandAi : AppColors.accentOrange,
+              label: ready ? 'Ready' : 'Protocol',
+              color: ready ? AppColors.brandAi : AppColors.brandAi,
             ),
             const SizedBox(width: 8),
             _HeaderIconButton(
@@ -212,13 +198,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
                       'Emergency session',
                       style: GoogleFonts.spaceGrotesk(
                         color: AppColors.textPrimary,
@@ -227,20 +214,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Protocol-guided help. Local first.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const StatusPill(
-                icon: Icons.offline_bolt_outlined,
-                label: 'Offline',
-                color: AppColors.accentOrange,
+              const SizedBox(height: 4),
+              Text(
+                'Designed for local, no-signal guidance.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -290,70 +272,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDesktopActionDock(SessionState session) {
+  Widget _buildDesktopActionDock(SessionState session, {bool compact = false}) {
     final setupState = ref.watch(modelSetupServiceProvider);
     final llmState = ref.watch(llmServiceProvider);
 
     return Align(
       alignment: Alignment.center,
       child: TacticalContainer(
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(compact ? 12 : 10),
         showGlow: false,
         borderRadius: 22,
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          runAlignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _HomeCommandButton(
-              icon: Icons.movie_filter_outlined,
-              label: 'Best demo',
-              color: AppColors.brandAi,
-              onTap: _startBestDemo,
-            ),
-            _HomeCommandButton(
-              icon: Icons.school_outlined,
-              label: 'Practice',
-              color: AppColors.accentBlue,
-              onTap: _startPracticeSession,
-            ),
-            _HomeCommandButton(
-              icon: Icons.map_outlined,
-              label: 'Location',
-              color: AppColors.brandAi,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Location sharing is available inside an active session.',
-                    ),
-                  ),
-                );
-              },
-            ),
-            _HomeCommandButton(
-              icon: Icons.playlist_play_rounded,
-              label: 'Demos',
-              color: AppColors.accentOrange,
-              onTap: _showDemoScenariosDialog,
-            ),
-            _HomeCommandButton(
-              icon: Icons.history_rounded,
-              label: 'History ${session.sessionHistory.length}',
-              color: AppColors.textSecondary,
-              onTap: session.sessionHistory.isEmpty
-                  ? null
-                  : () => _showSessionHistoryDialog(),
-            ),
-            _HomeCommandButton(
-              icon: _modelButtonIcon(setupState, llmState),
-              label: _modelButtonLabel(setupState, llmState),
-              color: _modelButtonColor(setupState, llmState),
-              onTap: _showModelDialog,
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final buttonWidth = compact
+                ? ((constraints.maxWidth - 10) / 2).clamp(132.0, 190.0)
+                : 110.0;
+            final buttonHeight = compact ? 52.0 : 46.0;
+
+            return Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _HomeCommandButton(
+                  icon: Icons.movie_filter_outlined,
+                  label: 'Best demo',
+                  color: AppColors.brandAi,
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: _startBestDemo,
+                ),
+                _HomeCommandButton(
+                  icon: Icons.school_outlined,
+                  label: 'Practice',
+                  color: AppColors.accentBlue,
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: _startPracticeSession,
+                ),
+                _HomeCommandButton(
+                  icon: Icons.map_outlined,
+                  label: 'Location',
+                  color: AppColors.brandAi,
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Location sharing is available inside an active session.',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _HomeCommandButton(
+                  icon: Icons.playlist_play_rounded,
+                  label: 'Demos',
+                  color: AppColors.accentOrange,
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: _showDemoScenariosDialog,
+                ),
+                _HomeCommandButton(
+                  icon: Icons.history_rounded,
+                  label: 'History ${session.sessionHistory.length}',
+                  color: AppColors.textSecondary,
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: session.sessionHistory.isEmpty
+                      ? null
+                      : () => _showSessionHistoryDialog(),
+                ),
+                _HomeCommandButton(
+                  icon: _modelButtonIcon(setupState, llmState),
+                  label: _modelButtonLabel(setupState, llmState),
+                  color: _modelButtonColor(setupState, llmState),
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  onTap: _showModelDialog,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -989,8 +992,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.all(14),
       showGlow: false,
       borderRadius: 18,
-      borderColor: (modelReady ? AppColors.brandAi : AppColors.accentOrange)
-          .withValues(alpha: 0.24),
+      borderColor: AppColors.brandAi.withValues(alpha: 0.24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1000,12 +1002,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 modelReady
                     ? Icons.offline_bolt_rounded
                     : Icons.fact_check_outlined,
-                color: modelReady ? AppColors.brandAi : AppColors.accentOrange,
+                color: AppColors.brandAi,
                 size: 18,
               ),
               const SizedBox(width: 8),
               Text(
-                modelReady ? 'Offline Ready' : 'Protocol Ready',
+                modelReady ? 'Ready' : 'Protocol Ready',
                 style: GoogleFonts.spaceGrotesk(
                   color: AppColors.textPrimary,
                   fontSize: 14,
@@ -1015,7 +1017,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const Spacer(),
               Text(
-                'Runs local-first',
+                'Local-first by design',
                 style: GoogleFonts.inter(
                   color: AppColors.textSecondary,
                   fontSize: 11,
@@ -1026,26 +1028,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ReadinessPill(
-                icon: Icons.memory_rounded,
-                label: modelLabel,
-                color: modelReady ? AppColors.brandAi : AppColors.accentOrange,
-              ),
-              const _ReadinessPill(
-                icon: Icons.my_location_outlined,
-                label: 'GPS tool available',
-                color: AppColors.accentBlue,
-              ),
-              const _ReadinessPill(
-                icon: Icons.storage_outlined,
-                label: 'Emergency data local',
-                color: AppColors.brandAi,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final chipWidth = constraints.maxWidth >= 280
+                  ? (constraints.maxWidth - 8) / 2
+                  : constraints.maxWidth;
+
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ReadinessPill(
+                    icon: Icons.memory_rounded,
+                    label: modelLabel,
+                    color: modelReady
+                        ? AppColors.brandAi
+                        : AppColors.accentBlue,
+                    width: chipWidth,
+                  ),
+                  _ReadinessPill(
+                    icon: Icons.my_location_outlined,
+                    label: 'GPS available',
+                    color: AppColors.accentBlue,
+                    width: chipWidth,
+                  ),
+                  _ReadinessPill(
+                    icon: Icons.storage_outlined,
+                    label: 'Emergency data local',
+                    color: AppColors.brandAi,
+                    width: chipWidth,
+                  ),
+                  _ReadinessPill(
+                    icon: Icons.signal_cellular_connected_no_internet_4_bar,
+                    label: 'No-signal mode',
+                    color: AppColors.brandAi,
+                    width: chipWidth,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1057,36 +1078,47 @@ class _ReadinessPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final double? width;
 
   const _ReadinessPill({
     required this.icon,
     required this.label,
     required this.color,
+    this.width,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 13),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          mainAxisSize: width == null ? MainAxisSize.min : MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 13),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1096,12 +1128,16 @@ class _HomeCommandButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final double width;
+  final double height;
   final VoidCallback? onTap;
 
   const _HomeCommandButton({
     required this.icon,
     required this.label,
     required this.color,
+    this.width = 110,
+    this.height = 46,
     required this.onTap,
   });
 
@@ -1120,9 +1156,9 @@ class _HomeCommandButton extends StatelessWidget {
         child: Opacity(
           opacity: onTap == null ? 0.45 : 1,
           child: Container(
-            width: 110,
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            width: width,
+            height: height,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: AppColors.surfaceMuted.withValues(alpha: 0.54),
               borderRadius: BorderRadius.circular(16),
@@ -1137,7 +1173,8 @@ class _HomeCommandButton extends StatelessWidget {
                   child: Text(
                     label.toUpperCase(),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
                     style: GoogleFonts.spaceGrotesk(
                       color: color,
                       fontSize: 11,

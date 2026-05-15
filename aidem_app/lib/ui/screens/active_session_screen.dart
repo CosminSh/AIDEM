@@ -86,6 +86,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   late Animation<double> _breathAnimation;
   bool _isTrackingPath = false;
   bool _desktopToolsExpanded = false;
+  bool _mobileDetailsExpanded = false;
   DateTime? _lastPathFixAt;
   String? _lastSpokenAiSignature;
 
@@ -523,12 +524,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         session.currentNode == null || session.currentNode?.id == 'start'
         ? 'Conversation'
         : _formatPhaseTitle(session.currentNode!.id);
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     _scrollToBottom();
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 72,
+        toolbarHeight: keyboardOpen ? 58 : 72,
         centerTitle: false,
         title: Row(
           children: [
@@ -709,15 +711,24 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               children: [
                 const Divider(color: AppColors.border, height: 1),
 
-                _buildEmergencyCallBanner(compact: true),
-
-                _buildSafetyStrip(
-                  rescueReady: session.chatHistory.length > 1,
-                  isPracticeMode: session.isPracticeMode,
+                _buildMobileSessionDetailsHeader(
+                  session,
+                  phaseTitle,
+                  keyboardOpen: keyboardOpen,
                 ),
 
+                if (_mobileDetailsExpanded) ...[
+                  _buildEmergencyCallBanner(compact: true),
+
+                  _buildSafetyStrip(
+                    rescueReady: session.chatHistory.length > 1,
+                    isPracticeMode: session.isPracticeMode,
+                  ),
+                ],
+
                 // Situation context chip (shows what Gemma knows)
-                if (session.situationSummary.isNotEmpty)
+                if (_mobileDetailsExpanded &&
+                    session.situationSummary.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: TacticalContainer(
@@ -760,7 +771,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                     ),
                   ),
 
-                if (session.currentNode != null &&
+                if (_mobileDetailsExpanded &&
+                    session.currentNode != null &&
                     session.currentNode?.id != 'start')
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -1024,7 +1036,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
                 // Free-form Gemma input
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    keyboardOpen ? 8 : 18,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -1063,6 +1080,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                             decoration: InputDecoration(
                               hintText: session.isLlmTyping
                                   ? 'Gemma is responding...'
+                                  : keyboardOpen
+                                  ? 'Describe...'
                                   : 'Describe your situation in detail...',
                               hintStyle: const TextStyle(
                                 color: AppColors.textSecondary,
@@ -1075,7 +1094,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                             ),
                             onSubmitted: (_) => _sendMessage(),
                             textInputAction: TextInputAction.send,
-                            maxLines: null,
+                            minLines: 1,
+                            maxLines: keyboardOpen ? 1 : 3,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1182,6 +1202,118 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSessionDetailsHeader(
+    SessionState session,
+    String phaseTitle, {
+    required bool keyboardOpen,
+  }) {
+    final summaryReady = session.chatHistory.length > 1;
+    final summary = session.situationSummary.isEmpty
+        ? (session.isPracticeMode
+              ? 'Practice/demo session'
+              : 'Emergency session')
+        : session.situationSummary;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, keyboardOpen ? 8 : 10, 16, 0),
+      child: InkWell(
+        onTap: () {
+          UiSoundService.tap();
+          setState(() => _mobileDetailsExpanded = !_mobileDetailsExpanded);
+        },
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        child: TacticalContainer(
+          showGlow: false,
+          borderRadius: AppColors.radius,
+          padding: EdgeInsets.symmetric(
+            horizontal: 13,
+            vertical: keyboardOpen ? 9 : 11,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _mobileDetailsExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: AppColors.brandAi,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            phaseTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: AppColors.textPrimary,
+                              fontSize: keyboardOpen ? 12 : 13,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: summaryReady
+                                ? AppColors.brandAi
+                                : AppColors.accentOrange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          summaryReady ? 'summary ready' : 'recording',
+                          style: TextStyle(
+                            color: summaryReady
+                                ? AppColors.brandAi
+                                : AppColors.accentOrange,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!keyboardOpen) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        summary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _mobileDetailsExpanded ? 'Hide' : 'Details',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
