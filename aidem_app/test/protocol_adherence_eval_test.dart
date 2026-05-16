@@ -216,6 +216,9 @@ void main() {
           'No sharp pain with movement.',
           'No numbness reported.',
           'No cold pack or ice available.',
+          'Swelling is not getting worse.',
+          'No crooked shape or deformity reported.',
+          'Pain is moderate.',
         ],
       );
 
@@ -223,14 +226,98 @@ void main() {
         ConversationGuard.asksAnsweredFact(
           ctx: ctx,
           response:
-              'Apply a cold pack wrapped in cloth. Can you put weight on it without sharp pain?',
+              'Apply a cold pack wrapped in cloth. Can you put weight on it without sharp pain, numbness, a crooked shape, or severe pain?',
         ),
         isTrue,
       );
       expect(
         ConversationGuard.fallbackResponseForContext(ctx),
+        allOf(contains('walk'), contains('battery saver')),
+      );
+      expect(
+        ConversationGuard.fallbackResponseForContext(ctx),
         isNot(contains('cold pack')),
       );
+    });
+
+    test('detects stale bleeding and swelling loops from context', () {
+      final ctx = SituationContext.empty().copyWith(
+        incidentType: 'injury',
+        injuryType: 'knee injury',
+        confirmedLacks: ['signal'],
+        answeredFacts: [
+          'Bleeding has stopped.',
+          'Swelling is not getting worse.',
+          'Can stand or bear weight.',
+        ],
+      );
+
+      expect(
+        ConversationGuard.asksAnsweredFact(
+          ctx: ctx,
+          response:
+              'Keep applying firm pressure. Is there any sign that the swelling is getting worse?',
+        ),
+        isTrue,
+      );
+      expect(
+        ConversationGuard.asksAnsweredFact(
+          ctx: ctx,
+          response: 'Keep the area still and avoid putting weight on the knee.',
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'walk-home fallback asks weight once instead of repeating stale care',
+      () {
+        final ctx = SituationContext.empty().copyWith(
+          incidentType: 'injury',
+          injuryType: 'knee injury',
+          confirmedLacks: ['signal'],
+          answeredFacts: [
+            'No phone signal reported.',
+            'Bleeding has stopped.',
+            'No sharp pain with movement.',
+            'No numbness reported.',
+            'Swelling is not getting worse.',
+            'Injury is on the knee.',
+          ],
+        );
+
+        final response = ConversationGuard.fallbackResponseForContext(ctx);
+
+        expect(response.toLowerCase(), contains('before walking home'));
+        expect(response.toLowerCase(), contains('bear weight'));
+        expect(response.toLowerCase(), isNot(contains('avoid putting weight')));
+        expect(response.toLowerCase(), isNot(contains('clear photo')));
+      },
+    );
+
+    test('fallback does not start walk-out while bleeding is still active', () {
+      final ctx = SituationContext.empty().copyWith(
+        incidentType: 'injury',
+        injuryType: 'knee injury',
+        confirmedLacks: ['signal'],
+        answeredFacts: [
+          'No phone signal reported.',
+          'Bleeding is not heavy.',
+          'No sharp pain with movement.',
+          'No numbness reported.',
+          'Swelling is not getting worse.',
+          'Injury is on the knee.',
+        ],
+      );
+
+      final response = ConversationGuard.fallbackResponseForContext(
+        ctx,
+      ).toLowerCase();
+
+      expect(response, contains('steady pressure'));
+      expect(response, contains('when the bleeding stops'));
+      expect(response, isNot(contains('walking home')));
+      expect(response, isNot(contains('walk out')));
     });
   });
 }

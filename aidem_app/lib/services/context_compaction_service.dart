@@ -459,7 +459,7 @@ JSON:''';
     String? updatedInjuryType = _context.injuryType;
     String? updatedEnvironment = _context.environment;
 
-    void addFact(String fact) => _addUnique(updatedFacts, fact);
+    void addFact(String fact) => _addResolvedFact(updatedFacts, fact);
     void addStep(String step, List<String> steps) => _addUnique(steps, step);
 
     for (final entry in lackPatterns.entries) {
@@ -834,8 +834,12 @@ JSON:''';
       }
 
       if (_containsAny(msg, ['swollen', 'swelling', 'puffy'])) {
-        addFact('Swelling is present.');
-        if (updatedUrgency == 'Unknown') updatedUrgency = 'moderate';
+        if (_containsAny(msg, ['no swelling', 'not swollen'])) {
+          addFact('Swelling is not getting worse.');
+        } else {
+          addFact('Swelling is present.');
+          if (updatedUrgency == 'Unknown') updatedUrgency = 'moderate';
+        }
       }
       if (_containsAny(msg, ['bruised', 'bruise', 'purple'])) {
         addFact('Bruising is present.');
@@ -844,7 +848,15 @@ JSON:''';
         addFact('Possible broken bone warning sign reported.');
         updatedUrgency = 'critical';
       }
-      if (_containsAny(msg, ['numb', 'tingling', 'cannot feel'])) {
+      final noNumbness = _containsAny(msg, [
+        'no numb',
+        'no numbness',
+        'not numb',
+        'without numbness',
+      ]);
+      if (noNumbness) {
+        addFact('No numbness reported.');
+      } else if (_containsAny(msg, ['numb', 'tingling', 'cannot feel'])) {
         addFact('Numbness or tingling reported.');
         if (updatedUrgency != 'critical') updatedUrgency = 'moderate';
       }
@@ -1280,6 +1292,12 @@ JSON:''';
   }
 
   static String? _bodyPartFromText(String msg) {
+    var normalized = msg
+        .replaceAll('walk back home', 'walk home')
+        .replaceAll('walking back home', 'walking home')
+        .replaceAll('go back home', 'go home')
+        .replaceAll('going back home', 'going home')
+        .replaceAll('back home', 'home');
     const bodyParts = [
       'head',
       'neck',
@@ -1303,7 +1321,7 @@ JSON:''';
     ];
 
     for (final part in bodyParts) {
-      if (msg.contains(part)) return part;
+      if (RegExp('\\b$part\\b').hasMatch(normalized)) return part;
     }
     return null;
   }
@@ -1315,6 +1333,66 @@ JSON:''';
     if (!list.any((item) => item.toLowerCase() == lower)) {
       list.add(normalized);
     }
+  }
+
+  static void _addResolvedFact(List<String> list, String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return;
+    final lower = normalized.toLowerCase();
+
+    bool conflicts(String existing) {
+      final item = existing.toLowerCase();
+      if (lower.contains('no numbness') || lower.contains('not numb')) {
+        return item.contains('numbness or tingling') ||
+            item == 'numbness or tingling' ||
+            item == 'possible deep burn warning sign';
+      }
+      if (lower.contains('no sharp pain') ||
+          lower.contains('pain is mild and not sharp')) {
+        return item == 'sharp pain' ||
+            item.contains('severe pain') ||
+            item.contains('possible deep burn warning sign');
+      }
+      if (lower.contains('can stand or bear weight')) {
+        return item.contains('cannot stand') ||
+            item.contains('cannot bear weight');
+      }
+      if (lower.contains('cannot stand') ||
+          lower.contains('cannot bear weight')) {
+        return item.contains('can stand') || item.contains('bear weight');
+      }
+      if (lower.contains('bleeding has stopped')) {
+        return item.contains('bleeding is fairly heavy') ||
+            item.contains('bleeding is spurting') ||
+            item.contains('bleeding is a steady flow');
+      }
+      if (lower.contains('bleeding is not heavy')) {
+        return item.contains('bleeding is fairly heavy') ||
+            item.contains('bleeding is spurting');
+      }
+      if (lower.contains('no head impact') ||
+          lower.contains('no head injury')) {
+        return item.contains('injury is on the head') ||
+            item.contains('head injury');
+      }
+      if (lower.contains('swelling is not getting worse')) {
+        return item.contains('swelling is getting worse');
+      }
+      if (lower.contains('no crooked shape') ||
+          lower.contains('no deformity')) {
+        return item.contains('possible broken bone') ||
+            item.contains('crooked shape') ||
+            item.contains('deformed');
+      }
+      if (lower.contains('pain is moderate') ||
+          lower.contains('pain is mild')) {
+        return item.contains('severe pain');
+      }
+      return false;
+    }
+
+    list.removeWhere(conflicts);
+    _addUnique(list, normalized);
   }
 
   static bool _hasNoBlisters(String msg) {
@@ -1333,12 +1411,20 @@ JSON:''';
         lower.contains('look') ||
         lower.contains('examine') ||
         lower.contains('is there') ||
-        lower.contains('do you see');
+        lower.contains('do you see') ||
+        lower.contains('tell me whether') ||
+        lower.contains('tell me if') ||
+        lower.contains('can you tell me');
   }
 
   static bool _isCareInstruction(String previousAiMessage) {
     final lower = previousAiMessage.toLowerCase();
     if (lower.contains('?') && !lower.contains('done?')) return false;
+    if (lower.contains('tell me whether') ||
+        lower.contains('tell me if') ||
+        lower.contains('can you tell me')) {
+      return false;
+    }
     if (lower.startsWith('check') ||
         lower.startsWith('assess') ||
         lower.startsWith('look') ||
@@ -1405,14 +1491,63 @@ JSON:''';
     final msg = userMessage.toLowerCase();
     final prev = previousAiMessage.toLowerCase();
     final facts = <String>[];
+    void add(String fact) => _addResolvedFact(facts, fact);
 
     if ((msg == 'no' || msg == 'nope') &&
         _containsAny(prev, ['bleeding still heavy', 'still heavy'])) {
-      facts.add('bleeding is not heavy');
+      add('bleeding is not heavy');
     }
     if ((msg == 'yes' || msg == 'yep' || msg == 'yeah') &&
         _containsAny(prev, ['bleeding start to slow', 'slow down'])) {
-      facts.add('bleeding is slowing');
+      add('bleeding is slowing');
+    }
+    if ((msg == 'yes' || msg == 'yep' || msg == 'yeah') &&
+        _containsAny(prev, [
+          'put any weight',
+          'put weight',
+          'bear weight',
+          'can you walk',
+          'can you stand',
+        ])) {
+      add('can stand or bear weight');
+    }
+    if ((msg == 'no' || msg == 'nope') &&
+        _containsAny(prev, ['swelling getting worse', 'getting worse'])) {
+      add('swelling is not getting worse');
+    }
+    if (_containsAny(msg, ['better', 'improving']) &&
+        _containsAny(prev, [
+          'getting worse',
+          'worse',
+          'increasing',
+          'swelling',
+          'pain',
+        ])) {
+      add('symptoms are improving');
+      add('swelling is not getting worse');
+    }
+    if (_containsAny(msg, ['no swelling', 'not swollen'])) {
+      add('swelling is not getting worse');
+    }
+    if (_containsAny(msg, ['normal shape', 'not crooked', 'not deformed'])) {
+      add('no crooked shape or deformity reported');
+    }
+    if (_containsAny(msg, ['moderate pain'])) {
+      add('pain is moderate');
+    }
+    if (_containsAny(msg, [
+      'no sharp pain',
+      'not sharp',
+      'no numb',
+      'no numbness',
+      'not numb',
+    ])) {
+      if (_containsAny(msg, ['no sharp pain', 'not sharp'])) {
+        add('no sharp pain with movement');
+      }
+      if (_containsAny(msg, ['no numb', 'no numbness', 'not numb'])) {
+        add('no numbness reported');
+      }
     }
     if (_containsAny(msg, [
       'fairly bad',
@@ -1423,16 +1558,16 @@ JSON:''';
       'lots of blood',
       'a lot of blood',
     ])) {
-      facts.add('bleeding is fairly heavy');
+      add('bleeding is fairly heavy');
     }
     if (_containsAny(msg, ['bright red'])) {
-      facts.add('blood is bright red');
+      add('blood is bright red');
     }
     if (_containsAny(msg, ['dark red'])) {
-      facts.add('blood is dark red');
+      add('blood is dark red');
     }
     if (_containsAny(msg, ['steady flow', 'steady stream'])) {
-      facts.add('bleeding is a steady flow');
+      add('bleeding is a steady flow');
     }
     if (_containsAny(msg, [
       'spurting',
@@ -1441,16 +1576,16 @@ JSON:''';
       'spraying',
       'shooting out',
     ])) {
-      facts.add('bleeding is spurting or pulsing');
+      add('bleeding is spurting or pulsing');
     }
     if (_containsAny(msg, ['deep', 'deesp', 'gaping', 'open cut'])) {
-      facts.add('cut may be deep or gaping');
+      add('cut may be deep or gaping');
     }
     final lengthMatch = RegExp(
       r'\b(\d+(?:[.,]\d+)?)\s*(cm|centimeter|centimeters|mm|millimeter|millimeters)\b',
     ).firstMatch(msg);
     if (lengthMatch != null) {
-      facts.add(
+      add(
         'cut length is about ${lengthMatch.group(1)} ${lengthMatch.group(2)}',
       );
     }
@@ -1467,7 +1602,7 @@ JSON:''';
       'not a lot of blood',
       'not much blood',
     ])) {
-      facts.add('bleeding is not heavy');
+      add('bleeding is not heavy');
     }
     if (_containsAny(msg, [
       'almost stopped',
@@ -1479,7 +1614,7 @@ JSON:''';
       'it is slowing',
       'slowing down',
     ])) {
-      facts.add('bleeding is almost stopped');
+      add('bleeding is almost stopped');
     }
     if (_containsAny(msg, [
       'seems to stop',
@@ -1494,38 +1629,62 @@ JSON:''';
       'isn\'t bleeding',
       'is not bleeding',
     ])) {
-      facts.add('bleeding has stopped');
+      add('bleeding has stopped');
     }
-    if (msg.contains('red')) facts.add('red skin');
-    if (_hasNoBlisters(msg)) facts.add('no blisters');
+    if (msg.contains('red')) add('red skin');
+    if (_hasNoBlisters(msg)) add('no blisters');
     if (msg.contains('blister') && !_hasNoBlisters(msg)) {
-      facts.add('blisters present');
+      add('blisters present');
     }
     if (_containsAny(msg, ['first degree', 'first-degree', '1st degree'])) {
-      facts.add('user thinks it is mild/superficial');
+      add('user thinks it is mild/superficial');
     }
     if (_containsAny(msg, ['dull pain', 'pain is dull']) ||
         msg.trim() == 'dull') {
-      facts.add('dull pain');
+      add('dull pain');
     }
-    if (_containsAny(msg, ['sharp pain', 'pain is sharp']) ||
-        msg.trim() == 'sharp') {
-      facts.add('sharp pain');
+    if (_containsAny(msg, ['moderate pain'])) {
+      add('pain is moderate');
     }
-    if (_containsAny(msg, ['white', 'black', 'charred', 'numb', 'leathery'])) {
-      facts.add('possible deep burn warning sign');
+    final deniesSharpPain =
+        _containsAny(msg, ['no sharp pain', 'not sharp']) &&
+        msg.trim() != 'sharp';
+    if (!deniesSharpPain &&
+        (_containsAny(msg, ['sharp pain', 'pain is sharp']) ||
+            msg.trim() == 'sharp')) {
+      add('sharp pain');
+    }
+    final deniesNumbness = _containsAny(msg, [
+      'no numb',
+      'no numbness',
+      'not numb',
+    ]);
+    if (!deniesNumbness &&
+        _containsAny(msg, ['white', 'black', 'charred', 'numb', 'leathery'])) {
+      add('possible deep burn warning sign');
     }
     if (_containsAny(msg, ['swollen', 'swelling', 'puffy'])) {
-      facts.add('swelling is present');
+      if (_containsAny(msg, ['no swelling', 'not swollen'])) {
+        add('swelling is not getting worse');
+      } else {
+        add('swelling is present');
+      }
     }
     if (_containsAny(msg, ['bruised', 'bruise', 'purple'])) {
-      facts.add('bruising is present');
+      add('bruising is present');
+    }
+    if (_containsAny(msg, ['normal shape', 'not crooked', 'not deformed'])) {
+      add('no crooked shape or deformity reported');
     }
     if (_containsAny(msg, ['deformed', 'crooked', 'bone sticking out'])) {
-      facts.add('possible broken bone warning sign');
+      if (!_containsAny(msg, ['not crooked', 'not deformed'])) {
+        add('possible broken bone warning sign');
+      }
     }
-    if (_containsAny(msg, ['numb', 'tingling', 'cannot feel'])) {
-      facts.add('numbness or tingling');
+    if (deniesNumbness) {
+      add('no numbness reported');
+    } else if (_containsAny(msg, ['numb', 'tingling', 'cannot feel'])) {
+      add('numbness or tingling');
     }
     if (_containsAny(msg, [
       "can't move",
@@ -1534,14 +1693,14 @@ JSON:''';
       "can't bend",
       'cannot bend',
     ])) {
-      facts.add('movement is limited');
+      add('movement is limited');
     } else if (_containsAny(msg, [
       'can move',
       'i can move',
       'can bend',
       'i can bend',
     ])) {
-      facts.add('movement is possible');
+      add('movement is possible');
     }
     if (_containsAny(msg, [
       "can't stand",
@@ -1551,14 +1710,16 @@ JSON:''';
       "can't put weight",
       'cannot put weight',
     ])) {
-      facts.add('cannot stand or bear weight');
+      add('cannot stand or bear weight');
     } else if (_containsAny(msg, [
       'can stand',
       'can walk',
       'can put weight',
+      'can pui weight',
+      'can pui',
       'can bear weight',
     ])) {
-      facts.add('can stand or bear weight');
+      add('can stand or bear weight');
     }
     if (_containsAny(msg, [
       'lips are swelling',

@@ -184,11 +184,12 @@ AI: Turn on battery saver, save or note your location, and use the safest known 
         supportImage: true,
       );
 
-      // Add a tiny history window. LiteRT models have a small input budget, and
-      // SESSION STATE already carries the important memory.
-      final historyForModel = recentHistory.length > 4
-          ? recentHistory.sublist(recentHistory.length - 4)
-          : recentHistory;
+      // Do not feed prior assistant turns back into the small local model.
+      // SESSION STATE carries the vetted memory; raw history can reinforce a
+      // stale loop if an earlier answer was corrected by the guard.
+      final historyForModel = recentHistory
+          .where((message) => message.imagePath != null)
+          .toList();
 
       // Add history with strict role alternation
       bool lastWasUser = false;

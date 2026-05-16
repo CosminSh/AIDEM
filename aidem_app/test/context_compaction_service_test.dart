@@ -25,6 +25,24 @@ void main() {
         previousAiMessage: 'Is the bleeding slowing or stopped?',
       );
       service.noteUserMessage(
+        'no swelling',
+        previousAiMessage:
+            'Is the bleeding still coming on, or is the swelling getting worse?',
+      );
+      service.noteUserMessage(
+        'i will try to walk back home',
+        previousAiMessage: 'Try to move carefully to a safe spot.',
+      );
+      service.noteUserMessage(
+        'Yes',
+        previousAiMessage: 'Are you able to put any weight on the knee?',
+      );
+      service.noteUserMessage(
+        'no numbness, normal shape, moderate pain',
+        previousAiMessage:
+            'Tell me whether there is numbness, a crooked shape, or severe pain.',
+      );
+      service.noteUserMessage(
         "I don't have a cold pack. I can pui weight on it.",
         previousAiMessage:
             'Can you stand or put weight on that leg without sharp pain?',
@@ -44,8 +62,15 @@ void main() {
       expect(facts, contains('no head impact reported'));
       expect(facts, contains('bleeding has stopped'));
       expect(facts, contains('can stand or bear weight'));
+      expect(facts, contains('swelling is not getting worse'));
+      expect(facts, contains('no crooked shape or deformity reported'));
+      expect(facts, contains('pain is moderate'));
+      expect(facts, isNot(contains('injury is on the back')));
+      expect(facts, isNot(contains('numbness or tingling')));
+      expect(facts, isNot(contains('sharp pain,')));
       expect(steps, contains('bleeding controlled'));
       expect(steps, isNot(contains('cold pack')));
+      expect(steps, isNot(contains('avoid putting weight')));
       expect(prompt, contains('LACKS:'));
       expect(prompt, contains('ENVIRONMENT: forest trail'));
     });

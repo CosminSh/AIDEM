@@ -1,6 +1,10 @@
 import 'context_compaction_service.dart';
 
 class ConversationGuard {
+  static bool _hasAny(String text, List<String> values) {
+    return values.any(text.contains);
+  }
+
   static bool looksLikeExtractionJson(String response) {
     final trimmed = response.trim();
     return trimmed.startsWith('{') &&
@@ -110,6 +114,31 @@ class ConversationGuard {
     final facts = ctx.answeredFacts.join(' ').toLowerCase();
     final lacks = ctx.confirmedLacks.join(' ').toLowerCase();
     final lower = response.toLowerCase();
+    final noSharpPain = _hasAny(facts, [
+      'no sharp pain',
+      'pain is mild and not sharp',
+    ]);
+    final noNumbness = _hasAny(facts, ['no numbness', 'not numb']);
+    final noDeformity = _hasAny(facts, [
+      'no crooked shape',
+      'normal shape',
+      'no deformity',
+    ]);
+    final moderateOrMildPain = _hasAny(facts, [
+      'pain is moderate',
+      'pain is mild',
+      'no sharp pain',
+    ]);
+    final controlledBleeding =
+        facts.contains('bleeding has stopped') ||
+        facts.contains('bleeding is not heavy') ||
+        facts.contains('bleeding is almost stopped') ||
+        facts.contains('bleeding is slowing');
+    final stableSwelling =
+        facts.contains('swelling is not getting worse') ||
+        facts.contains('no swelling') ||
+        facts.contains('symptoms are improving');
+    final canBearWeight = facts.contains('can stand or bear weight');
     final asksWeight =
         lower.contains('put weight') ||
         lower.contains('bear weight') ||
@@ -119,16 +148,40 @@ class ConversationGuard {
         lower.contains('sharp pain') ||
         lower.contains('numbness') ||
         lower.contains('numb');
+    final asksDeformity =
+        lower.contains('crooked') ||
+        lower.contains('deformity') ||
+        lower.contains('deformed') ||
+        lower.contains('normal shape');
+    final asksSeverePain = lower.contains('severe pain');
+    final asksBleeding =
+        lower.contains('bleeding') &&
+        (lower.contains('still') ||
+            lower.contains('slowing') ||
+            lower.contains('coming on') ||
+            lower.contains('coming'));
+    final asksSwelling =
+        lower.contains('swelling') &&
+        (lower.contains('worse') || lower.contains('getting'));
     final suggestsColdPack =
         lower.contains('cold pack') || lower.contains('ice');
+    final avoidWeight =
+        lower.contains('avoid putting weight') ||
+        lower.contains('avoid weight') ||
+        lower.contains('keep weight off');
+    final stalePressure =
+        controlledBleeding &&
+        lower.contains('keep') &&
+        (lower.contains('pressure') || lower.contains('pressing'));
 
     if (asksWeight && facts.contains('can stand or bear weight')) return true;
-    if (asksSharpOrNumb &&
-        (facts.contains('no sharp pain') ||
-            facts.contains('no numbness') ||
-            facts.contains('pain is mild and not sharp'))) {
-      return true;
-    }
+    if (avoidWeight && canBearWeight) return true;
+    if (asksBleeding && controlledBleeding) return true;
+    if (stalePressure) return true;
+    if (asksSwelling && stableSwelling) return true;
+    if (asksSharpOrNumb && (noSharpPain || noNumbness)) return true;
+    if (asksDeformity && noDeformity) return true;
+    if (asksSeverePain && moderateOrMildPain) return true;
     if (suggestsColdPack &&
         (facts.contains('no cold pack') || lacks.contains('cold pack'))) {
       return true;
@@ -148,11 +201,33 @@ class ConversationGuard {
         facts.contains('bleeding is not heavy') ||
         facts.contains('bleeding is almost stopped') ||
         facts.contains('bleeding is slowing');
+    final bleedingStoppedOrNearly =
+        facts.contains('bleeding has stopped') ||
+        facts.contains('bleeding is almost stopped');
     final canBearWeight = facts.contains('can stand or bear weight');
-    final noSharpPain =
-        facts.contains('no sharp pain') ||
-        facts.contains('pain is mild and not sharp');
-    final noNumbness = facts.contains('no numbness');
+    final cannotBearWeight =
+        facts.contains('cannot stand') || facts.contains('cannot bear weight');
+    final noSharpPain = _hasAny(facts, [
+      'no sharp pain',
+      'pain is mild and not sharp',
+    ]);
+    final positiveSharpPain =
+        _hasAny(facts, ['sharp pain', 'severe pain']) && !noSharpPain;
+    final noNumbness = _hasAny(facts, ['no numbness', 'not numb']);
+    final positiveNumbness =
+        _hasAny(facts, ['numbness or tingling', 'cannot feel']) && !noNumbness;
+    final noDeformity = _hasAny(facts, [
+      'no crooked shape',
+      'normal shape',
+      'no deformity',
+    ]);
+    final positiveDeformity =
+        _hasAny(facts, ['possible broken bone', 'bone sticking out']) &&
+        !noDeformity;
+    final stableSwelling =
+        facts.contains('swelling is not getting worse') ||
+        facts.contains('no swelling') ||
+        facts.contains('symptoms are improving');
     final noColdPack =
         facts.contains('no cold pack') || lacks.contains('cold pack');
     final dangerSignsKnown =
@@ -174,10 +249,34 @@ class ConversationGuard {
 
     if (noSignal &&
         controlledBleeding &&
+        fieldLegInjury &&
+        !bleedingStoppedOrNearly) {
+      return 'Keep steady pressure with the cleanest fabric you have and keep dirt out of the wound. Tell me when the bleeding stops, or if it starts soaking through.';
+    }
+
+    if (noSignal &&
+        controlledBleeding &&
+        fieldLegInjury &&
+        !canBearWeight &&
+        !cannotBearWeight &&
+        (noSharpPain || noNumbness || stableSwelling)) {
+      return 'Before walking home, test only a few careful steps while holding support if you can. Can you bear weight on the knee without it giving way or pain suddenly worsening?';
+    }
+
+    if (noSignal &&
+        controlledBleeding &&
         canBearWeight &&
         fieldLegInjury &&
         (noSharpPain || noNumbness)) {
       return 'Since the bleeding is controlled and you can bear weight, you can walk out slowly on a known safe route if there is no sharp pain, numbness, fast swelling, or knee giving way. Turn on battery saver, save your location, and stop if symptoms worsen.';
+    }
+
+    if (noSignal &&
+        controlledBleeding &&
+        canBearWeight &&
+        fieldLegInjury &&
+        stableSwelling) {
+      return 'You can try walking back slowly on the safest known route. Turn on battery saver, save your location, keep the knee covered, and stop if bleeding restarts, pain gets sharp, the knee gives way, or you feel dizzy.';
     }
 
     if (noSignal && controlledBleeding && canBearWeight && fieldLegInjury) {
@@ -187,7 +286,7 @@ class ConversationGuard {
     if (incident.contains('burn')) {
       final noBlisters = facts.contains('no blisters');
       final red = facts.contains('red');
-      final pain = facts.contains('sharp pain')
+      final pain = positiveSharpPain
           ? 'Sharp pain can still happen with a small burn.'
           : facts.contains('dull pain')
           ? 'Dull pain with red skin is usually less concerning.'
@@ -256,9 +355,7 @@ class ConversationGuard {
         incident.contains('fracture') ||
         incident.contains('sprain') ||
         injury.contains('injury')) {
-      if (facts.contains('possible broken bone') ||
-          facts.contains('cannot stand') ||
-          facts.contains('numbness')) {
+      if (positiveDeformity || cannotBearWeight || positiveNumbness) {
         return 'Keep the injured area still and avoid putting weight on it. If you can, send a clear photo, and tell me whether there is numbness, a crooked shape, or severe pain.';
       }
       if (facts.contains('swelling') ||
