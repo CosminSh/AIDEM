@@ -1,4 +1,6 @@
 import 'package:aidem_app/services/llm_service.dart';
+import 'package:aidem_app/services/conversation_guard_service.dart';
+import 'package:aidem_app/services/context_compaction_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class ProtocolEvalCase {
@@ -82,6 +84,29 @@ void main() {
       forbidden: ['urine', 'sports drink', 'any clear liquid'],
     ),
     ProtocolEvalCase(
+      name: 'runner knee fall starts with danger signs, not bleeding loop',
+      userMessage:
+          'I stumbled while running in the forest. My knee is bleeding and I have no signal.',
+      expectedAny: ['head', 'dizzy', 'confused', 'breathing'],
+      forbidden: ['tourniquet', 'stay where you are'],
+    ),
+    ProtocolEvalCase(
+      name: 'runner with no clean cloth gets improvised cleanest fabric',
+      userMessage: "I don't have a clean cloth.",
+      situationContext:
+          'environment is a forest trail. knee wound. no phone signal reported. cut is bleeding.',
+      expectedAny: ['cleanest fabric', 'inside of a shirt', 'dirt'],
+      forbidden: ['clean cloth. is the bleeding still heavy'],
+    ),
+    ProtocolEvalCase(
+      name: 'controlled runner injury moves to self evacuation',
+      userMessage: 'No, just a bit of pain.',
+      situationContext:
+          'environment is a forest trail. knee wound. no phone signal reported. bleeding has stopped. can stand or bear weight.',
+      expectedAny: ['walk', 'battery saver', 'save your location'],
+      forbidden: ['is the bleeding still heavy', 'can you put weight'],
+    ),
+    ProtocolEvalCase(
       name: 'cold exposure handles hypothermia risk',
       userMessage:
           'We are wet and cold after rain. My friend is shivering and confused.',
@@ -134,6 +159,78 @@ void main() {
       expect(response, contains('emergency'));
       expect(response, contains('first-aid'));
       expect(response, contains('survival'));
+    });
+  });
+
+  group('Conversation response guard', () {
+    test(
+      'detects article-style answers that are too long for emergency UI',
+      () {
+        const response = '''
+### Immediate First Aid Steps
+1. Stop moving and rest.
+2. Control the bleeding.
+3. Signal for help.
+''';
+
+        expect(ConversationGuard.isTooLongOrArticleStyle(response), isTrue);
+      },
+    );
+
+    test('replaces runner first response if it skips danger triage', () {
+      final ctx = SituationContext.empty().copyWith(
+        incidentType: 'injury',
+        injuryType: 'knee injury',
+        confirmedLacks: ['signal'],
+        answeredFacts: [
+          'Environment is a forest or trail.',
+          'Cut is bleeding.',
+          'Injury is on the knee.',
+          'No phone signal reported.',
+        ],
+      );
+
+      expect(
+        ConversationGuard.skipsInitialFieldTriage(
+          ctx: ctx,
+          response:
+              'Apply firm, direct pressure to the knee to slow the bleeding.',
+        ),
+        isTrue,
+      );
+      expect(
+        ConversationGuard.fallbackResponseForContext(ctx),
+        contains('did you hit your head'),
+      );
+    });
+
+    test('detects answered questions and missing cold pack suggestions', () {
+      final ctx = SituationContext.empty().copyWith(
+        incidentType: 'injury',
+        injuryType: 'knee injury',
+        confirmedLacks: ['signal', 'cold pack'],
+        answeredFacts: [
+          'No phone signal reported.',
+          'Bleeding is not heavy.',
+          'Can stand or bear weight.',
+          'No sharp pain with movement.',
+          'No numbness reported.',
+          'No cold pack or ice available.',
+        ],
+      );
+
+      expect(
+        ConversationGuard.asksAnsweredFact(
+          ctx: ctx,
+          response:
+              'Apply a cold pack wrapped in cloth. Can you put weight on it without sharp pain?',
+        ),
+        isTrue,
+      );
+      expect(
+        ConversationGuard.fallbackResponseForContext(ctx),
+        isNot(contains('cold pack')),
+      );
     });
   });
 }

@@ -350,21 +350,47 @@ class SessionNotifier extends Notifier<SessionState> {
     );
     final recentHistory = compactionService.getRecentMessages(count: 14);
 
-    // Map incident types to relevant documentation nodes if current node is 'start'
+    // Map incident types to relevant documentation nodes. For mixed field
+    // injuries, route by the decision the user needs now rather than the first
+    // symptom mentioned, so minor bleeding does not trap the conversation.
+    final incident = compactionService.context.incidentType.toLowerCase();
+    final summary = state.situationSummary.toLowerCase();
+    final userMsgLower = userText.toLowerCase();
+    final promptContextLower = situationContext.toLowerCase();
+    final combined = '$incident $summary $userMsgLower $promptContextLower';
+    bool hasAny(List<String> terms) => terms.any(combined.contains);
+    final runnerFieldInjury =
+        hasAny([
+          'forest',
+          'trail',
+          'woods',
+          'running',
+          'runner',
+          'jogging',
+          'stumbled',
+        ]) &&
+        hasAny(['knee', 'ankle', 'leg', 'fell', 'fall', 'injury', 'wound']);
+    final controlledAndMobile =
+        hasAny([
+          'bleeding has stopped',
+          'bleeding stopped',
+          'stopped bleeding',
+          'not bleeding anymore',
+          'bleeding is not heavy',
+        ]) &&
+        hasAny(['can stand', 'can walk', 'can put weight', 'can bear weight']);
     String effectiveNodeId = state.currentNode?.id ?? 'start';
-    if (effectiveNodeId == 'start') {
-      final incident = compactionService.context.incidentType.toLowerCase();
-      final summary = state.situationSummary.toLowerCase();
-      final userMsgLower = userText.toLowerCase();
-      final combined = '$incident $summary $userMsgLower';
-      bool hasAny(List<String> terms) => terms.any(combined.contains);
-
+    if (runnerFieldInjury && controlledAndMobile) {
+      effectiveNodeId = 'evacuation_triage';
+    } else if (effectiveNodeId == 'start') {
       // NOTE: burn must be checked BEFORE bleed — cooking burns involve no bleeding
       if (incident.contains('burn') ||
           userMsgLower.contains('burn') ||
           userMsgLower.contains('burned') ||
           summary.contains('burn')) {
         effectiveNodeId = 'burn_protocol';
+      } else if (runnerFieldInjury) {
+        effectiveNodeId = 'injury_assessment';
       } else if (incident.contains('bleed') ||
           incident.contains('cut') ||
           incident.contains('wound') ||
@@ -521,12 +547,18 @@ class SessionNotifier extends Notifier<SessionState> {
       }
     }
 
+    final effectiveNode = protocolService.getNode(effectiveNodeId);
+    if (effectiveNode != null && effectiveNode.id != state.currentNode?.id) {
+      state = state.copyWith(currentNode: effectiveNode);
+    }
+
     final knowledgeBase = protocolService.getDocumentationForNode(
       effectiveNodeId,
     );
 
     // 3. Stream Gemma's response token by token
     final responseBuffer = StringBuffer();
+    var responseWasCapped = false;
 
     await for (final token in llm.generateResponseStream(
       userMessage: (userText.isEmpty && imagePath != null)
@@ -541,12 +573,28 @@ class SessionNotifier extends Notifier<SessionState> {
       lastAiMessage: lastAiMessage.isNotEmpty ? lastAiMessage : null,
     )) {
       responseBuffer.write(token);
+      if (responseBuffer.length > 620) {
+        responseWasCapped = true;
+        state = state.copyWith(streamingBuffer: '');
+        break;
+      }
       // Update streaming buffer in state so UI can show live typing
       state = state.copyWith(streamingBuffer: responseBuffer.toString());
     }
 
     var fullResponse = responseBuffer.toString().trim();
     if (ConversationGuard.looksLikeExtractionJson(fullResponse) ||
+        fullResponse.contains('[Error:') ||
+        responseWasCapped ||
+        ConversationGuard.isTooLongOrArticleStyle(fullResponse) ||
+        ConversationGuard.skipsInitialFieldTriage(
+          ctx: compactionService.context,
+          response: fullResponse,
+        ) ||
+        ConversationGuard.asksAnsweredFact(
+          ctx: compactionService.context,
+          response: fullResponse,
+        ) ||
         ConversationGuard.repeatsLastQuestion(
           previousAiMessage: lastAiMessage,
           response: fullResponse,
@@ -573,7 +621,7 @@ class SessionNotifier extends Notifier<SessionState> {
 
     // 4. Update compaction service and persist
     final aiMessage = ChatMessage(
-      text: responseBuffer.toString(),
+      text: fullResponse,
       author: MessageAuthor.ai,
       timestamp: DateTime.now(),
     );

@@ -69,7 +69,9 @@ class ProtocolService {
   /// Maps each node to related nodes whose documentation is also relevant.
   static final Map<String, List<String>> _relatedNodes = {
     'start': ['triage_selection', 'lost_protocol', 'disaster_selection'],
+    'injury_assessment': ['clean_wound', 'evacuation_triage'],
     'bleeding_protocol': ['injury_assessment'],
+    'clean_wound': ['injury_assessment', 'evacuation_triage'],
     'apply_tourniquet': ['bleeding_protocol'],
     'pressure_dressing': ['bleeding_protocol'],
     'lost_protocol': ['signaling_protocol', 'shelter_protocol'],

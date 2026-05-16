@@ -383,7 +383,7 @@
     },
     "clean_wound": {
       "id": "clean_wound",
-      "question": "Wash the wound with clean water. Apply a bandage. Keep it dry.",
+      "question": "Once bleeding is controlled, rinse the wound with clean running water if available, cover it with the cleanest dressing or fabric available, and keep dirt out. If no clean water or dressing is available, do not scrub with unsafe water, dirt, leaves, or snow; protect the wound until it can be cleaned safely.",
       "source": "WHO",
       "gps_context": false,
       "branches": [
@@ -1259,7 +1259,7 @@
     },
     "evacuation_triage": {
       "id": "evacuation_triage",
-      "question": "Can the patient walk, or is the terrain/weather too dangerous to move?",
+      "question": "If bleeding is controlled and there are no danger signs, decide whether to wait or move. Walking out can be reasonable only if the person is alert, can bear weight without sharp pain or the joint giving way, the route is known and safe, and weather/terrain are manageable. Before moving, save or note location/GPS, turn on battery saver, keep the wound protected, and stop if bleeding restarts, pain worsens, swelling increases, numbness appears, dizziness starts, or conditions become unsafe.",
       "source": "NOLS",
       "gps_context": true,
       "branches": [

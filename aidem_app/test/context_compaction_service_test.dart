@@ -4,6 +4,52 @@ import 'package:aidem_app/services/context_compaction_service.dart';
 
 void main() {
   group('ContextCompactionService flow memory', () {
+    test('runner knee scenario remembers no signal and mobility facts', () async {
+      final service = ContextCompactionService();
+      await service.init(null);
+
+      service.noteUserMessage(
+        'I stumbled while running in the forest. My knee is bleeding and swollen. I have no signal.',
+      );
+      service.noteUserMessage(
+        'I am breathing fine and did not hit my head.',
+        previousAiMessage:
+            'Did you hit your head, feel dizzy or confused, or have trouble breathing?',
+      );
+      service.noteUserMessage(
+        "I don't have a clean cloth.",
+        previousAiMessage: 'Press a clean cloth firmly on the bleeding knee.',
+      );
+      service.noteUserMessage(
+        'The bleeding stopped.',
+        previousAiMessage: 'Is the bleeding slowing or stopped?',
+      );
+      service.noteUserMessage(
+        "I don't have a cold pack. I can pui weight on it.",
+        previousAiMessage:
+            'Can you stand or put weight on that leg without sharp pain?',
+      );
+
+      final ctx = service.context;
+      final facts = ctx.answeredFacts.join(' ').toLowerCase();
+      final steps = ctx.completedSteps.join(' ').toLowerCase();
+      final prompt = service.getPromptContext(currentUserMessage: 'what now?');
+
+      expect(ctx.environment, 'forest trail');
+      expect(ctx.injuryType, 'knee injury');
+      expect(ctx.confirmedLacks, contains('signal'));
+      expect(ctx.confirmedLacks, contains('bandage'));
+      expect(ctx.confirmedLacks, contains('cold pack'));
+      expect(facts, contains('breathing is normal'));
+      expect(facts, contains('no head impact reported'));
+      expect(facts, contains('bleeding has stopped'));
+      expect(facts, contains('can stand or bear weight'));
+      expect(steps, contains('bleeding controlled'));
+      expect(steps, isNot(contains('cold pack')));
+      expect(prompt, contains('LACKS:'));
+      expect(prompt, contains('ENVIRONMENT: forest trail'));
+    });
+
     test(
       'burn observations become answered facts, not completed care steps',
       () async {

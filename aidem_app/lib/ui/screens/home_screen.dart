@@ -55,7 +55,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 980;
-              final horizontalPadding = wide ? 48.0 : 20.0;
+              final horizontalPadding = wide
+                  ? 48.0
+                  : constraints.maxWidth < 380
+                  ? 12.0
+                  : constraints.maxWidth < 520
+                  ? 16.0
+                  : 20.0;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -276,25 +282,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final setupState = ref.watch(modelSetupServiceProvider);
     final llmState = ref.watch(llmServiceProvider);
 
-    return Align(
-      alignment: Alignment.center,
+    return SizedBox(
+      width: double.infinity,
       child: TacticalContainer(
         padding: EdgeInsets.all(compact ? 12 : 10),
         showGlow: false,
         borderRadius: 22,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final buttonWidth = compact
-                ? ((constraints.maxWidth - 10) / 2).clamp(132.0, 190.0)
-                : 110.0;
-            final buttonHeight = compact ? 52.0 : 46.0;
+            final spacing = constraints.maxWidth < 360 ? 8.0 : 10.0;
+            final columns = constraints.maxWidth >= 520
+                ? 3
+                : constraints.maxWidth >= 292
+                ? 2
+                : 1;
+            final buttonWidth =
+                (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+            final buttonHeight = compact ? 52.0 : 48.0;
 
             return Wrap(
               alignment: WrapAlignment.center,
               runAlignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
+              spacing: spacing,
+              runSpacing: spacing,
               children: [
                 _HomeCommandButton(
                   icon: Icons.movie_filter_outlined,
@@ -437,7 +448,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _startBestDemo() async {
     final scenario = demoScenarios.firstWhere(
-      (scenario) => scenario.id == 'lost_hiker_ankle',
+      (scenario) => scenario.id == 'runner_knee_self_evac',
       orElse: () => demoScenarios.first,
     );
     await _openDemoScenario(scenario);
@@ -988,88 +999,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       LlmStatus.error => 'Protocol fallback active',
     };
 
-    return TacticalContainer(
-      padding: const EdgeInsets.all(14),
-      showGlow: false,
-      borderRadius: 18,
-      borderColor: AppColors.brandAi.withValues(alpha: 0.24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, outerConstraints) {
+        final tight = outerConstraints.maxWidth < 380;
+
+        return TacticalContainer(
+          padding: EdgeInsets.all(tight ? 10 : 14),
+          showGlow: false,
+          borderRadius: 18,
+          borderColor: AppColors.brandAi.withValues(alpha: 0.24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                modelReady
-                    ? Icons.offline_bolt_rounded
-                    : Icons.fact_check_outlined,
-                color: AppColors.brandAi,
-                size: 18,
+              Row(
+                children: [
+                  Icon(
+                    modelReady
+                        ? Icons.offline_bolt_rounded
+                        : Icons.fact_check_outlined,
+                    color: AppColors.brandAi,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    modelReady ? 'Ready' : 'Protocol Ready',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      tight ? 'Local-first' : 'Local-first by design',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                modelReady ? 'Ready' : 'Protocol Ready',
-                style: GoogleFonts.spaceGrotesk(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Local-first by design',
-                style: GoogleFonts.inter(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0,
-                ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final chipWidth = constraints.maxWidth >= 280
+                      ? (constraints.maxWidth - 8) / 2
+                      : constraints.maxWidth;
+
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ReadinessPill(
+                        icon: Icons.memory_rounded,
+                        label: modelLabel,
+                        color: modelReady
+                            ? AppColors.brandAi
+                            : AppColors.accentBlue,
+                        width: chipWidth,
+                      ),
+                      _ReadinessPill(
+                        icon: Icons.my_location_outlined,
+                        label: 'GPS available',
+                        color: AppColors.accentBlue,
+                        width: chipWidth,
+                      ),
+                      _ReadinessPill(
+                        icon: Icons.storage_outlined,
+                        label: 'Emergency data local',
+                        color: AppColors.brandAi,
+                        width: chipWidth,
+                      ),
+                      _ReadinessPill(
+                        icon: Icons.signal_cellular_connected_no_internet_4_bar,
+                        label: 'No-signal mode',
+                        color: AppColors.brandAi,
+                        width: chipWidth,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final chipWidth = constraints.maxWidth >= 280
-                  ? (constraints.maxWidth - 8) / 2
-                  : constraints.maxWidth;
-
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _ReadinessPill(
-                    icon: Icons.memory_rounded,
-                    label: modelLabel,
-                    color: modelReady
-                        ? AppColors.brandAi
-                        : AppColors.accentBlue,
-                    width: chipWidth,
-                  ),
-                  _ReadinessPill(
-                    icon: Icons.my_location_outlined,
-                    label: 'GPS available',
-                    color: AppColors.accentBlue,
-                    width: chipWidth,
-                  ),
-                  _ReadinessPill(
-                    icon: Icons.storage_outlined,
-                    label: 'Emergency data local',
-                    color: AppColors.brandAi,
-                    width: chipWidth,
-                  ),
-                  _ReadinessPill(
-                    icon: Icons.signal_cellular_connected_no_internet_4_bar,
-                    label: 'No-signal mode',
-                    color: AppColors.brandAi,
-                    width: chipWidth,
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1158,7 +1180,10 @@ class _HomeCommandButton extends StatelessWidget {
           child: Container(
             width: width,
             height: height,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: width < 150 ? 8 : 12,
+              vertical: 10,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surfaceMuted.withValues(alpha: 0.54),
               borderRadius: BorderRadius.circular(16),
@@ -1167,17 +1192,17 @@ class _HomeCommandButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 18),
-                const SizedBox(width: 8),
+                Icon(icon, color: color, size: width < 150 ? 16 : 18),
+                SizedBox(width: width < 150 ? 6 : 8),
                 Flexible(
                   child: Text(
                     label.toUpperCase(),
                     maxLines: 1,
-                    overflow: TextOverflow.fade,
+                    overflow: TextOverflow.ellipsis,
                     softWrap: false,
                     style: GoogleFonts.spaceGrotesk(
                       color: color,
-                      fontSize: 11,
+                      fontSize: width < 150 ? 10 : 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
                     ),

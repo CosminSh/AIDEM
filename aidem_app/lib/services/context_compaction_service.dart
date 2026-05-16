@@ -158,6 +158,7 @@ class SituationContext {
     }
 
     if (injuryType != null) buffer.writeln('INJURY: $injuryType');
+    if (environment != null) buffer.writeln('ENVIRONMENT: $environment');
     if (isAlone == true) buffer.writeln('PATIENT: Alone.');
     if (isAlone == false) buffer.writeln('PATIENT: Not alone.');
     if (hazards != 'None reported' && hazards != 'None (Confirmed)') {
@@ -165,6 +166,9 @@ class SituationContext {
     }
     if (confirmedResources.isNotEmpty) {
       buffer.writeln('HAS: ${confirmedResources.join(', ')}');
+    }
+    if (confirmedLacks.isNotEmpty) {
+      buffer.writeln('LACKS: ${confirmedLacks.join(', ')}');
     }
 
     // Completed steps — the most critical block for preventing loops
@@ -422,14 +426,27 @@ JSON:''';
         'no bandage',
         'no clean bandage',
         'no cloth',
+        'no clean cloth',
         'no dressing',
         "don't have bandage",
         "don't have a bandage",
+        "don't have cloth",
+        "don't have a cloth",
+        "don't have clean cloth",
+        "don't have a clean cloth",
       ],
       'tourniquet': ['no tourniquet', "don't have tourniquet"],
       'signal': ['no signal', 'no service', 'no reception', "can't call"],
       'fire': ['no fire', 'no lighter', 'no matches', "can't make fire"],
       'shelter': ['no shelter', 'exposed', 'no cover'],
+      'cold pack': [
+        'no cold pack',
+        "don't have a cold pack",
+        'dont have a cold pack',
+        'no ice',
+        "don't have ice",
+        'dont have ice',
+      ],
     };
 
     final updatedLacks = List<String>.from(_context.confirmedLacks);
@@ -440,6 +457,7 @@ JSON:''';
     String updatedIncidentType = _context.incidentType;
     String updatedUrgency = _context.urgencyLevel;
     String? updatedInjuryType = _context.injuryType;
+    String? updatedEnvironment = _context.environment;
 
     void addFact(String fact) => _addUnique(updatedFacts, fact);
     void addStep(String step, List<String> steps) => _addUnique(steps, step);
@@ -470,8 +488,78 @@ JSON:''';
     // Detect user confirming an action was done so we can add it to completedSteps
     // and prevent the LLM from repeating that instruction.
     final prevLower = previousAiMessage?.toLowerCase() ?? '';
+    if (_containsAny(msg, ['forest', 'trail', 'woods'])) {
+      updatedEnvironment = 'forest trail';
+      addFact('Environment is a forest or trail.');
+    }
+    if (_containsAny(msg, ['running', 'runner', 'jogging'])) {
+      addFact('User was running when the incident happened.');
+    }
+    if (_containsAny(msg, [
+      'breathing fine',
+      'breathing normally',
+      'i can breathe',
+      'can breathe',
+      'breathing is fine',
+    ])) {
+      addFact('Breathing is normal.');
+    }
+    if (_containsAny(msg, [
+      'no head',
+      'did not hit my head',
+      "didn't hit my head",
+    ])) {
+      addFact('No head impact reported.');
+    }
+    if ((msg == 'no' || msg == 'nope') &&
+        _containsAny(prevLower, ['head', 'dizzy', 'confused'])) {
+      addFact('No head injury, dizziness, or confusion reported.');
+    }
+    if ((msg == 'no' || msg == 'nope') && prevLower.contains('sharp pain')) {
+      addFact('No sharp pain with movement.');
+      if (prevLower.contains('numb')) addFact('No numbness reported.');
+    }
+    if (_containsAny(msg, [
+      'just a bit of pain',
+      'a bit of pain',
+      'mild pain',
+      'not sharp',
+      'no sharp pain',
+    ])) {
+      addFact('Pain is mild and not sharp.');
+    }
+    if (_containsAny(msg, [
+      'no clean cloth',
+      "don't have a clean cloth",
+      "dont have a clean cloth",
+      'no bandage',
+      "don't have a bandage",
+      "dont have a bandage",
+    ])) {
+      addFact('No clean cloth or bandage available.');
+      _addUnique(updatedLacks, 'bandage');
+    }
+    if (_containsAny(msg, [
+      'no cold pack',
+      "don't have a cold pack",
+      "dont have a cold pack",
+      'no ice',
+      "don't have ice",
+      'dont have ice',
+    ])) {
+      addFact('No cold pack or ice available.');
+      _addUnique(updatedLacks, 'cold pack');
+    }
     final mentionsCut =
-        _containsAny(msg, ['cut', 'wound', 'sliced', 'slice', 'scrape']) ||
+        _containsAny(msg, [
+          'cut',
+          'wound',
+          'sliced',
+          'slice',
+          'scrape',
+          'bleeding',
+          'blood',
+        ]) ||
         _containsAny(_context.incidentType.toLowerCase(), [
           'cut',
           'wound',
@@ -590,8 +678,14 @@ JSON:''';
         'is not bleeding',
       ])) {
         addFact('Bleeding has stopped.');
+        addStep('Bleeding controlled or stopped.', updatedSteps);
         updatedUrgency = 'minor';
-        updatedSummary = 'Finger cut reported. Bleeding has stopped.';
+        final woundLabel = updatedInjuryType.contains('knee')
+            ? 'Knee wound'
+            : updatedInjuryType.contains('cut')
+            ? 'Cut'
+            : 'Wound';
+        updatedSummary = '$woundLabel reported. Bleeding has stopped.';
       }
       if ((msg == 'no' || msg == 'nope') &&
           _containsAny(prevLower, ['bleeding still heavy', 'still heavy'])) {
@@ -690,6 +784,7 @@ JSON:''';
         _containsAny(msg, [
           'fell',
           'fall',
+          'stumbled',
           'tripped',
           'slipped',
           'twisted',
@@ -707,16 +802,33 @@ JSON:''';
           'sprain',
         ]);
     if (mentionsFallOrInjury) {
-      if (updatedIncidentType == 'Unknown') updatedIncidentType = 'injury';
+      if (updatedIncidentType == 'Unknown' || updatedIncidentType == 'cut') {
+        updatedIncidentType = 'injury';
+      }
       if (updatedSummary.isEmpty) {
         updatedSummary =
             'Injury reported. Checking pain, movement, and warning signs.';
       }
 
+      final noHeadImpact = _containsAny(msg, [
+        'no head',
+        'did not hit my head',
+        "didn't hit my head",
+      ]);
       final bodyPart = _bodyPartFromText(msg);
       if (bodyPart != null) {
-        updatedInjuryType = '$bodyPart injury';
-        addFact('Injury is on the $bodyPart.');
+        if (bodyPart == 'head' && noHeadImpact) {
+          updatedInjuryType ??= _context.injuryType ?? 'injury';
+        } else {
+          updatedInjuryType = '$bodyPart injury';
+          addFact('Injury is on the $bodyPart.');
+          if ((updatedEnvironment == 'forest trail' ||
+                  _containsAny(msg, ['running', 'runner', 'jogging'])) &&
+              _containsAny(msg, ['fell', 'fall', 'stumbled', 'tripped'])) {
+            updatedSummary =
+                'Trail fall with $bodyPart injury. Checking bleeding, movement, and safe walk-out.';
+          }
+        }
       } else {
         updatedInjuryType ??= 'injury';
       }
@@ -768,11 +880,22 @@ JSON:''';
         'can stand',
         'can walk',
         'can put weight',
+        'can pui weight',
+        'can pui',
         'can bear weight',
       ])) {
         addFact('Can stand or bear weight.');
       }
-      if (_containsAny(msg, ['ice', 'iced it', 'cold pack'])) {
+      final lacksColdPack = _containsAny(msg, [
+        'no cold pack',
+        "don't have a cold pack",
+        "dont have a cold pack",
+        'no ice',
+        "don't have ice",
+        'dont have ice',
+      ]);
+      if (_containsAny(msg, ['ice', 'iced it', 'cold pack']) &&
+          !lacksColdPack) {
         addStep('Applied a cold pack to the injury.', updatedSteps);
       }
       if (_containsAny(msg, ['elevated', 'raised it', 'raised my'])) {
@@ -1039,7 +1162,8 @@ JSON:''';
 
         if (isAssessmentAnswer || _isAssessmentPrompt(prevLower)) {
           addFact(_factFromUserAnswer(userMessage, previousAiMessage));
-        } else if (_isCareInstruction(prevLower)) {
+        } else if (_isCareInstruction(prevLower) &&
+            !_isNegativeOnlyAnswer(msg)) {
           addStep(_canonicalCareStep(previousAiMessage) ?? label, updatedSteps);
         }
       }
@@ -1130,6 +1254,7 @@ JSON:''';
       incidentType: updatedIncidentType,
       urgencyLevel: updatedUrgency,
       injuryType: updatedInjuryType,
+      environment: updatedEnvironment,
       confirmedLacks: updatedLacks,
       confirmedResources: updatedResources,
       completedSteps: updatedSteps,
@@ -1142,6 +1267,16 @@ JSON:''';
 
   static bool _containsAny(String text, List<String> patterns) {
     return patterns.any(text.contains);
+  }
+
+  static bool _isNegativeOnlyAnswer(String msg) {
+    final normalized = msg.trim().replaceAll(RegExp(r'[.!?]+$'), '');
+    return normalized == 'no' ||
+        normalized == 'nope' ||
+        normalized == 'not yet' ||
+        normalized.startsWith("i don't have") ||
+        normalized.startsWith('i dont have') ||
+        normalized.startsWith('no ');
   }
 
   static String? _bodyPartFromText(String msg) {

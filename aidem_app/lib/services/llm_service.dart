@@ -31,10 +31,18 @@ class LlmService extends Notifier<LlmState> {
 
   bool get isModelLoaded => state.status == LlmStatus.ready;
 
+  static String _limitText(String value, int maxChars) {
+    final trimmed = value.trim();
+    if (trimmed.length <= maxChars) return trimmed;
+    return '${trimmed.substring(0, maxChars)}...';
+  }
+
   String _buildSystemPrompt({
     required String situationContext,
     required String knowledgeBase,
   }) {
+    final trimmedContext = _limitText(situationContext, 1400);
+    final trimmedKb = _limitText(knowledgeBase, 1100);
     // Prompt engineered specifically for Gemma-4-E2B-IT (litertlm).
     // Key design decisions:
     // - SESSION STATE block is injected first (highest attention weight).
@@ -56,86 +64,25 @@ RULES (FOLLOW EXACTLY):
 10. GENERAL TRIAGE: For any situation, first handle immediate danger, then learn the one most important missing fact before concluding. Use what the user already told you. Good missing facts are: breathing/consciousness, bleeding control, pain severity, movement/feeling, swelling/deformity, exposure/substance, location/signal, and available supplies.
 11. PHOTO TIMING: Do not ask for a photo before urgent actions like calling emergency services, stopping heavy bleeding, cooling a burn, choking first aid, or using epinephrine. After the urgent step is underway, a photo can help visual assessment.
 12. BLEEDING WORDING: Do not say bright red blood means an artery is involved. Treat spurting, pulsing, soaking through cloth, or bleeding that will not slow as the danger signs.
-13. SCOPE: If the user asks for unrelated help, refuse briefly and redirect to emergency, first-aid, survival, or rescue support.
+13. FIELD FALL WITH NO SIGNAL: If the user fell on a trail/forest and has a bleeding knee/ankle/leg, treat this as injury plus self-evacuation triage, not only a bleeding case. First check immediate danger/head/breathing, then bleeding control, then walking safety, then phone battery/location/route.
+14. DO NOT LOOP BLEEDING: If the user says bleeding is not heavy, slowing, or stopped, do not ask if bleeding is heavy again. Move to covering/cleaning the wound, movement safety, or evacuation.
+15. DO NOT LOOP WEIGHT-BEARING: If the user says they can stand, walk, or put weight on it, do not ask that again. If sharp pain/instability/numbness is unknown, ask that once; otherwise advise cautious movement or waiting.
+16. SCOPE: If the user asks for unrelated help, refuse briefly and redirect to emergency, first-aid, survival, or rescue support.
 
-$situationContext
+$trimmedContext
 
 REFERENCE MATERIAL (use to determine correct next step):
-$knowledgeBase
+$trimmedKb
 
-EXAMPLES OF CORRECT BEHAVIOR:
-
-WRONG (loop - never do this):
+EXAMPLES:
 User: it stopped bleeding
-AI: Apply pressure to stop the bleeding. Has the bleeding stopped?
+AI: Good, the bleeding has stopped. Cover it with the cleanest material you have; is there sharp pain or numbness?
 
-RIGHT:
-User: it stopped bleeding
-AI: Good. Now cover the wound with a clean dressing. Is the wound deep?
+User: i don't have a clean cloth
+AI: Use the cleanest fabric you have, like the inside of a shirt. Press it firmly on the wound; do not use dirt, leaves, or stream water.
 
-WRONG (repeat question already answered):
-User: yes i cooled it under water, it feels better
-AI: Cool the burn under running water for 10 minutes.
-
-RIGHT:
-User: yes i cooled it under water, it feels better
-AI: Cover loosely with a clean cloth or bandage. Do not use ice or butter. Are there any blisters?
-
-WRONG (too technical):
-User: it's red, no blisters
-AI: Check for blanching. Is it first, second, or third degree?
-
-RIGHT:
-User: it's red, no blisters
-AI: That sounds like a mild surface burn. If it has already been cooled for 10-20 minutes, cover it loosely with a clean dry bandage. Watch for blisters, spreading redness, numbness, or worsening pain.
-
-WRONG (stuck on either/or question):
-User: dull pain
-AI: Does the pain feel sharp or dull?
-
-RIGHT:
-User: dull pain
-AI: Dull pain with red skin and no blisters usually fits a mild burn. Cool it under running water for 10-20 minutes if you have not already, then cover it loosely with a clean dry cloth.
-
-WRONG (bleeding answer ignored):
-User: the bleeding almost stopped
-AI: Is the bleeding still heavy?
-
-RIGHT:
-User: the bleeding almost stopped
-AI: Good, it is slowing down. Keep gentle pressure for a few more minutes, then rinse the cut with clean running water and cover it with a clean bandage once bleeding stops.
-
-WRONG (jumps to conclusion too fast):
-User: it's not bleeding that bad
-AI: If bleeding does not slow, the cut is deep, or you feel numbness, get medical help.
-
-RIGHT:
-User: it's not bleeding that bad
-AI: Good, it does not sound like heavy bleeding. Keep gentle pressure a bit longer. Is the cut deep or gaping, dirty, or does your fingertip feel numb?
-
-WRONG (overstates blood color):
-User: bright red
-AI: The bright red blood indicates an artery is likely involved.
-
-RIGHT:
-User: bright red
-AI: Keep firm pressure on it. Bright red matters most if it is spurting, pulsing, soaking through cloth, or not slowing; is it spurting or a steady flow?
-
-WRONG (concludes before learning enough):
-User: i fell and my ankle is swollen
-AI: It is probably a sprain. Rest and ice it.
-
-RIGHT:
-User: i fell and my ankle is swollen
-AI: Keep weight off it and use a cold pack wrapped in cloth. Can you move your toes and put any weight on that foot?
-
-WRONG (misses image input opportunity):
-User: i have a rash after a bee sting
-AI: Watch it and rest.
-
-RIGHT:
-User: i have a rash after a bee sting
-AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat. If breathing is normal, send a clear photo of the rash if you can.''';
+User: i have no signal but i can walk
+AI: Turn on battery saver, save or note your location, and use the safest known route. Stop if pain, bleeding, dizziness, or weather gets worse.''';
   }
 
   Future<bool> init() async {
@@ -237,11 +184,18 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
         supportImage: true,
       );
 
+      // Add a tiny history window. LiteRT models have a small input budget, and
+      // SESSION STATE already carries the important memory.
+      final historyForModel = recentHistory.length > 4
+          ? recentHistory.sublist(recentHistory.length - 4)
+          : recentHistory;
+
       // Add history with strict role alternation
       bool lastWasUser = false;
-      for (int i = 0; i < recentHistory.length; i++) {
-        final msg = recentHistory[i];
+      for (int i = 0; i < historyForModel.length; i++) {
+        final msg = historyForModel[i];
         final isUser = msg.author == MessageAuthor.user;
+        final text = _limitText(msg.text, 220);
 
         if (isUser) {
           if (lastWasUser) continue;
@@ -258,21 +212,19 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
           if (histImageBytes != null) {
             await chat.addQueryChunk(
               Message.withImage(
-                text: msg.text,
+                text: text,
                 isUser: true,
                 imageBytes: histImageBytes,
               ),
             );
           } else {
-            await chat.addQueryChunk(
-              Message.text(text: msg.text, isUser: true),
-            );
+            await chat.addQueryChunk(Message.text(text: text, isUser: true));
           }
           lastWasUser = true;
         } else {
           // AI Response
           if (!lastWasUser && i > 0) continue;
-          await chat.addQueryChunk(Message.text(text: msg.text, isUser: false));
+          await chat.addQueryChunk(Message.text(text: text, isUser: false));
           lastWasUser = false;
         }
       }
@@ -298,7 +250,18 @@ AI: Watch for trouble breathing or swelling of the lips, tongue, face, or throat
 
       await chat.close();
     } catch (e) {
-      yield '\n\n[Error: ${e.toString()}]';
+      debugPrint('LLM stream error, using adaptive fallback: $e');
+      final response = AdaptiveMock.respond(
+        userMessage: imagePath != null
+            ? "[IMAGE ATTACHED] $userMessage"
+            : userMessage,
+        situationContext: situationContext,
+        historyCount: recentHistory.length,
+      );
+      for (final word in response.split(' ')) {
+        yield '$word ';
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
     }
   }
 
@@ -391,6 +354,77 @@ class AdaptiveMock {
   }) {
     final msg = userMessage.toLowerCase();
     final ctx = situationContext.toLowerCase();
+    final combined = '$msg $ctx';
+    final trailFallContext =
+        _hasAny(combined, [
+          'forest',
+          'trail',
+          'woods',
+          'running',
+          'runner',
+          'jogging',
+          'stumbled',
+        ]) &&
+        _hasAny(combined, [
+          'fell',
+          'fall',
+          'stumbled',
+          'knee',
+          'ankle',
+          'leg',
+          'injury',
+        ]);
+    final fieldWound = _hasAny(combined, [
+      'bleeding',
+      'blood',
+      'wound',
+      'scrape',
+      'cut',
+    ]);
+    final fieldNoSignal =
+        _lacks(msg, ['signal', 'phone', 'cell', 'reception', 'call']) ||
+        _hasAny(combined, ['no signal', 'no phone signal', 'lacks: signal']);
+    final fieldNoBandage =
+        _lacks(msg, ['bandage', 'cloth', 'dressing', 'gauze']) ||
+        _hasAny(combined, [
+          'no clean cloth',
+          'no clean cloth or bandage',
+          'lacks: bandage',
+        ]);
+    final bleedingStopped = _hasAny(combined, [
+      'bleeding has stopped',
+      'bleeding stopped',
+      'stopped bleeding',
+      'not bleeding anymore',
+      'no bleeding',
+    ]);
+    final bleedingNotHeavy = _hasAny(combined, [
+      'bleeding is not heavy',
+      'not bleeding that bad',
+      'not heavy',
+      'not much bleeding',
+      'only a little blood',
+    ]);
+    final canBearWeight = _hasAny(combined, [
+      'can stand',
+      'can walk',
+      'can put weight',
+      'can pui weight',
+      'can pui',
+      'can bear weight',
+    ]);
+    final noSharpPain = _hasAny(combined, [
+      'no sharp pain',
+      'not sharp',
+      'just a bit of pain',
+      'mild pain',
+      'pain is mild',
+    ]);
+    final noNumbness = _hasAny(combined, [
+      'no numbness',
+      'not numb',
+      'no numb',
+    ]);
 
     if (_isOffTopic(msg)) {
       return "I can only help with emergency, first-aid, survival, or rescue support. Tell me the immediate safety problem, injuries, location, and what supplies you have.";
@@ -427,6 +461,49 @@ class AdaptiveMock {
         return "Image received. I can look for visible swelling, spreading redness, or a retained stinger, but I cannot identify every bite or venom risk from a photo. Wash the area if safe and tell me if swelling is spreading or breathing feels hard.";
       }
       return "Image received. I can use visible clues, but I cannot diagnose severity from a photo alone. Tell me what happened, whether there is severe bleeding, trouble breathing, confusion, or worsening pain.";
+    }
+
+    if (trailFallContext && (fieldWound || fieldNoSignal)) {
+      final asksToWalk =
+          msg.contains('safe to walk') ||
+          msg.contains('walk now') ||
+          msg.contains('walking home') ||
+          msg.contains('walk home');
+      if (bleedingStopped && canBearWeight && (noSharpPain || noNumbness)) {
+        return "Since the bleeding has stopped and you can bear weight without sharp pain, you can start walking out slowly on a known safe route. Turn on battery saver, save your location, and stop if bleeding restarts, pain gets sharp, the knee gives way, or you feel dizzy.";
+      }
+      if (asksToWalk && bleedingStopped && canBearWeight) {
+        return "You can try to walk out gently if there is no sharp pain, numbness, fast swelling, or knee giving way. Before moving, turn on battery saver and save or note your location.";
+      }
+      if (bleedingStopped) {
+        return "Good, the bleeding has stopped. Cover or protect the wound with the cleanest material you have; can you stand or put weight on that leg without sharp pain or the knee giving way?";
+      }
+      if (fieldNoBandage) {
+        return "Use the cleanest fabric you have, such as the inside of a shirt or sock, and press it firmly on the knee. Do not use dirt, leaves, or stream water; is the bleeding slowing or stopped?";
+      }
+      if (!_hasAny(combined, [
+        'breathing is normal',
+        'breathing fine',
+        'no head injury',
+        'no head impact',
+        'did not hit my head',
+        "didn't hit my head",
+      ])) {
+        return "Sit somewhere safe off the trail edge if you can. Keep steady pressure on the knee with the cleanest fabric available; did you hit your head, feel dizzy or confused, or have trouble breathing?";
+      }
+      if (canBearWeight && bleedingNotHeavy && (noSharpPain || noNumbness)) {
+        return "Good, the bleeding is not heavy and you can bear weight without those warning signs. Keep the knee protected with your cloth, turn on battery saver, save your location, and walk out slowly on the safest known route.";
+      }
+      if (canBearWeight && bleedingNotHeavy) {
+        return "Good, it does not sound like heavy bleeding and you can bear weight. Keep it protected, then tell me if there is sharp pain, numbness, the knee giving way, or swelling that is getting worse.";
+      }
+      if (bleedingNotHeavy) {
+        return "Keep gentle pressure on the knee for a few more minutes and protect it from dirt. Can you stand or put weight on that leg without sharp pain or the knee giving way?";
+      }
+      if (_hasAny(combined, ['breathing is normal', 'breathing fine'])) {
+        return "Press the cleanest fabric you have firmly on the bleeding knee and keep the leg still. Is the bleeding spurting, soaking through, or not slowing?";
+      }
+      return "Sit somewhere safe off the trail edge if you can and check for immediate danger first. Did you hit your head, feel dizzy or confused, or have trouble breathing?";
     }
 
     if (_isBurn(msg) || ctx.contains('burn')) {
@@ -521,6 +598,9 @@ class AdaptiveMock {
         return "Do not move if your neck or back may be hurt. Call emergency services if there is severe pain, numbness, weakness, or trouble moving. Are you breathing normally?";
       }
       if (msg.contains('swollen') || msg.contains('twisted')) {
+        if (ctx.contains('no cold pack') || ctx.contains('lacks: cold pack')) {
+          return "Rest the injured area and keep it protected with the cleanest cloth you have. Keep it raised if that is comfortable, and tell me if pain, swelling, numbness, or movement gets worse.";
+        }
         return "Keep weight off it and use a cold pack wrapped in cloth. A clear photo can help if there is swelling or a strange shape. Can you move it or put weight on it without sharp pain?";
       }
       return "Keep the injured area still for now. Tell me where it hurts and whether it is swollen, crooked, numb, or hard to move.";
@@ -576,7 +656,8 @@ class AdaptiveMock {
     if (historyCount > 2 &&
         (msg.contains('lost') ||
             msg.contains('forest') ||
-            msg.contains('mountain'))) {
+            msg.contains('mountain')) &&
+        !(bleedingStopped && canBearWeight && noSharpPain)) {
       return "STAY WHERE YOU ARE. Moving makes rescue 10 times harder. Can you get to high ground? Do you have anything reflective to signal from the air? Keep your phone on for any signal updates.";
     }
 
@@ -593,6 +674,10 @@ class AdaptiveMock {
           msg.contains('lost my $kw') ||
           msg.contains("can't use $kw"),
     );
+  }
+
+  static bool _hasAny(String text, List<String> keywords) {
+    return keywords.any(text.contains);
   }
 
   static bool _isBackInjury(String msg) {

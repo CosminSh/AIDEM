@@ -52,10 +52,137 @@ class ConversationGuard {
         current.contains(previousQuestion);
   }
 
+  static bool isTooLongOrArticleStyle(String response) {
+    final trimmed = response.trim();
+    if (trimmed.length > 520) return true;
+    final lineCount = '\n'.allMatches(trimmed).length + 1;
+    if (lineCount > 5) return true;
+    final lower = trimmed.toLowerCase();
+    return lower.contains('###') ||
+        lower.contains('**') ||
+        lower.contains('1.') ||
+        lower.contains('2.') ||
+        lower.contains('immediate first aid steps') ||
+        lower.contains('how to signal for help') ||
+        lower.contains('what to do when help arrives');
+  }
+
+  static bool skipsInitialFieldTriage({
+    required SituationContext ctx,
+    required String response,
+  }) {
+    final facts = ctx.answeredFacts.join(' ').toLowerCase();
+    final injury = ctx.injuryType?.toLowerCase() ?? '';
+    final lacks = ctx.confirmedLacks.join(' ').toLowerCase();
+    final noSignal =
+        facts.contains('no phone signal') || lacks.contains('signal');
+    final fieldLegInjury =
+        injury.contains('knee') ||
+        injury.contains('ankle') ||
+        injury.contains('leg') ||
+        facts.contains('injury is on the knee');
+    final bleedingMentioned =
+        facts.contains('cut is bleeding') || facts.contains('bleeding');
+    final dangerSignsKnown =
+        facts.contains('breathing is normal') ||
+        facts.contains('no head injury') ||
+        facts.contains('no head impact') ||
+        facts.contains('dizziness') ||
+        facts.contains('confusion');
+    final lower = response.toLowerCase();
+    final asksDangerSigns =
+        lower.contains('head') ||
+        lower.contains('dizzy') ||
+        lower.contains('confused') ||
+        lower.contains('breathing');
+
+    return noSignal &&
+        fieldLegInjury &&
+        bleedingMentioned &&
+        !dangerSignsKnown &&
+        !asksDangerSigns;
+  }
+
+  static bool asksAnsweredFact({
+    required SituationContext ctx,
+    required String response,
+  }) {
+    final facts = ctx.answeredFacts.join(' ').toLowerCase();
+    final lacks = ctx.confirmedLacks.join(' ').toLowerCase();
+    final lower = response.toLowerCase();
+    final asksWeight =
+        lower.contains('put weight') ||
+        lower.contains('bear weight') ||
+        lower.contains('can you walk') ||
+        lower.contains('can you stand');
+    final asksSharpOrNumb =
+        lower.contains('sharp pain') ||
+        lower.contains('numbness') ||
+        lower.contains('numb');
+    final suggestsColdPack =
+        lower.contains('cold pack') || lower.contains('ice');
+
+    if (asksWeight && facts.contains('can stand or bear weight')) return true;
+    if (asksSharpOrNumb &&
+        (facts.contains('no sharp pain') ||
+            facts.contains('no numbness') ||
+            facts.contains('pain is mild and not sharp'))) {
+      return true;
+    }
+    if (suggestsColdPack &&
+        (facts.contains('no cold pack') || lacks.contains('cold pack'))) {
+      return true;
+    }
+    return false;
+  }
+
   static String fallbackResponseForContext(SituationContext ctx) {
     final facts = ctx.answeredFacts.join(' ').toLowerCase();
     final incident = ctx.incidentType.toLowerCase();
     final injury = ctx.injuryType?.toLowerCase() ?? '';
+    final lacks = ctx.confirmedLacks.join(' ').toLowerCase();
+    final noSignal =
+        facts.contains('no phone signal') || lacks.contains('signal');
+    final controlledBleeding =
+        facts.contains('bleeding has stopped') ||
+        facts.contains('bleeding is not heavy') ||
+        facts.contains('bleeding is almost stopped') ||
+        facts.contains('bleeding is slowing');
+    final canBearWeight = facts.contains('can stand or bear weight');
+    final noSharpPain =
+        facts.contains('no sharp pain') ||
+        facts.contains('pain is mild and not sharp');
+    final noNumbness = facts.contains('no numbness');
+    final noColdPack =
+        facts.contains('no cold pack') || lacks.contains('cold pack');
+    final dangerSignsKnown =
+        facts.contains('breathing is normal') ||
+        facts.contains('no head injury') ||
+        facts.contains('no head impact') ||
+        facts.contains('dizziness') ||
+        facts.contains('confusion');
+    final fieldLegInjury =
+        injury.contains('knee') ||
+        injury.contains('ankle') ||
+        injury.contains('leg') ||
+        facts.contains('injury is on the knee') ||
+        facts.contains('environment is a forest or trail');
+
+    if (noSignal && fieldLegInjury && !dangerSignsKnown) {
+      return 'Sit somewhere safe off the trail edge if you can. Keep steady pressure on the knee with the cleanest fabric available; did you hit your head, feel dizzy or confused, or have trouble breathing?';
+    }
+
+    if (noSignal &&
+        controlledBleeding &&
+        canBearWeight &&
+        fieldLegInjury &&
+        (noSharpPain || noNumbness)) {
+      return 'Since the bleeding is controlled and you can bear weight, you can walk out slowly on a known safe route if there is no sharp pain, numbness, fast swelling, or knee giving way. Turn on battery saver, save your location, and stop if symptoms worsen.';
+    }
+
+    if (noSignal && controlledBleeding && canBearWeight && fieldLegInjury) {
+      return 'Good, you can bear weight and the bleeding does not sound heavy. Keep the knee protected with your cloth; do you feel sharp pain, numbness, or the knee giving way when you take a few careful steps?';
+    }
 
     if (incident.contains('burn')) {
       final noBlisters = facts.contains('no blisters');
@@ -136,6 +263,9 @@ class ConversationGuard {
       }
       if (facts.contains('swelling') ||
           facts.contains('movement is possible')) {
+        if (noColdPack) {
+          return 'Rest the injured area and keep it protected with the cleanest cloth you have. Keep it raised if that is comfortable; tell me if pain, swelling, numbness, or movement gets worse.';
+        }
         return 'Rest the injured area, use a cold pack wrapped in cloth, and keep it raised if that is comfortable. A clear photo can help; can you put weight on it or move it without sharp pain?';
       }
       return 'Keep the injured area still for now. Tell me where it hurts and whether it is swollen, crooked, numb, or hard to move.';

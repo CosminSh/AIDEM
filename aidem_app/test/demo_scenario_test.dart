@@ -26,5 +26,20 @@ void main() {
         expect(scenario.tags, isNot(contains('Live GPS')));
       }
     });
+
+    test('runner self-evacuation demo has a complete safe arc', () {
+      final scenario = demoScenarios.firstWhere(
+        (scenario) => scenario.id == 'runner_knee_self_evac',
+      );
+      final script = scenario.turns.map((turn) => turn.text).join('\n');
+
+      expect(scenario.currentNodeId, 'evacuation_triage');
+      expect(script, contains('no signal'));
+      expect(script, contains('cleanest fabric'));
+      expect(script, contains('Do not scrub'));
+      expect(script, contains('A cautious self-evacuation is reasonable'));
+      expect(script, contains('turn on battery saver'));
+      expect(script, contains('clean the wound properly when you get home'));
+    });
   });
 }
