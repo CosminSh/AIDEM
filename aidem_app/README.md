@@ -77,9 +77,8 @@ Windows:
 flutter build windows --release
 ```
 
-The helper script `scripts/bundle_app.ps1` can assemble a local portable Windows package under `Releases/Windows`.
+The helper script `scripts/bundle_app.ps1` can assemble local Android and Windows packages under the repository-level `Releases/` directory. The script resolves paths relative to its own location so it can run from any checkout path.
 
 ## Safety Note
 
 AIDEM is emergency decision support, not a medical professional. The app prioritizes emergency services whenever reachable, avoids diagnosis, and keeps advice inside protocol and uncertainty boundaries.
-

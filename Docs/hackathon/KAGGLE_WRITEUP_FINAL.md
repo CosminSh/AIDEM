@@ -101,7 +101,6 @@ Full Gemma behavior requires selecting a local `.litertlm` model file during set
 
 ## Links
 
-- Video: TODO add public YouTube link
-- Code repository: TODO add public GitHub/Kaggle repository link
-- Live demo / build files: TODO add public release link or attach files to Kaggle
-
+- Video: add public YouTube link before upload
+- Code repository: add public GitHub/Kaggle repository link before upload
+- Live demo / build files: add public release link or attach files to Kaggle before upload

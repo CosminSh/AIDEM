@@ -84,8 +84,8 @@ class _TacticalContainerState extends State<TacticalContainer>
               color:
                   widget.borderColor ??
                   (widget.animatePulse
-                      ? (widget.accentColor ?? AppColors.brandAi).withOpacity(
-                          _pulseAnimation.value,
+                      ? (widget.accentColor ?? AppColors.brandAi).withValues(
+                          alpha: _pulseAnimation.value,
                         )
                       : AppColors.border),
               width: 1,

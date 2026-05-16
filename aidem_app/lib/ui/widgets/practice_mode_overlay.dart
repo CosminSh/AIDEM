@@ -30,7 +30,7 @@ class PracticeModeOverlay extends StatelessWidget {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 5),
-              color: AppColors.accentBlue.withOpacity(0.72),
+              color: AppColors.accentBlue.withValues(alpha: 0.72),
               child: const Text(
                 "Practice mode - no real emergency active",
                 textAlign: TextAlign.center,

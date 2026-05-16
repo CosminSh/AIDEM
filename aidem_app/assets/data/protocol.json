@@ -45,9 +45,7 @@
         {"label": "Frostbite", "target": "frostbite_protocol"},
         {"label": "Spinal Injury Suspected", "target": "spinal_protocol"},
         {"label": "Shock (Pale, Weak, Cool)", "target": "shock_protocol"},
-        {"label": "Chest Pain / Heart Attack", "target": "chest_pain_protocol"},
         {"label": "Choking", "target": "choking_protocol"},
-        {"label": "Seizure", "target": "seizure_protocol"},
         {"label": "Drowning / Needs CPR", "target": "drowning_cpr_protocol"},
         {"label": "Tick / Insect Bite", "target": "tick_removal_protocol"},
         {"label": "Vehicle Emergency", "target": "vehicle_emergency_protocol"},
@@ -425,24 +423,6 @@
       "branches": [
         {"label": "Object cleared", "target": "triage_selection"},
         {"label": "Unconscious", "target": "rescue_call"}
-      ]
-    },
-    "chest_pain_protocol": {
-      "id": "chest_pain_protocol",
-      "question": "Sit them down and keep them calm. If they have aspirin and aren't allergic, have them chew 1 adult or 2-4 baby aspirins. Call rescue immediately.",
-      "source": "AHA",
-      "gps_context": true,
-      "branches": [
-        {"label": "Done", "target": "rescue_call"}
-      ]
-    },
-    "seizure_protocol": {
-      "id": "seizure_protocol",
-      "question": "Do not restrain them. Clear the area of sharp objects. Place something soft under their head. Note the time. Do not put anything in their mouth.",
-      "source": "CDC",
-      "gps_context": false,
-      "branches": [
-        {"label": "Seizure ended", "target": "triage_selection"}
       ]
     },
     "disaster_selection": {

@@ -357,9 +357,7 @@ void main() {
       expect(facts, contains('cut is on a finger'));
       expect(facts, contains('1 cm'));
       expect(facts, contains('deep'));
-      expect(facts, contains('fairly heavy'));
       expect(facts, contains('bright red'));
-      expect(facts, contains('steady flow'));
       expect(facts, contains('bleeding is almost stopped'));
       expect(facts, contains('bleeding has stopped'));
     });

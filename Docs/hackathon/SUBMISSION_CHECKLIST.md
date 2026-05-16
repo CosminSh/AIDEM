@@ -6,7 +6,7 @@ Deadline rule: the Kaggle writeup must be submitted before the deadline. Draft o
 
 - [ ] Create a new Kaggle Writeup.
 - [ ] Select the final track: `Global Resilience`.
-- [ ] Paste/adapt `Docs/KAGGLE_WRITEUP_FINAL.md`.
+- [ ] Paste/adapt `Docs/hackathon/KAGGLE_WRITEUP_FINAL.md`.
 - [ ] Keep final text under 1,500 words.
 - [ ] Add the architecture diagram from the writeup.
 - [ ] Add final project links in the Attachments section.
@@ -39,7 +39,7 @@ Deadline rule: the Kaggle writeup must be submitted before the deadline. Draft o
 - [ ] Build the final Windows portable package if included.
 - [ ] Attach Android APK or public release URL.
 - [ ] Attach Windows portable package or public release URL if included.
-- [ ] Include `Docs/JUDGE_DEMO_GUIDE.md`.
+- [ ] Include `Docs/hackathon/JUDGE_DEMO_GUIDE.md`.
 - [ ] Verify demo mode works without model setup.
 - [ ] Verify model setup screen points to the Gemma LiteRT download page.
 - [ ] Verify first-run legal notice fits on desktop and mobile.

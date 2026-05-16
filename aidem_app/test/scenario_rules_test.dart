@@ -5,19 +5,23 @@ void main() {
   group('Emergency Scenario Detection', () {
     test('Tier 1: Spinal injury keywords trigger critical response', () {
       final response = AdaptiveMock.respond(
-        userMessage: 'my friend fell on his mtb and hit his back, lower back hurts',
+        userMessage:
+            'my friend fell on his mtb and hit his back, lower back hurts',
         situationContext: '',
         historyCount: 0,
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(
-        contains('don'),
-        contains('stay still'),
-        contains('call'),
-        contains('911'),
-        contains('112'),
-      ));
+      expect(
+        lower,
+        anyOf(
+          contains('don'),
+          contains('stay still'),
+          contains('call'),
+          contains('911'),
+          contains('112'),
+        ),
+      );
     });
 
     test('Tier 1: Unconscious triggers emergency protocol', () {
@@ -28,13 +32,16 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(
-        contains('cpr'),
-        contains('breathing'),
-        contains('call'),
-        contains('911'),
-        contains('112'),
-      ));
+      expect(
+        lower,
+        anyOf(
+          contains('cpr'),
+          contains('breathing'),
+          contains('call'),
+          contains('911'),
+          contains('112'),
+        ),
+      );
     });
 
     test('Tier 3: Minor wound gets self-management advice', () {
@@ -45,12 +52,15 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(
-        contains('clean'),
-        contains('water'),
-        contains('bandage'),
-        contains('elevate'),
-      ));
+      expect(
+        lower,
+        anyOf(
+          contains('clean'),
+          contains('water'),
+          contains('bandage'),
+          contains('elevate'),
+        ),
+      );
     });
 
     test('Tier 2: Fracture suspicion gives immobilization advice', () {
@@ -61,13 +71,16 @@ void main() {
       );
 
       final lower = response.toLowerCase();
-      expect(lower, anyOf(
-        contains('splint'),
-        contains('immobilize'),
-        contains('support'),
-        contains('ice'),
-        contains('elevate'),
-      ));
+      expect(
+        lower,
+        anyOf(
+          contains('splint'),
+          contains('immobilize'),
+          contains('support'),
+          contains('ice'),
+          contains('elevate'),
+        ),
+      );
     });
   });
 

@@ -26,7 +26,7 @@ class ImageCaptureButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           decoration: BoxDecoration(
             color: hasImage
-                ? AppColors.success.withOpacity(0.1)
+                ? AppColors.success.withValues(alpha: 0.1)
                 : AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(AppColors.radius),
             border: Border.all(

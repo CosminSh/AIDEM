@@ -67,8 +67,8 @@ class _MicButtonState extends State<MicButton>
               boxShadow: widget.isListening
                   ? [
                       BoxShadow(
-                        color: AppColors.accentRed.withOpacity(
-                          0.3 * _controller.value,
+                        color: AppColors.accentRed.withValues(
+                          alpha: 0.3 * _controller.value,
                         ),
                         blurRadius: 15 * _controller.value,
                         spreadRadius: 8 * _controller.value,

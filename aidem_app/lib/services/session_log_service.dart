@@ -1,6 +1,8 @@
 import 'dart:async';
 // import 'package:sqflite/sqflite.dart';
 // import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
+
 import 'gps_service.dart';
 
 class SessionLogService {
@@ -49,7 +51,7 @@ class SessionLogService {
     //   'timestamp': timestamp,
     //   'user_choice': userChoice,
     // });
-    print('Logged step: $nodeId ($userChoice) at $timestamp');
+    debugPrint('Logged step: $nodeId ($userChoice) at $timestamp');
   }
 
   /// Logs a GPS position.
@@ -64,6 +66,6 @@ class SessionLogService {
     //   'altitude': coords.altitude,
     //   'timestamp': coords.timestamp.millisecondsSinceEpoch,
     // });
-    print('Logged position: ${coords.latitude}, ${coords.longitude}');
+    debugPrint('Logged position: ${coords.latitude}, ${coords.longitude}');
   }
 }

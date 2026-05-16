@@ -1,5 +1,8 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import '../models/protocol.dart';
 
 class ProtocolService {
@@ -34,7 +37,7 @@ class ProtocolService {
 
       _isLoaded = true;
     } catch (e) {
-      print('Error loading protocol: $e');
+      debugPrint('Error loading protocol: $e');
       rethrow;
     }
   }

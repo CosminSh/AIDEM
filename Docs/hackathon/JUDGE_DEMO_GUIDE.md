@@ -52,7 +52,7 @@ After creating final release builds, use one or both of these for the Kaggle "Li
 Public Kaggle/GitHub release URL:
 
 ```text
-TODO add public build link after upload
+Add the public build link here after upload.
 ```
 
 ## Known Limitations

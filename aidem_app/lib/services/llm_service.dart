@@ -690,6 +690,7 @@ class AdaptiveMock {
   static bool _isOffTopic(String msg) {
     final asksForEntertainment =
         msg.contains('tell me a joke') ||
+        msg.contains('poem') ||
         msg.contains('write a poem') ||
         msg.contains('write me a poem') ||
         msg.contains('sing') ||

@@ -7,6 +7,30 @@ void main() {
   group('Protocol data quality', () {
     final protocolFile = File('assets/data/protocol.json');
 
+    test('protocol file does not contain duplicate node ids', () {
+      final protocolText = protocolFile.readAsStringSync();
+      final nodeIdPattern = RegExp(r'^    "([^"]+)": \{', multiLine: true);
+      final seen = <String>{};
+      final duplicateIds = <String>[];
+
+      for (final match in nodeIdPattern.allMatches(protocolText)) {
+        final nodeId = match.group(1)!;
+        if (!seen.add(nodeId)) {
+          duplicateIds.add(nodeId);
+        }
+      }
+
+      expect(duplicateIds, isEmpty);
+    });
+
+    test('protocol has broad emergency coverage', () {
+      final protocol =
+          jsonDecode(protocolFile.readAsStringSync()) as Map<String, dynamic>;
+      final nodes = protocol['nodes'] as Map<String, dynamic>;
+
+      expect(nodes.length, greaterThanOrEqualTo(150));
+    });
+
     test('every protocol node has a source citation', () {
       final protocol =
           jsonDecode(protocolFile.readAsStringSync()) as Map<String, dynamic>;
@@ -22,6 +46,28 @@ void main() {
       }
 
       expect(missingSources, isEmpty);
+    });
+
+    test('branch labels are unique within each protocol node', () {
+      final protocol =
+          jsonDecode(protocolFile.readAsStringSync()) as Map<String, dynamic>;
+      final nodes = protocol['nodes'] as Map<String, dynamic>;
+      final duplicateLabels = <String>[];
+
+      for (final entry in nodes.entries) {
+        final node = entry.value as Map<String, dynamic>;
+        final branches = node['branches'] as List<dynamic>? ?? [];
+        final seen = <String>{};
+        for (final branch in branches) {
+          final label = ((branch as Map<String, dynamic>)['label'] as String)
+              .trim();
+          if (!seen.add(label)) {
+            duplicateLabels.add('${entry.key}: $label');
+          }
+        }
+      }
+
+      expect(duplicateLabels, isEmpty);
     });
 
     test('all branch targets resolve to existing nodes or terminal end', () {

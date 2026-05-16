@@ -24,21 +24,21 @@ Global Resilience
 
 Body:
 
-Use `Docs/KAGGLE_WRITEUP_FINAL.md`.
+Use `Docs/hackathon/KAGGLE_WRITEUP_FINAL.md`.
 
 Project Links:
 
 ```text
-Video: TODO YouTube URL
-Code repository: TODO public GitHub/Kaggle URL
-Live demo: TODO public release URL or Kaggle file attachment
+Video: add final YouTube URL before upload.
+Code repository: add final public GitHub or Kaggle repository URL before upload.
+Live demo: add final release URL or attach files to Kaggle.
 ```
 
 Media Gallery:
 
 ```text
 Cover image: Docs/media/aidem-cover.png
-Video: TODO YouTube URL
+Video: add final YouTube URL before upload.
 Screenshots: no-signal proof, home screen, active guidance, image input, GPS capture, rescue summary
 ```
 
@@ -59,8 +59,8 @@ The app does not replace emergency services or medical professionals. It is desi
 
 Built for the Google Gemma Hackathon.
 
-Code: TODO public repository URL
-Demo: TODO public release or Kaggle attachment URL
+Code: add final public repository URL before upload.
+Demo: add final release URL or Kaggle attachment before upload.
 ```
 
 Tags:
@@ -128,4 +128,3 @@ Recommended simplest path:
 1. Upload the APK and optional Windows zip to a GitHub Release.
 2. Add the GitHub Release URL to Kaggle Project Links as the live demo.
 3. Attach the cover image and video in the Media Gallery.
-

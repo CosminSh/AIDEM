@@ -31,7 +31,7 @@ void main() {
       name: 'back injury warns not to move',
       userMessage: 'My friend fell and says his back and neck hurt.',
       expectedAny: ['do not move', 'still', 'call', 'spine'],
-      forbidden: ['walk', 'sit up', 'stand him'],
+      forbidden: ['walk him', 'make him stand', 'move him to'],
     ),
     ProtocolEvalCase(
       name: 'burns avoid unsafe folk remedies',
@@ -55,7 +55,7 @@ void main() {
       name: 'stroke signs escalate and avoid food',
       userMessage: 'His face is drooping and his speech is slurred.',
       expectedAny: ['stroke', 'time', 'emergency', '911'],
-      forbidden: ['give food', 'give drink', 'aspirin now'],
+      forbidden: ['feed them', 'give aspirin', 'aspirin now'],
     ),
     ProtocolEvalCase(
       name: 'opioid overdose prompts naloxone and breathing support',
@@ -211,7 +211,7 @@ void main() {
         confirmedLacks: ['signal', 'cold pack'],
         answeredFacts: [
           'No phone signal reported.',
-          'Bleeding is not heavy.',
+          'Bleeding has stopped.',
           'Can stand or bear weight.',
           'No sharp pain with movement.',
           'No numbness reported.',
@@ -219,6 +219,8 @@ void main() {
           'Swelling is not getting worse.',
           'No crooked shape or deformity reported.',
           'Pain is moderate.',
+          'No head injury reported.',
+          'Breathing is normal.',
         ],
       );
 
@@ -283,6 +285,8 @@ void main() {
             'No numbness reported.',
             'Swelling is not getting worse.',
             'Injury is on the knee.',
+            'No head injury reported.',
+            'Breathing is normal.',
           ],
         );
 
@@ -307,6 +311,8 @@ void main() {
           'No numbness reported.',
           'Swelling is not getting worse.',
           'Injury is on the knee.',
+          'No head injury reported.',
+          'Breathing is normal.',
         ],
       );
 

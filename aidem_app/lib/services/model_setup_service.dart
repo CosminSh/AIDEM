@@ -1,7 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_gemma/flutter_gemma.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum ModelStatus { notInstalled, downloading, ready, error }
 
@@ -62,8 +65,6 @@ class ModelSetupService extends Notifier<ModelSetupState> {
 
   static const String _modelFileName = 'gemma-4-e2b-it.litertlm';
   static const String _lastUsedModelKey = 'last_used_model_path';
-  static const String _defaultModelPath =
-      r'G:\Antigravity Projects\AIDEM\Assets\Models\gemma-4-E2B-it.litertlm';
 
   @override
   ModelSetupState build() {
@@ -86,24 +87,16 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         return true;
       }
 
-      // 2. Check for last used model path or default paths
+      // 2. Check the last used model path or portable app directories.
       final prefs = await SharedPreferences.getInstance();
       String? savedPath = prefs.getString(_lastUsedModelKey);
 
-      // Look for model in relative 'models' folder next to the exe (Portable mode)
-      final exeDir = File(Platform.resolvedExecutable).parent.path;
-      final relativePath = '$exeDir\\models\\$_modelFileName';
-
       if (savedPath == null || !File(savedPath).existsSync()) {
-        if (File(relativePath).existsSync()) {
-          savedPath = relativePath;
-        } else if (File(_defaultModelPath).existsSync()) {
-          savedPath = _defaultModelPath;
-        }
+        savedPath = await _findBundledModelPath();
       }
 
       if (savedPath != null && File(savedPath).existsSync()) {
-        print('Auto-loading model from: $savedPath');
+        debugPrint('Auto-loading model from: $savedPath');
         await installFromLocalFile(savedPath);
         if (state.status == ModelStatus.ready) return true;
       }
@@ -127,7 +120,7 @@ class ModelSetupService extends Notifier<ModelSetupState> {
       );
       return false;
     } catch (e) {
-      print('checkIfInstalled error: $e');
+      debugPrint('checkIfInstalled error: $e');
       state = state.copyWith(status: ModelStatus.notInstalled);
       return false;
     }
@@ -199,8 +192,10 @@ class ModelSetupService extends Notifier<ModelSetupState> {
           ? ModelFileType.binary
           : (isLiteRT ? ModelFileType.litertlm : ModelFileType.task);
 
-      print('LLM Setup: Starting installation of ($fileType) from: $filePath');
-      print(
+      debugPrint(
+        'LLM Setup: Starting installation of ($fileType) from: $filePath',
+      );
+      debugPrint(
         'LLM Setup: This may take a minute as the model is copied to internal storage...',
       );
 
@@ -209,13 +204,13 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         fileType: fileType,
       ).fromFile(filePath).install();
 
-      print('LLM Setup: Installation call completed.');
+      debugPrint('LLM Setup: Installation call completed.');
 
       // Save this path as the last used one
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastUsedModelKey, filePath);
 
-      print('LLM Setup: SharedPreferences updated.');
+      debugPrint('LLM Setup: SharedPreferences updated.');
 
       state = state.copyWith(
         status: ModelStatus.ready,
@@ -224,12 +219,46 @@ class ModelSetupService extends Notifier<ModelSetupState> {
         activeModelPath: filePath,
       );
     } catch (e) {
-      print('LLM Setup: installFromLocalFile error: $e');
+      debugPrint('LLM Setup: installFromLocalFile error: $e');
       state = state.copyWith(
         status: ModelStatus.error,
         errorMessage: e.toString(),
         statusMessage: 'Installation failed',
       );
     }
+  }
+
+  Future<String?> _findBundledModelPath() async {
+    final candidates = <String>[];
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      candidates.add(_joinPath(exeDir.path, ['models', _modelFileName]));
+      candidates.add(_joinPath(exeDir.parent.path, ['models', _modelFileName]));
+    }
+
+    final supportDir = await getApplicationSupportDirectory();
+    candidates.add(_joinPath(supportDir.path, ['models', _modelFileName]));
+
+    final documentsDir = await getApplicationDocumentsDirectory();
+    candidates.add(
+      _joinPath(documentsDir.path, ['AIDEM', 'models', _modelFileName]),
+    );
+
+    for (final path in candidates) {
+      if (File(path).existsSync()) {
+        return path;
+      }
+    }
+
+    return null;
+  }
+
+  String _joinPath(String root, List<String> segments) {
+    var current = root;
+    for (final segment in segments) {
+      current = '$current${Platform.pathSeparator}$segment';
+    }
+    return current;
   }
 }

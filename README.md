@@ -79,8 +79,8 @@ aidem_app/lib/providers/         Session and app state
 aidem_app/assets/data/           Protocol, knowledge base, emergency numbers
 aidem_app/assets/images/         App logo and generated platform assets
 aidem_app/test/                  Protocol, data, guard, demo, and context tests
-Docs/                            Kaggle submission, video, and judging docs
-Releases/                        Local release artifacts for demo packaging
+Docs/hackathon/                  Submission-ready writeups, demo guide, scripts
+Docs/archive/                    Historical planning and draft notes
 ```
 
 ## Running The App
@@ -98,6 +98,8 @@ cd aidem_app
 flutter pub get
 flutter run -d android
 ```
+
+Validated hackathon demo targets are Android and Windows. Flutter project folders for iOS, macOS, Linux, and web are retained for future portability work, but they are not advertised as validated release targets in this submission.
 
 Build commands:
 
@@ -138,17 +140,22 @@ flutter test
 dart analyze
 ```
 
-The test suite includes protocol adherence scenarios, data quality checks, demo scenario checks, conversation guard tests, and context compaction tests.
+The test suite includes protocol adherence scenarios, data quality checks, demo scenario checks, conversation guard tests, and context compaction tests. CI runs Dart analysis and Flutter tests through `.github/workflows/flutter.yml`.
+
+## Project Hygiene
+
+- Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
+- Contribution and review expectations are in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Local models, release binaries, SDKs, signing files, and generated build output are excluded by `.gitignore`.
 
 ## Submission Docs
 
-- [Final Kaggle Writeup](Docs/KAGGLE_WRITEUP_FINAL.md)
-- [Judge Demo Guide](Docs/JUDGE_DEMO_GUIDE.md)
-- [Final Video Script](Docs/FINAL_VIDEO_SCRIPT.md)
-- [Submission Checklist](Docs/SUBMISSION_CHECKLIST.md)
-- [Gemma Hackathon Plan](Docs/GEMMA_HACKATHON_PRIZE_PLAN.md)
+- [Submission Docs Index](Docs/README.md)
+- [Final Kaggle Writeup](Docs/hackathon/KAGGLE_WRITEUP_FINAL.md)
+- [Judge Demo Guide](Docs/hackathon/JUDGE_DEMO_GUIDE.md)
+- [Final Video Script](Docs/hackathon/FINAL_VIDEO_SCRIPT.md)
+- [Submission Checklist](Docs/hackathon/SUBMISSION_CHECKLIST.md)
 
-## License
+## Evaluation License
 
-Proprietary / All Rights Reserved. This source code is provided for evaluation and judging as part of the Google Gemma Hackathon. See [LICENSE](LICENSE) for details.
-
+This source code is provided for evaluation and judging as part of the Google Gemma Hackathon. It is not released as open source unless the project owners replace the evaluation license. See [LICENSE](LICENSE) for details.

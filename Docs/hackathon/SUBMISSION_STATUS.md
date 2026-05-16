@@ -1,14 +1,14 @@
 # AIDEM Submission Status
 
-Last updated: 2026-05-14
+Last updated: 2026-05-16
 
 ## Ready Locally
 
-- Final Kaggle writeup draft: `Docs/KAGGLE_WRITEUP_FINAL.md`
-- Judge demo guide: `Docs/JUDGE_DEMO_GUIDE.md`
-- Final video script: `Docs/FINAL_VIDEO_SCRIPT.md`
-- Submission checklist: `Docs/SUBMISSION_CHECKLIST.md`
-- Upload templates: `Docs/UPLOAD_TEMPLATES.md`
+- Final Kaggle writeup draft: `Docs/hackathon/KAGGLE_WRITEUP_FINAL.md`
+- Judge demo guide: `Docs/hackathon/JUDGE_DEMO_GUIDE.md`
+- Final video script: `Docs/hackathon/FINAL_VIDEO_SCRIPT.md`
+- Submission checklist: `Docs/hackathon/SUBMISSION_CHECKLIST.md`
+- Upload templates: `Docs/hackathon/UPLOAD_TEMPLATES.md`
 - Kaggle cover image: `Docs/media/aidem-cover.png`
 - Public README cleaned and updated.
 - App module README cleaned and updated.
@@ -33,21 +33,20 @@ dart analyze
 Result:
 
 - Completed successfully.
-- No analyzer errors.
-- Existing info-level lint warnings remain, mostly `avoid_print` and deprecated `withOpacity` / speech APIs.
+- No analyzer issues found.
 
 Command:
 
 ```bash
 cd aidem_app
-flutter test
+dart --packages=<flutter-sdk>/packages/flutter_tools/.dart_tool/package_config.json <flutter-sdk>/bin/cache/flutter_tools.snapshot test
 ```
 
 Result:
 
-- Timed out locally before returning test output.
-- Focused Flutter test runs also timed out locally.
-- Direct `dart run test` is not valid for these tests because they import `flutter_test` and require the Flutter test runner.
+- Completed successfully.
+- All 74 tests passed.
+- Note: the local Windows `flutter.bat test` wrapper timed out in this desktop session, so the same Flutter test runner was executed through the Flutter tool snapshot.
 
 ## Remaining User-Owned Submission Tasks
 

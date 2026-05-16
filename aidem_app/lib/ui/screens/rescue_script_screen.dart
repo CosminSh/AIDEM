@@ -42,10 +42,10 @@ class RescueScriptScreen extends StatelessWidget {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentRed.withOpacity(0.14),
+                  color: AppColors.accentRed.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(AppColors.radius),
                   border: Border.all(
-                    color: AppColors.accentRed.withOpacity(0.34),
+                    color: AppColors.accentRed.withValues(alpha: 0.34),
                   ),
                 ),
                 child: const Row(
@@ -68,7 +68,7 @@ class RescueScriptScreen extends StatelessWidget {
               const SizedBox(height: 18),
               TacticalContainer(
                 padding: const EdgeInsets.all(22),
-                borderColor: AppColors.accentRed.withOpacity(0.26),
+                borderColor: AppColors.accentRed.withValues(alpha: 0.26),
                 showGlow: false,
                 child: SelectableText(
                   script,

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+
 import '../models/protocol.dart';
 import 'gps_service.dart';
 
@@ -73,7 +76,7 @@ class SessionPersistenceService {
       final file = File('${dir.path}/session_${session.id}.json');
       await file.writeAsString(jsonEncode(session.toJson()));
     } catch (e) {
-      print('Error saving session: $e');
+      debugPrint('Error saving session: $e');
     }
   }
 
@@ -87,7 +90,7 @@ class SessionPersistenceService {
         return PersistedSession.fromJson(json);
       }
     } catch (e) {
-      print('Error loading session: $e');
+      debugPrint('Error loading session: $e');
     }
     return null;
   }
@@ -110,7 +113,7 @@ class SessionPersistenceService {
       sessions.sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
       return sessions;
     } catch (e) {
-      print('Error listing sessions: $e');
+      debugPrint('Error listing sessions: $e');
       return [];
     }
   }
@@ -131,7 +134,7 @@ class SessionPersistenceService {
         await contextFile.delete();
       }
     } catch (e) {
-      print('Error deleting session: $e');
+      debugPrint('Error deleting session: $e');
     }
   }
 }

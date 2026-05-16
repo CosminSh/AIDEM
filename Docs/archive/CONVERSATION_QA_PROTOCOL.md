@@ -7,7 +7,7 @@ Use this protocol after changes to the emergency conversation flow, prompts, con
 From `aidem_app`, run:
 
 ```powershell
-G:\flutter\bin\cache\dart-sdk\bin\dart.exe --packages=G:\flutter\packages\flutter_tools\.dart_tool\package_config.json G:\flutter\bin\cache\flutter_tools.snapshot test test\active_session_screen_test.dart test\context_compaction_service_test.dart test\conversation_guard_service_test.dart test\adaptive_mock_test.dart test\scenario_rules_test.dart
+flutter test test/active_session_screen_test.dart test/context_compaction_service_test.dart test/conversation_guard_service_test.dart test/adaptive_mock_test.dart test/scenario_rules_test.dart
 ```
 
 This checks:

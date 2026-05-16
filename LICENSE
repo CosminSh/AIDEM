@@ -1,11 +1,11 @@
+AIDEM Evaluation License
+
 Copyright (c) 2026 AIDEM Contributors
 
-All Rights Reserved.
+All rights reserved.
 
-This software and its associated documentation files are the exclusive property of the AIDEM project contributors.
+This repository is provided solely for evaluation and judging as part of the Google Gemma Hackathon. No open-source license is granted.
 
-As of May 2026, this source code is being provided solely for the purpose of evaluation and judging as part of the Google Gemma Hackathon. 
+Without prior written permission from the copyright holders, no person or organization may use, copy, modify, merge, publish, distribute, sublicense, sell, or otherwise exploit this software or its associated documentation for any commercial or non-commercial purpose outside hackathon evaluation.
 
-NO LICENSE IS GRANTED: No person or organization is permitted to use, copy, modify, merge, publish, distribute, sublicense, or sell copies of this software for any purpose (commercial or non-commercial) without the express written permission of the copyright holders.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+The software is provided "as is", without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability arising from or in connection with the software or its use.

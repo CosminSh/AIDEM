@@ -193,8 +193,8 @@ class AppTheme {
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.surfaceElevated,
       disabledColor: AppColors.surfaceMuted,
-      selectedColor: AppColors.brandAi.withOpacity(0.14),
-      secondarySelectedColor: AppColors.brandAi.withOpacity(0.18),
+      selectedColor: AppColors.brandAi.withValues(alpha: 0.14),
+      secondarySelectedColor: AppColors.brandAi.withValues(alpha: 0.18),
       labelStyle: const TextStyle(color: AppColors.textPrimary),
       secondaryLabelStyle: const TextStyle(color: AppColors.brandAi),
       side: const BorderSide(color: AppColors.border),

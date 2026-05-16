@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class EmergencyNumberService {
@@ -18,7 +20,7 @@ class EmergencyNumberService {
       );
       _isLoaded = true;
     } catch (e) {
-      print('Error loading emergency numbers: $e');
+      debugPrint('Error loading emergency numbers: $e');
     }
   }
 
