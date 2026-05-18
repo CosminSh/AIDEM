@@ -13,6 +13,20 @@ Desktop.ini
 *.tmp
 *.temp
 
+# Local working notes and submission drafts
+# Keep the public README/CHANGELOG/CONTRIBUTING/LICENSE in git; keep planning,
+# scripts, judge notes, and archived writeups as local backups only.
+TODO.md
+Docs/
+sims/scenarios.md
+PITCH.md
+TECHNICAL_PRESENTATION.md
+SUBMISSION_*.md
+KAGGLE_*.md
+JUDGE_*.md
+*_DRAFT.md
+*_SCRIPT.md
+
 # Secrets, signing, and local machine config
 .env
 .env.*
