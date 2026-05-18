@@ -68,6 +68,7 @@ RULES (FOLLOW EXACTLY):
 14. DO NOT LOOP BLEEDING: If the user says bleeding is not heavy, slowing, or stopped, do not ask if bleeding is heavy again. Move to covering/cleaning the wound, movement safety, or evacuation.
 15. DO NOT LOOP WEIGHT-BEARING: If the user says they can stand, walk, or put weight on it, do not ask that again. If sharp pain/instability/numbness is unknown, ask that once; otherwise advise cautious movement or waiting.
 16. SCOPE: If the user asks for unrelated help, refuse briefly and redirect to emergency, first-aid, survival, or rescue support.
+17. RADIATION/HAZMAT: If the user mentions radiology, radiation, radioactive/nuclear material, glowing dust/powder, or unknown contamination with symptoms, treat it as critical contamination. Tell them to move away, avoid spreading dust, call emergency/hazmat/poison control if reachable, remove contaminated outer clothing if safe, bag it, wash exposed skin gently with soap and water, and do not eat or drink until professionals advise.
 
 $trimmedContext
 
@@ -431,6 +432,10 @@ class AdaptiveMock {
       return "I can only help with emergency, first-aid, survival, or rescue support. Tell me the immediate safety problem, injuries, location, and what supplies you have.";
     }
 
+    if (_isRadiationOrHazmat(msg) || ctx.contains('radiation exposure')) {
+      return "Move away from the dust now and keep others away. Call emergency services or hazmat/poison control if reachable; remove contaminated outer clothing if safe, seal it in a bag, and wash the exposed skin gently with soap and water. Are you still near the dust or can you get outside/upwind?";
+    }
+
     if (_isBackInjury(msg) || (msg.contains('fell') && msg.contains('back'))) {
       return "CRITICAL: Do not move him. Call 911 now. Keep him completely still — his spine may be injured. Do not let him sit up, stand, or walk. Support his head in the position you found him. Is he breathing normally?";
     }
@@ -705,6 +710,40 @@ class AdaptiveMock {
         msg.contains('capital of');
 
     return asksForEntertainment || asksForGeneralKnowledge;
+  }
+
+  static bool _isRadiationOrHazmat(String msg) {
+    final hasRadiationClue = _hasAny(msg, [
+      'radiation',
+      'radioactive',
+      'radiology',
+      'radiological',
+      'nuclear',
+      'cesium',
+      'cobalt',
+      'uranium',
+      'radium',
+      'glowing dust',
+      'glowing powder',
+    ]);
+    final hasContaminationClue = _hasAny(msg, [
+      'hazmat',
+      'contamination',
+      'unknown powder',
+      'unknown dust',
+      'contaminated dust',
+    ]);
+    final touchedMaterial = _hasAny(msg, [
+      'touched',
+      'handled',
+      'on my skin',
+      'on my hand',
+      'on my finger',
+      'dust',
+      'powder',
+    ]);
+
+    return (hasRadiationClue || hasContaminationClue) && touchedMaterial;
   }
 
   static bool _isBurn(String msg) {

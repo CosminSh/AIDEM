@@ -67,6 +67,269 @@ class SessionState {
   }
 }
 
+String routeProtocolNodeIdForSituation({
+  required String currentNodeId,
+  required String incident,
+  required String summary,
+  required String userMessage,
+  required String promptContext,
+}) {
+  final incidentLower = incident.toLowerCase();
+  final summaryLower = summary.toLowerCase();
+  final userMsgLower = userMessage.toLowerCase();
+  final promptContextLower = promptContext.toLowerCase();
+  final combined =
+      '$incidentLower $summaryLower $userMsgLower $promptContextLower';
+  bool hasAny(List<String> terms) => terms.any(combined.contains);
+
+  final runnerFieldInjury =
+      hasAny([
+        'forest',
+        'trail',
+        'woods',
+        'running',
+        'runner',
+        'jogging',
+        'stumbled',
+      ]) &&
+      hasAny(['knee', 'ankle', 'leg', 'fell', 'fall', 'injury', 'wound']);
+  final controlledAndMobile =
+      hasAny([
+        'bleeding has stopped',
+        'bleeding stopped',
+        'stopped bleeding',
+        'not bleeding anymore',
+        'bleeding is not heavy',
+      ]) &&
+      hasAny(['can stand', 'can walk', 'can put weight', 'can bear weight']);
+
+  if (runnerFieldInjury && controlledAndMobile) {
+    return 'evacuation_triage';
+  }
+
+  if (currentNodeId != 'start') {
+    return currentNodeId;
+  }
+
+  // Environmental and toxic hazards beat symptom-only routing. A mixed prompt
+  // like "CO alarm + chest pain" should not be downgraded to generic chest pain.
+  if (hasAny([
+    'radiation',
+    'radioactive',
+    'radiology',
+    'radiological',
+    'nuclear contamination',
+    'glowing dust',
+    'glowing powder',
+    'contaminated dust',
+  ])) {
+    return 'radiation_decontamination';
+  }
+  if (hasAny([
+    'carbon monoxide',
+    'co alarm',
+    'co detector',
+    'generator indoors',
+    'headache dizziness',
+  ])) {
+    return 'carbon_monoxide_protocol';
+  }
+  if (hasAny(['gas leak', 'smell gas', 'hissing gas', 'propane leak'])) {
+    return 'gas_leak_protocol';
+  }
+  if (hasAny([
+    'chemical spill',
+    'chemical release',
+    'toxic cloud',
+    'hazmat',
+    'fumes',
+    'chlorine gas',
+    'ammonia fumes',
+    'acid spill',
+  ])) {
+    return 'chemical_spill_protocol';
+  }
+  if (hasAny([
+    'outbreak',
+    'infectious',
+    'infection spreading',
+    'pandemic',
+    'quarantine',
+    'isolate',
+  ])) {
+    return 'infectious_disease_protocol';
+  }
+  if (hasAny([
+    'power outage',
+    'blackout',
+    'no electricity',
+    'generator',
+    'medical device power',
+  ])) {
+    return 'power_outage_protocol';
+  }
+
+  if (hasAny([
+    'overdose',
+    'naloxone',
+    'narcan',
+    'opioid',
+    'fentanyl',
+    'heroin',
+    'too many pills',
+  ])) {
+    return 'opioid_overdose_protocol';
+  }
+  if (hasAny([
+    'stroke',
+    'face droop',
+    'slurred',
+    'one side',
+    'one-sided',
+    'arm weakness',
+    'weak on one',
+    'trouble speaking',
+  ])) {
+    return 'stroke_protocol';
+  }
+  if (hasAny([
+    'allergic reaction',
+    'anaphylaxis',
+    'epipen',
+    'epi pen',
+    'swollen lips',
+    'tongue swelling',
+    'throat swelling',
+  ])) {
+    return 'anaphylaxis_protocol';
+  }
+  if (hasAny(['snake bite', 'snake bit', 'snakebite'])) {
+    return 'snake_bite_protocol';
+  }
+  if (hasAny(['drowning', 'near drowned', 'needs cpr', 'no pulse'])) {
+    return 'drowning_cpr_protocol';
+  }
+  if (incidentLower.contains('poison') || summaryLower.contains('poison')) {
+    return 'poisoning_protocol';
+  }
+  if (hasAny([
+    'pregnant',
+    'pregnancy',
+    'labor',
+    'contractions',
+    'water broke',
+    'giving birth',
+  ])) {
+    return 'pregnancy_labor_protocol';
+  }
+  if (hasAny([
+    'suicide',
+    'self harm',
+    'kill myself',
+    'kill himself',
+    'kill herself',
+    'mental health crisis',
+    'panic attack',
+  ])) {
+    return 'mental_health_crisis_protocol';
+  }
+  if (hasAny([
+    'many injured',
+    'multiple injured',
+    'mass casualty',
+    'explosion',
+    'crowd crush',
+  ])) {
+    return 'mass_casualty_triage';
+  }
+
+  if (incidentLower.contains('burn') ||
+      userMsgLower.contains('burn') ||
+      userMsgLower.contains('burned') ||
+      summaryLower.contains('burn')) {
+    return 'burn_protocol';
+  }
+  if (runnerFieldInjury) {
+    return 'injury_assessment';
+  }
+  if (incidentLower.contains('bleed') ||
+      incidentLower.contains('cut') ||
+      incidentLower.contains('wound') ||
+      userMsgLower.contains('cut') ||
+      userMsgLower.contains('bleeding') ||
+      summaryLower.contains('bleed') ||
+      summaryLower.contains('cut') ||
+      summaryLower.contains('wound') ||
+      summaryLower.contains('sangr')) {
+    return 'bleeding_protocol';
+  }
+  if (incidentLower.contains('fall') ||
+      incidentLower.contains('knee') ||
+      incidentLower.contains('elbow') ||
+      summaryLower.contains('fall')) {
+    return 'injury_assessment';
+  }
+  if (incidentLower.contains('heart') ||
+      incidentLower.contains('chest') ||
+      summaryLower.contains('chest')) {
+    return 'heart_attack_protocol';
+  }
+  if (hasAny(['asthma', 'inhaler', 'wheezing', 'shortness of breath'])) {
+    return 'asthma_breathing_protocol';
+  }
+  if (incidentLower.contains('chok') || summaryLower.contains('chok')) {
+    return 'choking_protocol';
+  }
+  if (incidentLower.contains('seiz') || summaryLower.contains('seiz')) {
+    return 'seizure_protocol';
+  }
+  if (incidentLower.contains('frost') ||
+      incidentLower.contains('freeze') ||
+      summaryLower.contains('cold')) {
+    return 'frostbite_protocol';
+  }
+  if (incidentLower.contains('lost') || summaryLower.contains('lost')) {
+    return 'lost_protocol';
+  }
+  if (incidentLower.contains('earthquake') ||
+      incidentLower.contains('shaking')) {
+    return 'earthquake_protocol';
+  }
+  if (incidentLower.contains('flood') || summaryLower.contains('flood')) {
+    return 'flood_protocol';
+  }
+  if (incidentLower.contains('wildfire') || incidentLower.contains('fire')) {
+    return 'wildfire_protocol';
+  }
+  if (incidentLower.contains('storm') ||
+      incidentLower.contains('tornado') ||
+      incidentLower.contains('hurricane')) {
+    return 'storm_protocol';
+  }
+  if (incidentLower.contains('water') ||
+      incidentLower.contains('drink') ||
+      summaryLower.contains('water')) {
+    return 'water_skills';
+  }
+  if (incidentLower.contains('food') ||
+      incidentLower.contains('hungry') ||
+      summaryLower.contains('food')) {
+    return 'food_skills';
+  }
+  if (incidentLower.contains('shelter') ||
+      incidentLower.contains('sleep') ||
+      summaryLower.contains('shelter')) {
+    return 'shelter_skills';
+  }
+  if (incidentLower.contains('navigat') ||
+      summaryLower.contains('direction') ||
+      summaryLower.contains('where')) {
+    return 'nav_skills';
+  }
+
+  return currentNodeId;
+}
+
 class SessionNotifier extends Notifier<SessionState> {
   @override
   SessionState build() {
@@ -350,203 +613,13 @@ class SessionNotifier extends Notifier<SessionState> {
     );
     final recentHistory = compactionService.getRecentMessages(count: 14);
 
-    // Map incident types to relevant documentation nodes. For mixed field
-    // injuries, route by the decision the user needs now rather than the first
-    // symptom mentioned, so minor bleeding does not trap the conversation.
-    final incident = compactionService.context.incidentType.toLowerCase();
-    final summary = state.situationSummary.toLowerCase();
-    final userMsgLower = userText.toLowerCase();
-    final promptContextLower = situationContext.toLowerCase();
-    final combined = '$incident $summary $userMsgLower $promptContextLower';
-    bool hasAny(List<String> terms) => terms.any(combined.contains);
-    final runnerFieldInjury =
-        hasAny([
-          'forest',
-          'trail',
-          'woods',
-          'running',
-          'runner',
-          'jogging',
-          'stumbled',
-        ]) &&
-        hasAny(['knee', 'ankle', 'leg', 'fell', 'fall', 'injury', 'wound']);
-    final controlledAndMobile =
-        hasAny([
-          'bleeding has stopped',
-          'bleeding stopped',
-          'stopped bleeding',
-          'not bleeding anymore',
-          'bleeding is not heavy',
-        ]) &&
-        hasAny(['can stand', 'can walk', 'can put weight', 'can bear weight']);
-    String effectiveNodeId = state.currentNode?.id ?? 'start';
-    if (runnerFieldInjury && controlledAndMobile) {
-      effectiveNodeId = 'evacuation_triage';
-    } else if (effectiveNodeId == 'start') {
-      // NOTE: burn must be checked BEFORE bleed — cooking burns involve no bleeding
-      if (incident.contains('burn') ||
-          userMsgLower.contains('burn') ||
-          userMsgLower.contains('burned') ||
-          summary.contains('burn')) {
-        effectiveNodeId = 'burn_protocol';
-      } else if (runnerFieldInjury) {
-        effectiveNodeId = 'injury_assessment';
-      } else if (incident.contains('bleed') ||
-          incident.contains('cut') ||
-          incident.contains('wound') ||
-          userMsgLower.contains('cut') ||
-          userMsgLower.contains('bleeding') ||
-          summary.contains('bleed') ||
-          summary.contains('cut') ||
-          summary.contains('wound') ||
-          summary.contains('sangr')) {
-        effectiveNodeId = 'bleeding_protocol';
-      } else if (incident.contains('fall') ||
-          incident.contains('knee') ||
-          incident.contains('elbow') ||
-          summary.contains('fall')) {
-        effectiveNodeId = 'injury_assessment';
-      } else if (incident.contains('heart') ||
-          incident.contains('chest') ||
-          summary.contains('chest')) {
-        effectiveNodeId = 'chest_pain_protocol';
-      } else if (hasAny([
-        'stroke',
-        'face droop',
-        'slurred',
-        'one side',
-        'one-sided',
-        'arm weakness',
-        'weak on one',
-        'trouble speaking',
-      ])) {
-        effectiveNodeId = 'stroke_protocol';
-      } else if (hasAny([
-        'asthma',
-        'inhaler',
-        'wheezing',
-        'shortness of breath',
-      ])) {
-        effectiveNodeId = 'asthma_breathing_protocol';
-      } else if (incident.contains('chok') || summary.contains('chok')) {
-        effectiveNodeId = 'choking_protocol';
-      } else if (incident.contains('seiz') || summary.contains('seiz')) {
-        effectiveNodeId = 'seizure_protocol';
-      } else if (incident.contains('frost') ||
-          incident.contains('freeze') ||
-          summary.contains('cold')) {
-        effectiveNodeId = 'frostbite_protocol';
-      } else if (incident.contains('lost') || summary.contains('lost')) {
-        effectiveNodeId = 'lost_protocol';
-      } else if (incident.contains('earthquake') ||
-          incident.contains('shaking')) {
-        effectiveNodeId = 'earthquake_protocol';
-      } else if (incident.contains('flood') || summary.contains('flood')) {
-        effectiveNodeId = 'flood_protocol';
-      } else if (incident.contains('wildfire') || incident.contains('fire')) {
-        effectiveNodeId = 'wildfire_protocol';
-      } else if (incident.contains('storm') ||
-          incident.contains('tornado') ||
-          incident.contains('hurricane')) {
-        effectiveNodeId = 'storm_protocol';
-      } else if (hasAny([
-        'power outage',
-        'blackout',
-        'no electricity',
-        'generator',
-        'medical device power',
-      ])) {
-        effectiveNodeId = 'power_outage_protocol';
-      } else if (hasAny([
-        'carbon monoxide',
-        'co alarm',
-        'co detector',
-        'generator indoors',
-        'headache dizziness',
-      ])) {
-        effectiveNodeId = 'carbon_monoxide_protocol';
-      } else if (hasAny([
-        'gas leak',
-        'smell gas',
-        'hissing gas',
-        'propane leak',
-      ])) {
-        effectiveNodeId = 'gas_leak_protocol';
-      } else if (hasAny([
-        'chemical spill',
-        'chemical release',
-        'toxic cloud',
-        'hazmat',
-        'fumes',
-      ])) {
-        effectiveNodeId = 'chemical_spill_protocol';
-      } else if (hasAny([
-        'outbreak',
-        'infectious',
-        'infection spreading',
-        'pandemic',
-        'quarantine',
-        'isolate',
-      ])) {
-        effectiveNodeId = 'infectious_disease_protocol';
-      } else if (incident.contains('water') ||
-          incident.contains('drink') ||
-          summary.contains('water')) {
-        effectiveNodeId = 'water_skills';
-      } else if (incident.contains('food') ||
-          incident.contains('hungry') ||
-          summary.contains('food')) {
-        effectiveNodeId = 'food_skills';
-      } else if (incident.contains('shelter') ||
-          incident.contains('sleep') ||
-          summary.contains('shelter')) {
-        effectiveNodeId = 'shelter_skills';
-      } else if (incident.contains('navigat') ||
-          summary.contains('direction') ||
-          summary.contains('where')) {
-        effectiveNodeId = 'nav_skills';
-      } else if (hasAny([
-        'overdose',
-        'naloxone',
-        'narcan',
-        'opioid',
-        'fentanyl',
-        'heroin',
-        'too many pills',
-      ])) {
-        effectiveNodeId = 'opioid_overdose_protocol';
-      } else if (incident.contains('poison') || summary.contains('poison')) {
-        effectiveNodeId = 'poisoning_protocol';
-      } else if (hasAny([
-        'pregnant',
-        'pregnancy',
-        'labor',
-        'contractions',
-        'water broke',
-        'giving birth',
-      ])) {
-        effectiveNodeId = 'pregnancy_labor_protocol';
-      } else if (hasAny([
-        'suicide',
-        'self harm',
-        'kill myself',
-        'kill himself',
-        'kill herself',
-        'mental health crisis',
-        'panic attack',
-      ])) {
-        effectiveNodeId = 'mental_health_crisis_protocol';
-      } else if (hasAny([
-        'many injured',
-        'multiple injured',
-        'mass casualty',
-        'explosion',
-        'crowd crush',
-      ])) {
-        effectiveNodeId = 'mass_casualty_triage';
-      }
-    }
-
+    var effectiveNodeId = routeProtocolNodeIdForSituation(
+      currentNodeId: state.currentNode?.id ?? 'start',
+      incident: compactionService.context.incidentType,
+      summary: state.situationSummary,
+      userMessage: userText,
+      promptContext: situationContext,
+    );
     final effectiveNode = protocolService.getNode(effectiveNodeId);
     if (effectiveNode != null && effectiveNode.id != state.currentNode?.id) {
       state = state.copyWith(currentNode: effectiveNode);

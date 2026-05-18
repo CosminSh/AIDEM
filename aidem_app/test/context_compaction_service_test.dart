@@ -317,6 +317,30 @@ void main() {
       expect(steps, isNot(contains('vomit')));
     });
 
+    test(
+      'radiology dust exposure is treated as critical contamination',
+      () async {
+        final service = ContextCompactionService();
+        await service.init(null);
+
+        service.noteUserMessage(
+          'i touched some fine glowing dust from an old radiology department, now my finger is getting blisters. other fingers fell off. i am throwing up a lot',
+        );
+
+        final ctx = service.context;
+        final facts = ctx.answeredFacts.join(' ').toLowerCase();
+
+        expect(ctx.incidentType, 'radiation exposure');
+        expect(ctx.injuryType, 'radiation or contamination exposure');
+        expect(ctx.urgencyLevel, 'critical');
+        expect(ctx.hazards.toLowerCase(), contains('radioactive'));
+        expect(facts, contains('hazardous dust exposure'));
+        expect(facts, contains('radiology or radiation source'));
+        expect(facts, contains('vomiting or nausea'));
+        expect(facts, contains('digit loss'));
+      },
+    );
+
     test('hand cut transcript details prevent repeated bleeding checks', () async {
       final service = ContextCompactionService();
       await service.init(null);

@@ -243,6 +243,14 @@ class ConversationGuard {
         facts.contains('injury is on the knee') ||
         facts.contains('environment is a forest or trail');
 
+    if (incident.contains('radiation') ||
+        incident.contains('contamination') ||
+        facts.contains('radioactive') ||
+        facts.contains('hazardous dust') ||
+        facts.contains('unknown dust')) {
+      return 'Move away from the dust and keep others away. Call emergency services or hazmat/poison control if reachable; remove contaminated outer clothing if safe, seal it in a bag, and wash exposed skin gently with soap and water.';
+    }
+
     if (noSignal && fieldLegInjury && !dangerSignsKnown) {
       return 'Sit somewhere safe off the trail edge if you can. Keep steady pressure on the knee with the cleanest fabric available; did you hit your head, feel dizzy or confused, or have trouble breathing?';
     }

@@ -458,6 +458,7 @@ JSON:''';
     String updatedUrgency = _context.urgencyLevel;
     String? updatedInjuryType = _context.injuryType;
     String? updatedEnvironment = _context.environment;
+    String updatedHazards = _context.hazards;
 
     void addFact(String fact) => _addResolvedFact(updatedFacts, fact);
     void addStep(String step, List<String> steps) => _addUnique(steps, step);
@@ -494,6 +495,80 @@ JSON:''';
     }
     if (_containsAny(msg, ['running', 'runner', 'jogging'])) {
       addFact('User was running when the incident happened.');
+    }
+
+    if (_isRadiationOrHazmatExposure(msg)) {
+      updatedIncidentType = 'radiation exposure';
+      updatedInjuryType = 'radiation or contamination exposure';
+      updatedUrgency = 'critical';
+      updatedHazards = 'Possible radioactive or hazardous contamination';
+      updatedSummary =
+          'Possible radioactive or hazardous material exposure with symptoms. Decontamination and emergency response needed.';
+      addFact('Possible radioactive or hazardous dust exposure reported.');
+      if (_containsAny(msg, ['radiology', 'radioactive', 'radiation'])) {
+        addFact('Radiology or radiation source mentioned.');
+      }
+      if (_containsAny(msg, ['glowing dust', 'dust', 'powder'])) {
+        addFact('Unknown dust or powder contacted skin.');
+      }
+      if (_containsAny(msg, ['blister', 'blisters'])) {
+        addFact('Blisters reported after possible contamination.');
+      }
+      if (_containsAny(msg, ['throwing up', 'vomiting', 'vomit', 'nausea'])) {
+        addFact('Vomiting or nausea reported after possible exposure.');
+      }
+      if (_containsAny(msg, [
+        'fell off',
+        'falling off',
+        'finger fell',
+        'fingers fell',
+      ])) {
+        addFact('Severe tissue injury or digit loss reported.');
+      }
+    }
+    if (!_isHazardIncident(updatedIncidentType) &&
+        _isCarbonMonoxideExposure(msg)) {
+      updatedIncidentType = 'carbon monoxide exposure';
+      updatedInjuryType = 'toxic gas exposure';
+      updatedUrgency = 'critical';
+      updatedHazards = 'Possible carbon monoxide exposure';
+      updatedSummary =
+          'Possible carbon monoxide exposure. Fresh air and emergency response needed.';
+      addFact('Carbon monoxide alarm or exposure reported.');
+      if (_containsAny(msg, ['headache', 'dizzy', 'dizziness', 'nausea'])) {
+        addFact('Carbon monoxide symptoms reported.');
+      }
+      if (_containsAny(msg, ['chest pain', 'passed out', 'confused'])) {
+        addFact('Carbon monoxide danger sign reported.');
+      }
+    }
+    if (!_isHazardIncident(updatedIncidentType) && _isGasLeakExposure(msg)) {
+      updatedIncidentType = 'gas leak';
+      updatedInjuryType = 'gas exposure';
+      updatedUrgency = 'critical';
+      updatedHazards = 'Possible gas leak or flammable fumes';
+      updatedSummary =
+          'Possible gas leak or flammable fumes. Evacuation and emergency response needed.';
+      addFact('Gas leak or fumes reported.');
+      if (_containsAny(msg, ['wheezing', 'shortness of breath', 'asthma'])) {
+        addFact('Breathing symptoms reported near gas leak.');
+      }
+    }
+    if (!_isHazardIncident(updatedIncidentType) &&
+        _isChemicalHazmatExposure(msg)) {
+      updatedIncidentType = 'chemical exposure';
+      updatedInjuryType = 'chemical or hazmat exposure';
+      updatedUrgency = 'critical';
+      updatedHazards = 'Possible chemical or hazardous material exposure';
+      updatedSummary =
+          'Possible chemical or hazardous material exposure. Decontamination and emergency response needed.';
+      addFact('Chemical or hazardous material exposure reported.');
+      if (_containsAny(msg, ['burn', 'burned', 'blister', 'skin', 'eye'])) {
+        addFact('Skin or eye symptoms reported after chemical exposure.');
+      }
+      if (_containsAny(msg, ['fumes', 'coughing', 'breathing', 'wheezing'])) {
+        addFact('Breathing symptoms reported after chemical exposure.');
+      }
     }
     if (_containsAny(msg, [
       'breathing fine',
@@ -567,7 +642,7 @@ JSON:''';
         ]) ||
         (_context.injuryType?.toLowerCase().contains('cut') ?? false) ||
         (_context.injuryType?.toLowerCase().contains('wound') ?? false);
-    if (mentionsCut) {
+    if (mentionsCut && !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = 'cut';
       if (updatedSummary.isEmpty) {
         updatedSummary = 'Cut reported. Checking bleeding and wound depth.';
@@ -711,7 +786,7 @@ JSON:''';
         _containsAny(msg, ['burn', 'burned', 'burnt', 'scald']) ||
         _context.incidentType.toLowerCase().contains('burn') ||
         (_context.injuryType?.toLowerCase().contains('burn') ?? false);
-    if (mentionsBurn) {
+    if (mentionsBurn && !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = 'burn';
       if (updatedSummary.isEmpty) {
         updatedSummary = 'Burn reported. Waiting on severity and care details.';
@@ -801,7 +876,7 @@ JSON:''';
           'fracture',
           'sprain',
         ]);
-    if (mentionsFallOrInjury) {
+    if (mentionsFallOrInjury && !_isHazardIncident(updatedIncidentType)) {
       if (updatedIncidentType == 'Unknown' || updatedIncidentType == 'cut') {
         updatedIncidentType = 'injury';
       }
@@ -933,7 +1008,7 @@ JSON:''';
           'choking',
           'breathing',
         ]);
-    if (mentionsBreathing) {
+    if (mentionsBreathing && !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = _containsAny(msg, ['chok'])
           ? 'choking'
           : 'breathing problem';
@@ -979,7 +1054,7 @@ JSON:''';
           'epi pen',
         ]) ||
         _context.incidentType.toLowerCase().contains('allergic');
-    if (mentionsAllergy) {
+    if (mentionsAllergy && !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = 'allergic reaction';
       updatedInjuryType ??= 'allergic reaction';
       if (updatedSummary.isEmpty) {
@@ -1024,7 +1099,7 @@ JSON:''';
           'inhaled smoke',
         ]) ||
         _context.incidentType.toLowerCase().contains('poison');
-    if (mentionsPoison) {
+    if (mentionsPoison && !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = 'poisoning';
       updatedInjuryType ??= 'poisoning or exposure';
       if (updatedSummary.isEmpty) {
@@ -1060,7 +1135,9 @@ JSON:''';
           'cat bite',
         ]) ||
         _containsAny(_context.incidentType.toLowerCase(), ['bite', 'sting']);
-    if (mentionsBiteOrSting && !mentionsAllergy) {
+    if (mentionsBiteOrSting &&
+        !mentionsAllergy &&
+        !_isHazardIncident(updatedIncidentType)) {
       updatedIncidentType = _containsAny(msg, ['sting', 'stung'])
           ? 'sting'
           : 'bite';
@@ -1104,7 +1181,7 @@ JSON:''';
           'exposure',
           'dehydration',
         ]);
-    if (mentionsLostOrExposure) {
+    if (mentionsLostOrExposure && !_isHazardIncident(updatedIncidentType)) {
       if (updatedIncidentType == 'Unknown') updatedIncidentType = 'survival';
       if (updatedSummary.isEmpty) {
         updatedSummary =
@@ -1200,7 +1277,6 @@ JSON:''';
     }
 
     // ── Hazard detection ──────────────────────────────────────────────────
-    String updatedHazards = _context.hazards;
     if (msg.contains('safe') ||
         msg.contains('all good') ||
         msg.contains('no danger') ||
@@ -1279,6 +1355,100 @@ JSON:''';
 
   static bool _containsAny(String text, List<String> patterns) {
     return patterns.any(text.contains);
+  }
+
+  static bool _isRadiationOrHazmatExposure(String text) {
+    final hasRadiationClue = _containsAny(text, [
+      'radiation',
+      'radioactive',
+      'radiology',
+      'radiological',
+      'nuclear',
+      'cesium',
+      'cobalt',
+      'uranium',
+      'radium',
+      'glowing dust',
+      'glowing powder',
+    ]);
+    final hasHazmatClue = _containsAny(text, [
+      'hazmat',
+      'unknown powder',
+      'unknown dust',
+      'contaminated dust',
+      'contamination',
+    ]);
+    final touchedMaterial = _containsAny(text, [
+      'touched',
+      'handled',
+      'on my skin',
+      'on my hand',
+      'on my finger',
+      'dust',
+      'powder',
+    ]);
+
+    return (hasRadiationClue || hasHazmatClue) && touchedMaterial;
+  }
+
+  static bool _isCarbonMonoxideExposure(String text) {
+    return _containsAny(text, [
+      'carbon monoxide',
+      'co alarm',
+      'co detector',
+      'generator indoors',
+      'heater indoors',
+      'headache and dizzy',
+      'headache dizziness',
+    ]);
+  }
+
+  static bool _isGasLeakExposure(String text) {
+    return _containsAny(text, [
+      'gas leak',
+      'smell gas',
+      'smells like gas',
+      'hissing gas',
+      'propane leak',
+      'natural gas',
+    ]);
+  }
+
+  static bool _isChemicalHazmatExposure(String text) {
+    final hasChemicalHazard = _containsAny(text, [
+      'chemical spill',
+      'chemical release',
+      'toxic cloud',
+      'hazmat',
+      'unknown chemical',
+      'acid spill',
+      'chlorine gas',
+      'ammonia fumes',
+      'chemical fumes',
+    ]);
+    final hasSkinOrAirExposure = _containsAny(text, [
+      'touched',
+      'on my skin',
+      'on my hand',
+      'on my finger',
+      'in my eye',
+      'breathing',
+      'breathed',
+      'inhaled',
+      'fumes',
+      'cloud',
+      'spill',
+    ]);
+
+    return hasChemicalHazard && hasSkinOrAirExposure;
+  }
+
+  static bool _isHazardIncident(String incidentType) {
+    final lower = incidentType.toLowerCase();
+    return lower.contains('radiation') ||
+        lower.contains('carbon monoxide') ||
+        lower.contains('gas leak') ||
+        lower.contains('chemical exposure');
   }
 
   static bool _isNegativeOnlyAnswer(String msg) {
